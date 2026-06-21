@@ -31,9 +31,17 @@ with the Supabase CLI, should we ever move off manual apply.
 | `20260621100000_memberships.sql` | `memberships` table · `membership_role` + `membership_status` enums · scope-validity CHECK · `has_role()` · RLS · bootstrap seed template |
 | `20260621103000_partner_centers_policies_directory.sql` | `partner_centers` role policies (admin/governance/center-admin) · `partner_center_directory` public view (anon, recognized-only) |
 | `20260621110000_candidates.sql` | `candidates` table (claimable minor records) · `candidate_status` enum · consent + retention fields · `anonymize_candidate()` erasure path · scoped RLS |
+| `20260621120000_certificates.sql` | `badge_level` enum · append-only `certificates` ledger (immutability trigger) · `certificate_revocations` · public `verify_certificate()` lookup · RLS |
 
-## Coming next (Phase 1)
+## Phase 1 schema — complete
 
-certificate-verification view (the last Phase 1 piece) — note: the
-`certificates` table it reads is part of Phase 2 (issuance), so the public
-verify-by-serial surface may land alongside P2.
+The registry foundation the PRD said the schema must unblock is in place:
+profiles · partner centers + public directory · RBAC (`has_role()`) ·
+claimable candidates with consent/retention/erasure · append-only certificate
+ledger with public verify-by-serial.
+
+## Coming next (Phase 2 — issuance)
+
+assessment/booking records → grading with **conflict-of-interest enforced in
+data** (an examiner cannot grade a candidate they instruct) → tighten examiner
+read/issue scope to assigned assessments → certificate serial generation.
