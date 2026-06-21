@@ -1,16 +1,18 @@
 import { BrowserRouter, Routes, Route, Link, NavLink, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import Protected from './components/Protected';
+import RequireRole from './components/RequireRole';
 import Home from './pages/Home';
 import Directory from './pages/Directory';
 import Verify from './pages/Verify';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import CentreRecognition from './pages/CentreRecognition';
 import './styles/public.css';
 import './styles/auth.css';
 
 function TopBar() {
-  const { session, signOut } = useAuth();
+  const { session, hasRole, signOut } = useAuth();
   const navigate = useNavigate();
 
   async function handleSignOut() {
@@ -30,6 +32,9 @@ function TopBar() {
         {session ? (
           <>
             <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'is-active' : ''}>Dashboard</NavLink>
+            {(hasRole('chairperson') || hasRole('board_member')) && (
+              <NavLink to="/admin/centres" className={({ isActive }) => isActive ? 'is-active' : ''}>Centre recognition</NavLink>
+            )}
             <button className="mas-signout" onClick={handleSignOut}>Sign out</button>
           </>
         ) : (
@@ -54,6 +59,14 @@ export default function App() {
               <Route path="/verify/:serial" element={<Verify />} />
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+              <Route
+                path="/admin/centres"
+                element={
+                  <RequireRole roles={['chairperson', 'board_member']}>
+                    <CentreRecognition />
+                  </RequireRole>
+                }
+              />
               <Route path="*" element={<Home />} />
             </Routes>
           </main>
