@@ -30,8 +30,10 @@ with the Supabase CLI, should we ever move off manual apply.
 | `20260621093000_partner_centers.sql` | `partner_centers` table · `my_state` + `partner_center_status` enums · baseline RLS (principal reads own) |
 | `20260621100000_memberships.sql` | `memberships` table · `membership_role` + `membership_status` enums · scope-validity CHECK · `has_role()` · RLS · bootstrap seed template |
 | `20260621103000_partner_centers_policies_directory.sql` | `partner_centers` role policies (admin/governance/center-admin) · `partner_center_directory` public view (anon, recognized-only) |
+| `20260621110000_candidates.sql` | `candidates` table (claimable minor records) · `candidate_status` enum · consent + retention fields · `anonymize_candidate()` erasure path · scoped RLS |
 
 ## Coming next (Phase 1)
 
-`candidates` (claimable minor records: data minimization, consent flag,
-retention fields) → certificate-verification view.
+certificate-verification view (the last Phase 1 piece) — note: the
+`certificates` table it reads is part of Phase 2 (issuance), so the public
+verify-by-serial surface may land alongside P2.
