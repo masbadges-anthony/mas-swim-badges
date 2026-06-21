@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CentreRecognition from './pages/CentreRecognition';
 import RegisterCandidate from './pages/RegisterCandidate';
+import ExaminerGrading from './pages/ExaminerGrading';
 import './styles/public.css';
 import './styles/auth.css';
 
@@ -27,6 +28,11 @@ function TopBar() {
     hasRole('chairperson') ||
     hasRole('board_member') ||
     hasRole('chief_examiner');
+  const canGrade =
+    hasRole('examiner') ||
+    hasRole('chief_examiner') ||
+    hasRole('chairperson') ||
+    hasRole('board_member');
 
   return (
     <header className="mas-topbar">
@@ -42,6 +48,9 @@ function TopBar() {
             <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'is-active' : ''}>Dashboard</NavLink>
             {canRegister && (
               <NavLink to="/candidates/register" className={({ isActive }) => isActive ? 'is-active' : ''}>Register candidate</NavLink>
+            )}
+            {canGrade && (
+              <NavLink to="/assessments/grade" className={({ isActive }) => isActive ? 'is-active' : ''}>Grading</NavLink>
             )}
             {canRecognise && (
               <NavLink to="/admin/centres" className={({ isActive }) => isActive ? 'is-active' : ''}>Centre recognition</NavLink>
@@ -75,6 +84,14 @@ export default function App() {
                 element={
                   <RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}>
                     <RegisterCandidate />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/assessments/grade"
+                element={
+                  <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
+                    <ExaminerGrading />
                   </RequireRole>
                 }
               />
