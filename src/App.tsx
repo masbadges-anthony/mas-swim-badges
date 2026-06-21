@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import CentreRecognition from './pages/CentreRecognition';
 import RegisterCandidate from './pages/RegisterCandidate';
 import ExaminerGrading from './pages/ExaminerGrading';
+import CertificateIssuance from './pages/CertificateIssuance';
 import './styles/public.css';
 import './styles/auth.css';
 
@@ -22,17 +23,12 @@ function TopBar() {
     navigate('/');
   }
 
+  const isGovernance =
+    hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner');
   const canRecognise = hasRole('chairperson') || hasRole('board_member');
-  const canRegister =
-    hasRole('instructor') ||
-    hasRole('chairperson') ||
-    hasRole('board_member') ||
-    hasRole('chief_examiner');
-  const canGrade =
-    hasRole('examiner') ||
-    hasRole('chief_examiner') ||
-    hasRole('chairperson') ||
-    hasRole('board_member');
+  const canRegister = hasRole('instructor') || isGovernance;
+  const canGrade = hasRole('examiner') || isGovernance;
+  const canIssue = hasRole('examiner') || isGovernance;
 
   return (
     <header className="mas-topbar">
@@ -51,6 +47,9 @@ function TopBar() {
             )}
             {canGrade && (
               <NavLink to="/assessments/grade" className={({ isActive }) => isActive ? 'is-active' : ''}>Grading</NavLink>
+            )}
+            {canIssue && (
+              <NavLink to="/certificates/issue" className={({ isActive }) => isActive ? 'is-active' : ''}>Issue certificates</NavLink>
             )}
             {canRecognise && (
               <NavLink to="/admin/centres" className={({ isActive }) => isActive ? 'is-active' : ''}>Centre recognition</NavLink>
@@ -92,6 +91,14 @@ export default function App() {
                 element={
                   <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
                     <ExaminerGrading />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/certificates/issue"
+                element={
+                  <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
+                    <CertificateIssuance />
                   </RequireRole>
                 }
               />
