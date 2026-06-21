@@ -51,6 +51,7 @@ read/issue scope to assigned assessments → certificate serial generation.
 | File | Adds |
 |---|---|
 | `20260621130000_assessments.sql` | `assessment_sessions` + `assessment_results` · `session_status` + `assessment_outcome` enums · **COI enforcement trigger** · `can_assess_candidate()` + examiner-scoped candidate reads · RLS |
+| `20260621140000_issuance.sql` | certificate serial generator (column default) · pass-gated issuance trigger (no cert without a passing result, auto-links it) · revoke-frees-result trigger for reissue |
 
-Still ahead in P2: tie certificate issuance to a passed result (serial
-generation + a trigger so a cert can only be issued against a `pass`).
+The certificate lifecycle is now closed end-to-end: assess → pass → issue
+(gated + serialised) → verify (public) → revoke → reissue.
