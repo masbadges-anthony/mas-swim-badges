@@ -241,3 +241,17 @@
     flex: 1 1 0;
   }
 }
+
+/* ---- Issuance -------------------------------------------------------------- */
+
+.mas-app .mas-issued {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.mas-app .mas-serial {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
