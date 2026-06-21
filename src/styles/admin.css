@@ -255,3 +255,44 @@
   font-weight: 600;
   letter-spacing: 0.01em;
 }
+
+/* ---- Scheduling roster ----------------------------------------------------- */
+
+.mas-app .mas-roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+  max-height: 22rem;
+  overflow-y: auto;
+  border: 1px solid var(--border, #e3e7ee);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.mas-app .mas-roster-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.mas-app .mas-roster-name {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.mas-app .mas-roster-level {
+  flex: 0 0 auto;
+  max-width: 11rem;
+}
+
+/* ---- Revoke inline editor -------------------------------------------------- */
+
+.mas-app .mas-revoke {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  max-width: 28rem;
+}
