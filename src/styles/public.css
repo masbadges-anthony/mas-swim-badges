@@ -1,0 +1,160 @@
+/* Public surfaces — scoped under .mas-app so it won't collide with the
+   existing index.css. Falls back to the brand navy if those vars aren't set. */
+
+.mas-app {
+  --mas-navy: var(--navy, #0a1f44);
+  --mas-navy-light: var(--navy-light, #14306b);
+  --mas-paper: #f5f8fc;
+  --mas-card: #ffffff;
+  --mas-line: #e3e9f3;
+  --mas-ink: #0a1f44;
+  --mas-muted: #5d6b85;
+  --mas-good: #2f9e58;
+  --mas-bad: #d23b34;
+
+  font-family: 'Nunito Sans', system-ui, -apple-system, sans-serif;
+  color: var(--mas-ink);
+  background: var(--mas-paper);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.mas-app h1, .mas-app h2, .mas-app h3 {
+  font-family: 'Barlow Condensed', 'Nunito Sans', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.015em;
+  margin: 0;
+  line-height: 1.05;
+}
+
+/* ---- top bar ---- */
+.mas-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  background: var(--mas-navy);
+  color: #fff;
+}
+.mas-brand { display: flex; align-items: baseline; gap: 0.55rem; text-decoration: none; color: #fff; }
+.mas-brand-mark {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700; letter-spacing: 0.08em;
+  background: #fff; color: var(--mas-navy);
+  padding: 0.05rem 0.4rem; border-radius: 4px; font-size: 1.05rem;
+}
+.mas-brand-text { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-size: 1.25rem; letter-spacing: 0.02em; }
+.mas-nav { display: flex; gap: 1.1rem; }
+.mas-nav a {
+  color: #c8d4ee; text-decoration: none; font-weight: 700; font-size: 0.95rem;
+  padding-bottom: 2px; border-bottom: 2px solid transparent;
+}
+.mas-nav a:hover { color: #fff; }
+.mas-nav a.is-active { color: #fff; border-bottom-color: #fff; }
+
+/* ---- layout ---- */
+.mas-main { flex: 1; width: 100%; }
+.mas-page { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.25rem 3.5rem; }
+.mas-page-narrow { max-width: 640px; }
+.mas-page-head { margin-bottom: 1.75rem; }
+.mas-eyebrow {
+  font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase;
+  letter-spacing: 0.14em; font-weight: 700; font-size: 0.85rem;
+  color: var(--mas-muted); margin: 0 0 0.35rem;
+}
+.mas-page-head h1 { font-size: clamp(2rem, 5vw, 2.9rem); color: var(--mas-navy); }
+.mas-lede { color: var(--mas-muted); font-size: 1.05rem; max-width: 52ch; margin: 0.6rem 0 0; line-height: 1.5; }
+
+/* ---- hero (home) ---- */
+.mas-hero {
+  background: linear-gradient(135deg, var(--mas-navy), var(--mas-navy-light));
+  color: #fff; border-radius: 16px; padding: 2.75rem 2rem; margin-bottom: 2rem;
+}
+.mas-hero .mas-eyebrow { color: #9fb4e0; }
+.mas-hero-title { font-size: clamp(2.6rem, 8vw, 4.25rem); color: #fff; }
+.mas-hero .mas-lede { color: #d3def2; }
+
+.mas-entry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+.mas-entry {
+  display: block; text-decoration: none; color: inherit;
+  background: var(--mas-card); border: 1px solid var(--mas-line);
+  border-radius: 14px; padding: 1.5rem; transition: transform .12s ease, box-shadow .12s ease;
+}
+.mas-entry:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(10,31,68,.1); }
+.mas-entry h2 { color: var(--mas-navy); font-size: 1.5rem; margin-bottom: 0.4rem; }
+.mas-entry p { color: var(--mas-muted); margin: 0 0 0.9rem; line-height: 1.45; }
+.mas-entry-go { font-weight: 800; color: var(--mas-navy); }
+
+/* ---- toolbar / form controls ---- */
+.mas-toolbar { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.5rem; }
+.mas-field-label { font-weight: 700; color: var(--mas-muted); }
+.mas-select, .mas-input {
+  font: inherit; padding: 0.6rem 0.75rem; border: 1px solid var(--mas-line);
+  border-radius: 9px; background: #fff; color: var(--mas-ink); min-width: 0;
+}
+.mas-select:focus-visible, .mas-input:focus-visible {
+  outline: 3px solid #cfe0ff; outline-offset: 1px; border-color: var(--mas-navy-light);
+}
+
+/* ---- directory cards ---- */
+.mas-card-grid { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+.mas-card { background: var(--mas-card); border: 1px solid var(--mas-line); border-radius: 12px; padding: 1.15rem; }
+.mas-card-title { font-size: 1.25rem; color: var(--mas-navy); }
+.mas-card-state {
+  display: inline-block; margin: 0.4rem 0 0.6rem; font-size: 0.78rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--mas-navy-light);
+  background: #eef3fb; padding: 0.15rem 0.5rem; border-radius: 20px;
+}
+.mas-card-line { color: var(--mas-muted); margin: 0 0 0.6rem; line-height: 1.4; }
+.mas-card-contact { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.92rem; }
+.mas-card-contact a { color: var(--mas-navy-light); }
+
+/* ---- verify ---- */
+.mas-verify-form { display: flex; gap: 0.6rem; margin-bottom: 1.5rem; }
+.mas-verify-form .mas-input { flex: 1; }
+.mas-btn {
+  font: inherit; font-weight: 800; cursor: pointer; border: none; border-radius: 9px;
+  background: var(--mas-navy); color: #fff; padding: 0.6rem 1.4rem;
+}
+.mas-btn:hover { background: var(--mas-navy-light); }
+.mas-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.mas-result {
+  background: var(--mas-card); border: 1px solid var(--mas-line);
+  border-top: 6px solid var(--accent, var(--mas-navy)); border-radius: 12px; overflow: hidden;
+}
+.mas-result-band {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  padding: 1.1rem 1.25rem; background: color-mix(in srgb, var(--accent) 10%, #fff);
+}
+.mas-result-level { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-weight: 700; font-size: 1.3rem; color: var(--mas-navy); }
+.mas-pill { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.25rem 0.65rem; border-radius: 20px; }
+.mas-pill-good { background: #e3f5ea; color: var(--mas-good); }
+.mas-pill-bad { background: #fbe6e5; color: var(--mas-bad); }
+.mas-result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0; padding: 1.25rem; }
+.mas-result-grid dt { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--mas-muted); margin-bottom: 0.15rem; }
+.mas-result-grid dd { margin: 0; font-size: 1.02rem; }
+.mas-mono { font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 0.92rem; }
+.mas-result-note { padding: 0 1.25rem 1.25rem; color: var(--mas-muted); }
+.mas-link { background: none; border: none; padding: 0; font: inherit; color: var(--mas-navy-light); font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+/* ---- status text ---- */
+.mas-status { color: var(--mas-muted); font-size: 1.02rem; }
+.mas-status-bad { color: var(--mas-bad); }
+
+/* ---- footer ---- */
+.mas-footer { padding: 1.5rem 1.25rem; text-align: center; color: var(--mas-muted); font-size: 0.9rem; border-top: 1px solid var(--mas-line); }
+
+/* ---- responsive ---- */
+@media (max-width: 600px) {
+  .mas-entry-grid, .mas-result-grid { grid-template-columns: 1fr; }
+  .mas-verify-form { flex-direction: column; }
+  .mas-verify-form .mas-btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mas-entry { transition: none; }
+}
