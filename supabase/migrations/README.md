@@ -45,3 +45,12 @@ ledger with public verify-by-serial.
 assessment/booking records → grading with **conflict-of-interest enforced in
 data** (an examiner cannot grade a candidate they instruct) → tighten examiner
 read/issue scope to assigned assessments → certificate serial generation.
+
+## Phase 2 — in progress
+
+| File | Adds |
+|---|---|
+| `20260621130000_assessments.sql` | `assessment_sessions` + `assessment_results` · `session_status` + `assessment_outcome` enums · **COI enforcement trigger** · `can_assess_candidate()` + examiner-scoped candidate reads · RLS |
+
+Still ahead in P2: tie certificate issuance to a passed result (serial
+generation + a trigger so a cert can only be issued against a `pass`).
