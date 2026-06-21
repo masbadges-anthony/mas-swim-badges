@@ -205,3 +205,39 @@
     width: 100%;
   }
 }
+
+/* ---- Grading (examiner) ---------------------------------------------------- */
+
+.mas-app .mas-grade-session {
+  margin-bottom: 1.5rem;
+}
+
+.mas-app .mas-grade-session-head {
+  margin-bottom: 0.5rem;
+}
+
+.mas-app .mas-grade-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mas-app .mas-outcome {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.mas-app .mas-outcome.is-pass {
+  color: var(--ok, #1a7f4b);
+}
+.mas-app .mas-outcome.is-refer {
+  color: var(--warn, #b4690e);
+}
+
+@media (max-width: 560px) {
+  .mas-app .mas-grade-actions {
+    align-self: stretch;
+  }
+  .mas-app .mas-grade-actions .mas-btn-primary,
+  .mas-app .mas-grade-actions .mas-btn-ghost {
+    flex: 1 1 0;
+  }
+}
