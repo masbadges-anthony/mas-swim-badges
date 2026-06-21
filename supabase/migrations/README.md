@@ -27,8 +27,9 @@ with the Supabase CLI, should we ever move off manual apply.
 | File | Adds |
 |---|---|
 | `20260621090000_profiles.sql` | `profiles` table · `handle_updated_at()` · `handle_new_user()` + `auth.users` trigger · RLS (own-row read/update) |
+| `20260621093000_partner_centers.sql` | `partner_centers` table · `my_state` + `partner_center_status` enums · baseline RLS (principal reads own) |
 
 ## Coming next (Phase 1)
 
-`partner_centers` → `memberships` + `has_role()` → `candidates` → public
-directory & certificate-verification views.
+`memberships` + `has_role()` → revisit `partner_centers` role policies +
+public directory view → `candidates` → certificate-verification view.
