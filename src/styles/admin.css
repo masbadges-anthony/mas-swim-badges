@@ -1,0 +1,142 @@
+/* Admin module styles — authenticated write surfaces (centre recognition, and
+   future role modules). Scoped under .mas-app to match public.css; falls back
+   to the --navy token + neutral fallbacks so it works even before all brand
+   tokens are defined. */
+
+.mas-app .mas-admin-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.mas-app .mas-admin-count {
+  font-size: 0.9rem;
+  color: var(--muted, #5b6472);
+}
+
+.mas-app .mas-admin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mas-app .mas-admin-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e3e7ee);
+  border-radius: 12px;
+}
+
+.mas-app .mas-admin-main {
+  min-width: 0;
+}
+
+.mas-app .mas-admin-name {
+  margin: 0 0 0.35rem;
+  font-family: 'Barlow Condensed', system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 1.25rem;
+  color: var(--navy, #0b1f3a);
+}
+
+.mas-app .mas-admin-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0 0 0.4rem;
+}
+
+.mas-app .mas-pill {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--navy, #0b1f3a);
+  color: #ffffff;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.mas-app .mas-admin-sub,
+.mas-app .mas-admin-line {
+  font-size: 0.9rem;
+  color: var(--muted, #5b6472);
+  margin: 0;
+}
+
+.mas-app .mas-admin-line {
+  margin: 0.15rem 0;
+}
+
+.mas-app .mas-admin-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 0.9rem;
+  margin-top: 0.3rem;
+}
+
+.mas-app .mas-admin-contact a {
+  color: var(--navy, #0b1f3a);
+}
+
+.mas-app .mas-admin-action {
+  flex: 0 0 auto;
+}
+
+.mas-app .mas-admin-rowerror {
+  margin-top: 0.5rem;
+}
+
+.mas-app .mas-btn-primary {
+  font: inherit;
+  cursor: pointer;
+  padding: 0.55rem 1.1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--navy, #0b1f3a);
+  color: #ffffff;
+  font-weight: 600;
+}
+.mas-app .mas-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.mas-app .mas-btn-ghost {
+  font: inherit;
+  cursor: pointer;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--border, #e3e7ee);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--navy, #0b1f3a);
+}
+.mas-app .mas-btn-ghost:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.mas-app .mas-status-good {
+  color: var(--ok, #1a7f4b);
+}
+
+@media (max-width: 560px) {
+  .mas-app .mas-admin-row {
+    flex-direction: column;
+  }
+  .mas-app .mas-admin-action {
+    align-self: stretch;
+  }
+  .mas-app .mas-btn-primary {
+    width: 100%;
+  }
+}
