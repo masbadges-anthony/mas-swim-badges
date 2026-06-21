@@ -8,6 +8,7 @@ import Verify from './pages/Verify';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CentreRecognition from './pages/CentreRecognition';
+import RegisterCandidate from './pages/RegisterCandidate';
 import './styles/public.css';
 import './styles/auth.css';
 
@@ -19,6 +20,13 @@ function TopBar() {
     await signOut();
     navigate('/');
   }
+
+  const canRecognise = hasRole('chairperson') || hasRole('board_member');
+  const canRegister =
+    hasRole('instructor') ||
+    hasRole('chairperson') ||
+    hasRole('board_member') ||
+    hasRole('chief_examiner');
 
   return (
     <header className="mas-topbar">
@@ -32,7 +40,10 @@ function TopBar() {
         {session ? (
           <>
             <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'is-active' : ''}>Dashboard</NavLink>
-            {(hasRole('chairperson') || hasRole('board_member')) && (
+            {canRegister && (
+              <NavLink to="/candidates/register" className={({ isActive }) => isActive ? 'is-active' : ''}>Register candidate</NavLink>
+            )}
+            {canRecognise && (
               <NavLink to="/admin/centres" className={({ isActive }) => isActive ? 'is-active' : ''}>Centre recognition</NavLink>
             )}
             <button className="mas-signout" onClick={handleSignOut}>Sign out</button>
@@ -59,6 +70,14 @@ export default function App() {
               <Route path="/verify/:serial" element={<Verify />} />
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+              <Route
+                path="/candidates/register"
+                element={
+                  <RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}>
+                    <RegisterCandidate />
+                  </RequireRole>
+                }
+              />
               <Route
                 path="/admin/centres"
                 element={
