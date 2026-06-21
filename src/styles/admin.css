@@ -1,7 +1,9 @@
-/* Admin module styles — authenticated write surfaces (centre recognition, and
-   future role modules). Scoped under .mas-app to match public.css; falls back
-   to the --navy token + neutral fallbacks so it works even before all brand
-   tokens are defined. */
+/* Admin module styles — authenticated write surfaces (centre recognition,
+   candidate registration, and future role modules). Scoped under .mas-app to
+   match public.css; falls back to the --navy token + neutral fallbacks so it
+   works even before all brand tokens are defined. */
+
+/* ---- Toolbar + lists (centre recognition) ---------------------------------- */
 
 .mas-app .mas-admin-toolbar {
   display: flex;
@@ -96,6 +98,8 @@
   margin-top: 0.5rem;
 }
 
+/* ---- Buttons --------------------------------------------------------------- */
+
 .mas-app .mas-btn-primary {
   font: inherit;
   cursor: pointer;
@@ -129,6 +133,64 @@
   color: var(--ok, #1a7f4b);
 }
 
+/* ---- Forms (candidate registration) ---------------------------------------- */
+
+.mas-app .mas-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 32rem;
+  padding: 1.25rem;
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e3e7ee);
+  border-radius: 12px;
+}
+
+.mas-app .mas-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.mas-app .mas-input {
+  font: inherit;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border, #e3e7ee);
+  border-radius: 8px;
+  background: #ffffff;
+  color: inherit;
+}
+.mas-app .mas-input:focus {
+  outline: 2px solid var(--navy, #0b1f3a);
+  outline-offset: 1px;
+}
+
+.mas-app .mas-field-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted, #5b6472);
+}
+
+.mas-app .mas-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.mas-app .mas-checkbox-row input {
+  margin-top: 0.2rem;
+  flex: 0 0 auto;
+}
+
+.mas-app .mas-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mas-app .mas-section-head {
+  margin-top: 2rem;
+}
+
 @media (max-width: 560px) {
   .mas-app .mas-admin-row {
     flex-direction: column;
@@ -137,6 +199,9 @@
     align-self: stretch;
   }
   .mas-app .mas-btn-primary {
+    width: 100%;
+  }
+  .mas-app .mas-form-actions .mas-btn-primary {
     width: 100%;
   }
 }
