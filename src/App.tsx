@@ -16,6 +16,7 @@ import CentreManagement from './pages/CentreManagement';
 import MembershipManagement from './pages/MembershipManagement';
 import AssessmentsOversight from './pages/AssessmentsOversight';
 import AccountSettings from './pages/AccountSettings';
+import ApplyCentre from './pages/ApplyCentre';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -64,6 +65,7 @@ function TopBar() {
                 {isGovernance && <NavLink to="/assessments/oversight" className={navClass}>Oversight</NavLink>}
                 {canManageCentres && <NavLink to="/admin/centres" className={navClass}>Manage centres</NavLink>}
                 {canManageMembers && <NavLink to="/admin/memberships" className={navClass}>Memberships</NavLink>}
+                <NavLink to="/centres/apply" className={navClass}>Apply as a centre</NavLink>
                 <NavLink to="/account" className={navClass}>Account</NavLink>
               </div>
             </details>
@@ -92,6 +94,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
               <Route path="/account" element={<Protected><AccountSettings /></Protected>} />
+              <Route path="/centres/apply" element={<Protected><ApplyCentre /></Protected>} />
               <Route
                 path="/candidates/register"
                 element={
