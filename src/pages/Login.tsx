@@ -26,7 +26,8 @@ export default function Login() {
   return (
     <section className="mas-page mas-page-narrow">
       <header className="mas-page-head">
-        <p className="mas-eyebrow">Staff & partners</p>
+        <img className="mas-auth-logo" src="/mas-logo.png" alt="MAS Badges — Malaysia Aquatics" />
+        <p className="mas-eyebrow">Staff &amp; partners</p>
         <h1>Sign in</h1>
         <p className="mas-lede">Access depends on the role granted to your account.</p>
       </header>
