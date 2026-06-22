@@ -19,6 +19,7 @@ interface MyCandidate {
   partner_center_id: string | null;
   status: string;
   created_at: string;
+  claim_code: string | null;
 }
 
 type Load = 'loading' | 'ready' | 'error';
@@ -60,6 +61,7 @@ export default function RegisterCandidate() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  const [lastCode, setLastCode] = useState<string | null>(null);
 
   const [mine, setMine] = useState<MyCandidate[]>([]);
   const [load, setLoad] = useState<Load>('loading');
@@ -90,7 +92,7 @@ export default function RegisterCandidate() {
     setLoad('loading');
     const { data, error } = await supabase
       .from('candidates')
-      .select('id, full_name, date_of_birth, partner_center_id, status, created_at')
+      .select('id, full_name, date_of_birth, partner_center_id, status, created_at, claim_code')
       .eq('registered_by_profile_id', profileId)
       .order('created_at', { ascending: false });
 
@@ -128,7 +130,7 @@ export default function RegisterCandidate() {
         consent_recorded_by: profileId,
         // status defaults to 'active' in the DB
       })
-      .select('id, full_name, date_of_birth, partner_center_id, status, created_at')
+      .select('id, full_name, date_of_birth, partner_center_id, status, created_at, claim_code')
       .single();
 
     setSubmitting(false);
@@ -140,6 +142,7 @@ export default function RegisterCandidate() {
 
     setMine((list) => [data as MyCandidate, ...list]);
     setJustAdded((data as MyCandidate).full_name);
+    setLastCode((data as MyCandidate).claim_code);
     // Reset the identity fields; keep the centre selected for quick batch entry.
     setFullName('');
     setDob('');
@@ -232,6 +235,12 @@ export default function RegisterCandidate() {
         {justAdded && !formError && (
           <p className="mas-status mas-status-good" role="status">
             “{justAdded}” registered.
+            {lastCode && (
+              <>
+                {' '}Give the parent this claim code:{' '}
+                <span className="mas-serial">{lastCode}</span>
+              </>
+            )}
           </p>
         )}
 
@@ -274,6 +283,11 @@ export default function RegisterCandidate() {
                       : ' · Independent'}
                   </span>
                 </p>
+                {c.claim_code && (
+                  <p className="mas-admin-line">
+                    Claim code: <span className="mas-serial">{c.claim_code}</span>
+                  </p>
+                )}
               </div>
             </li>
           ))}
