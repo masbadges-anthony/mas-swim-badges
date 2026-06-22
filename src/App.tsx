@@ -10,7 +10,6 @@ import Dashboard from './pages/Dashboard';
 import RegisterCandidate from './pages/RegisterCandidate';
 import CreateSession from './pages/CreateSession';
 import ExaminerGrading from './pages/ExaminerGrading';
-import CertificateIssuance from './pages/CertificateIssuance';
 import Certificates from './pages/Certificates';
 import CentreManagement from './pages/CentreManagement';
 import MembershipManagement from './pages/MembershipManagement';
@@ -46,7 +45,6 @@ function TopBar() {
   const canRegister = hasRole('instructor') || isGovernance;
   const canSchedule = hasRole('instructor') || isGovernance;
   const canGrade = hasRole('examiner') || isGovernance;
-  const canIssue = hasRole('examiner') || isGovernance;
   const canViewCerts = hasRole('examiner') || isGovernance;
   const canInvitations = hasRole('examiner');
   const canInvite = isGovernance;
@@ -72,7 +70,6 @@ function TopBar() {
                 {canInvite && <NavLink to="/assessments/invite" className={navClass}>Invite examiner</NavLink>}
                 {canGrade && <NavLink to="/assessments/grade" className={navClass}>Grading</NavLink>}
                 {canInvitations && <NavLink to="/assessments/invitations" className={navClass}>Invitations</NavLink>}
-                {canIssue && <NavLink to="/certificates/issue" className={navClass}>Issue certificates</NavLink>}
                 {canViewCerts && <NavLink to="/certificates" className={navClass}>Certificates</NavLink>}
                 {isGovernance && <NavLink to="/assessments/oversight" className={navClass}>Oversight</NavLink>}
                 {canAccounts && <NavLink to="/admin/accounts" className={navClass}>Accounts</NavLink>}
@@ -166,14 +163,6 @@ export default function App() {
                 element={
                   <RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}>
                     <AssessmentsOversight />
-                  </RequireRole>
-                }
-              />
-              <Route
-                path="/certificates/issue"
-                element={
-                  <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
-                    <CertificateIssuance />
                   </RequireRole>
                 }
               />
