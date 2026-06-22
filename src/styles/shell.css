@@ -157,3 +157,16 @@
     margin: 0 0 1rem;
   }
 }
+
+/* ---- Brand logo (sidebar) ---- */
+.mas-app .mas-sidebar .mas-brand {
+  align-items: center;
+  gap: 0;
+  padding: 0.2rem 0.35rem 0;
+}
+.mas-app .mas-sidebar .mas-logo {
+  width: 170px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
