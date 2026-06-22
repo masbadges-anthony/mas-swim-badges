@@ -68,6 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
     },
     hasRole(role) {
+      // system_admin is all-access for UX gating, mirroring the database
+      // has_role() wildcard. One check lights up the whole nav + every guard.
+      const isSystemAdmin = memberships.some(
+        (m) => m.role === 'system_admin' && m.status === 'active',
+      );
+      if (isSystemAdmin) return true;
       return memberships.some((m) => m.role === role && m.status === 'active');
     },
   };
@@ -88,7 +94,9 @@ export const ROLE_LABELS: Record<string, string> = {
   chairperson: 'Chairperson',
   chief_examiner: 'Chief Examiner',
   examiner_trainer: 'Examiner Course Trainer',
+  instructor_trainer: 'Instructor Trainer',
   examiner: 'Examiner',
   instructor: 'Instructor',
   partner_center_admin: 'Centre Admin',
+  system_admin: 'System Administrator',
 };
