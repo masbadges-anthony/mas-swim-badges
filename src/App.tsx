@@ -19,6 +19,7 @@ import AccountSettings from './pages/AccountSettings';
 import ApplyCentre from './pages/ApplyCentre';
 import CentreAdmin from './pages/CentreAdmin';
 import ClaimCandidate from './pages/ClaimCandidate';
+import Invitations from './pages/Invitations';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -44,6 +45,7 @@ function TopBar() {
   const canGrade = hasRole('examiner') || isGovernance;
   const canIssue = hasRole('examiner') || isGovernance;
   const canViewCerts = hasRole('examiner') || isGovernance;
+  const canInvitations = hasRole('examiner');
 
   return (
     <header className="mas-topbar">
@@ -62,6 +64,7 @@ function TopBar() {
                 {canRegister && <NavLink to="/candidates/register" className={navClass}>Register candidate</NavLink>}
                 {canSchedule && <NavLink to="/assessments/schedule" className={navClass}>Schedule assessment</NavLink>}
                 {canGrade && <NavLink to="/assessments/grade" className={navClass}>Grading</NavLink>}
+                {canInvitations && <NavLink to="/assessments/invitations" className={navClass}>Invitations</NavLink>}
                 {canIssue && <NavLink to="/certificates/issue" className={navClass}>Issue certificates</NavLink>}
                 {canViewCerts && <NavLink to="/certificates" className={navClass}>Certificates</NavLink>}
                 {isGovernance && <NavLink to="/assessments/oversight" className={navClass}>Oversight</NavLink>}
@@ -129,6 +132,14 @@ export default function App() {
                 element={
                   <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
                     <ExaminerGrading />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/assessments/invitations"
+                element={
+                  <RequireRole roles={['examiner']}>
+                    <Invitations />
                   </RequireRole>
                 }
               />
