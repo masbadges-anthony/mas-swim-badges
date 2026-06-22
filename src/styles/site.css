@@ -1,0 +1,92 @@
+/* site.css — public marketing layout (www.masbadges.org): top nav + rich
+   footer, light theme so the logo reads clearly. Scoped under .mas-app and
+   built on the public.css tokens. */
+
+.mas-app .mas-site { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ---- Top navigation ---- */
+.mas-app .mas-topnav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.85rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid var(--mas-line);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.mas-app .mas-topnav .mas-brand { color: var(--mas-navy); }
+.mas-app .mas-topnav .mas-brand-mark { background: var(--mas-navy); color: #fff; }
+.mas-app .mas-topnav .mas-brand-text { color: var(--mas-navy); }
+
+.mas-app .mas-topnav-links { display: flex; flex-wrap: wrap; gap: 1.1rem; flex: 1 1 auto; }
+.mas-app .mas-topnav-links a {
+  color: var(--mas-ink);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+.mas-app .mas-topnav-links a:hover { color: var(--mas-navy); }
+.mas-app .mas-topnav-links a.is-active { color: var(--mas-navy); border-bottom-color: var(--mas-navy); }
+
+.mas-app .mas-login-btn {
+  flex: 0 0 auto;
+  background: var(--mas-navy);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 800;
+  padding: 0.5rem 1.15rem;
+  border-radius: 9px;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+.mas-app .mas-login-btn:hover { background: var(--mas-navy-light); }
+
+.mas-app .mas-site .mas-main { flex: 1 1 auto; }
+
+/* ---- Footer ---- */
+.mas-app .mas-site-footer {
+  background: var(--mas-navy);
+  color: #c8d4ee;
+  margin-top: 2.5rem;
+  padding: 2.25rem 1.5rem 1.25rem;
+}
+.mas-app .mas-site-footer .mas-footer-cols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 2.5rem;
+  max-width: 960px;
+  margin: 0 auto 1.5rem;
+}
+.mas-app .mas-site-footer h4 {
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fff;
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem;
+}
+.mas-app .mas-site-footer a {
+  display: block;
+  color: #c8d4ee;
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.15rem 0;
+}
+.mas-app .mas-site-footer a:hover { color: #fff; }
+.mas-app .mas-site-footer .mas-footer-base {
+  max-width: 960px;
+  margin: 0 auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.85rem;
+  color: #9fb0d4;
+}
+
+@media (max-width: 820px) {
+  .mas-app .mas-topnav { flex-wrap: wrap; }
+  .mas-app .mas-topnav-links { order: 3; flex-basis: 100%; }
+}
