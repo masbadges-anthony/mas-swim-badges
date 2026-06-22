@@ -4,6 +4,8 @@ import Protected from './components/Protected';
 import RequireRole from './components/RequireRole';
 import Home from './pages/Home';
 import Directory from './pages/Directory';
+import InstructorDirectory from './pages/InstructorDirectory';
+import Courses from './pages/Courses';
 import Verify from './pages/Verify';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -22,6 +24,8 @@ import ClaimSlips from './pages/ClaimSlips';
 import Invitations from './pages/Invitations';
 import InviteExaminer from './pages/InviteExaminer';
 import InstructorOnboarding from './pages/InstructorOnboarding';
+import InstructorBlacklist from './pages/InstructorBlacklist';
+import CourseManagement from './pages/CourseManagement';
 import Accounts from './pages/Accounts';
 import MyInvoices from './pages/MyInvoices';
 import './styles/public.css';
@@ -56,11 +60,16 @@ function Sidebar() {
   const canClaimSlips = canRegister;
   const canOnboard =
     hasRole('instructor_trainer') || hasRole('chairperson') || hasRole('board_member');
+  const canBlacklist = canManageMembers;
+  const canManageCourses =
+    hasRole('instructor_trainer') || hasRole('examiner_trainer') ||
+    hasRole('chairperson') || hasRole('board_member');
 
   const assessmentsGroup =
     canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips;
   const billingGroup = canAccounts || canMyInvoices;
-  const adminGroup = canManageCentres || canManageMembers || canCentreAdmin || canOnboard;
+  const adminGroup =
+    canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses;
 
   return (
     <aside className="mas-sidebar">
@@ -70,6 +79,8 @@ function Sidebar() {
 
       <nav className="mas-sidenav">
         <NavLink to="/directory" className={navClass}>Centres</NavLink>
+        <NavLink to="/instructors" className={navClass}>Instructors</NavLink>
+        <NavLink to="/courses" className={navClass}>Courses</NavLink>
         <NavLink to="/verify" className={navClass}>Verify</NavLink>
         {session && <NavLink to="/dashboard" className={navClass}>Dashboard</NavLink>}
 
@@ -91,6 +102,8 @@ function Sidebar() {
         {session && canManageCentres && <NavLink to="/admin/centres" className={navClass}>Manage centres</NavLink>}
         {session && canManageMembers && <NavLink to="/admin/memberships" className={navClass}>Memberships</NavLink>}
         {session && canOnboard && <NavLink to="/admin/instructors" className={navClass}>Instructor onboarding</NavLink>}
+        {session && canBlacklist && <NavLink to="/admin/instructor-blacklist" className={navClass}>Instructor blacklist</NavLink>}
+        {session && canManageCourses && <NavLink to="/admin/courses" className={navClass}>Manage courses</NavLink>}
         {session && canCentreAdmin && <NavLink to="/centre" className={navClass}>My centre</NavLink>}
 
         {session && <p className="mas-sidenav-group">Account</p>}
@@ -122,6 +135,8 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/directory" element={<Directory />} />
+                  <Route path="/instructors" element={<InstructorDirectory />} />
+                  <Route path="/courses" element={<Courses />} />
                   <Route path="/verify" element={<Verify />} />
                   <Route path="/verify/:serial" element={<Verify />} />
                   <Route path="/login" element={<Login />} />
@@ -132,107 +147,63 @@ export default function App() {
                   <Route path="/invoices" element={<RequireRole roles={['instructor', 'partner_center_admin']}><MyInvoices /></RequireRole>} />
                   <Route
                     path="/centre"
-                    element={
-                      <RequireRole roles={['partner_center_admin']}>
-                        <CentreAdmin />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['partner_center_admin']}><CentreAdmin /></RequireRole>}
                   />
                   <Route
                     path="/candidates/register"
-                    element={
-                      <RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}>
-                        <RegisterCandidate />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RegisterCandidate /></RequireRole>}
                   />
                   <Route
                     path="/candidates/claim-slips"
-                    element={
-                      <RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}>
-                        <ClaimSlips />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><ClaimSlips /></RequireRole>}
                   />
                   <Route
                     path="/assessments/schedule"
-                    element={
-                      <RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}>
-                        <CreateSession />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><CreateSession /></RequireRole>}
                   />
                   <Route
                     path="/assessments/invite"
-                    element={
-                      <RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}>
-                        <InviteExaminer />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><InviteExaminer /></RequireRole>}
                   />
                   <Route
                     path="/assessments/grade"
-                    element={
-                      <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
-                        <ExaminerGrading />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><ExaminerGrading /></RequireRole>}
                   />
                   <Route
                     path="/assessments/invitations"
-                    element={
-                      <RequireRole roles={['examiner']}>
-                        <Invitations />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>}
                   />
                   <Route
                     path="/assessments/oversight"
-                    element={
-                      <RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}>
-                        <AssessmentsOversight />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><AssessmentsOversight /></RequireRole>}
                   />
                   <Route
                     path="/certificates"
-                    element={
-                      <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
-                        <Certificates />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>}
                   />
                   <Route
                     path="/admin/accounts"
-                    element={
-                      <RequireRole roles={['system_admin']}>
-                        <Accounts />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['system_admin']}><Accounts /></RequireRole>}
                   />
                   <Route
                     path="/admin/instructors"
-                    element={
-                      <RequireRole roles={['instructor_trainer', 'chairperson', 'board_member']}>
-                        <InstructorOnboarding />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['instructor_trainer', 'chairperson', 'board_member']}><InstructorOnboarding /></RequireRole>}
+                  />
+                  <Route
+                    path="/admin/instructor-blacklist"
+                    element={<RequireRole roles={['chairperson', 'board_member']}><InstructorBlacklist /></RequireRole>}
+                  />
+                  <Route
+                    path="/admin/courses"
+                    element={<RequireRole roles={['instructor_trainer', 'examiner_trainer', 'chairperson', 'board_member']}><CourseManagement /></RequireRole>}
                   />
                   <Route
                     path="/admin/centres"
-                    element={
-                      <RequireRole roles={['chairperson', 'board_member']}>
-                        <CentreManagement />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['chairperson', 'board_member']}><CentreManagement /></RequireRole>}
                   />
                   <Route
                     path="/admin/memberships"
-                    element={
-                      <RequireRole roles={['chairperson', 'board_member']}>
-                        <MembershipManagement />
-                      </RequireRole>
-                    }
+                    element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>}
                   />
                   <Route path="*" element={<Home />} />
                 </Routes>
