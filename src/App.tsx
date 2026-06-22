@@ -20,6 +20,8 @@ import ApplyCentre from './pages/ApplyCentre';
 import CentreAdmin from './pages/CentreAdmin';
 import ClaimCandidate from './pages/ClaimCandidate';
 import Invitations from './pages/Invitations';
+import InviteExaminer from './pages/InviteExaminer';
+import Accounts from './pages/Accounts';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -46,6 +48,8 @@ function TopBar() {
   const canIssue = hasRole('examiner') || isGovernance;
   const canViewCerts = hasRole('examiner') || isGovernance;
   const canInvitations = hasRole('examiner');
+  const canInvite = isGovernance;
+  const canAccounts = hasRole('system_admin');
 
   return (
     <header className="mas-topbar">
@@ -63,11 +67,13 @@ function TopBar() {
               <div className="mas-tools-menu">
                 {canRegister && <NavLink to="/candidates/register" className={navClass}>Register candidate</NavLink>}
                 {canSchedule && <NavLink to="/assessments/schedule" className={navClass}>Schedule assessment</NavLink>}
+                {canInvite && <NavLink to="/assessments/invite" className={navClass}>Invite examiner</NavLink>}
                 {canGrade && <NavLink to="/assessments/grade" className={navClass}>Grading</NavLink>}
                 {canInvitations && <NavLink to="/assessments/invitations" className={navClass}>Invitations</NavLink>}
                 {canIssue && <NavLink to="/certificates/issue" className={navClass}>Issue certificates</NavLink>}
                 {canViewCerts && <NavLink to="/certificates" className={navClass}>Certificates</NavLink>}
                 {isGovernance && <NavLink to="/assessments/oversight" className={navClass}>Oversight</NavLink>}
+                {canAccounts && <NavLink to="/admin/accounts" className={navClass}>Accounts</NavLink>}
                 {canManageCentres && <NavLink to="/admin/centres" className={navClass}>Manage centres</NavLink>}
                 {canManageMembers && <NavLink to="/admin/memberships" className={navClass}>Memberships</NavLink>}
                 {canCentreAdmin && <NavLink to="/centre" className={navClass}>My centre</NavLink>}
@@ -128,6 +134,14 @@ export default function App() {
                 }
               />
               <Route
+                path="/assessments/invite"
+                element={
+                  <RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}>
+                    <InviteExaminer />
+                  </RequireRole>
+                }
+              />
+              <Route
                 path="/assessments/grade"
                 element={
                   <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
@@ -164,6 +178,14 @@ export default function App() {
                 element={
                   <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
                     <Certificates />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/accounts"
+                element={
+                  <RequireRole roles={['system_admin']}>
+                    <Accounts />
                   </RequireRole>
                 }
               />
