@@ -13,8 +13,14 @@ import ExaminerGrading from './pages/ExaminerGrading';
 import CertificateIssuance from './pages/CertificateIssuance';
 import Certificates from './pages/Certificates';
 import CentreManagement from './pages/CentreManagement';
+import MembershipManagement from './pages/MembershipManagement';
+import AssessmentsOversight from './pages/AssessmentsOversight';
+import AccountSettings from './pages/AccountSettings';
 import './styles/public.css';
 import './styles/auth.css';
+import './styles/admin.css';
+
+const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'is-active' : '');
 
 function TopBar() {
   const { session, hasRole, signOut } = useAuth();
@@ -28,6 +34,7 @@ function TopBar() {
   const isGovernance =
     hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner');
   const canManageCentres = hasRole('chairperson') || hasRole('board_member');
+  const canManageMembers = hasRole('chairperson') || hasRole('board_member');
   const canRegister = hasRole('instructor') || isGovernance;
   const canSchedule = isGovernance;
   const canGrade = hasRole('examiner') || isGovernance;
@@ -41,33 +48,29 @@ function TopBar() {
         <span className="mas-brand-text">Swim Badges</span>
       </Link>
       <nav className="mas-nav mas-nav-auth">
-        <NavLink to="/directory" className={({ isActive }) => isActive ? 'is-active' : ''}>Centres</NavLink>
-        <NavLink to="/verify" className={({ isActive }) => isActive ? 'is-active' : ''}>Verify</NavLink>
+        <NavLink to="/directory" className={navClass}>Centres</NavLink>
+        <NavLink to="/verify" className={navClass}>Verify</NavLink>
         {session ? (
           <>
-            <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'is-active' : ''}>Dashboard</NavLink>
-            {canRegister && (
-              <NavLink to="/candidates/register" className={({ isActive }) => isActive ? 'is-active' : ''}>Register</NavLink>
-            )}
-            {canSchedule && (
-              <NavLink to="/assessments/schedule" className={({ isActive }) => isActive ? 'is-active' : ''}>Schedule</NavLink>
-            )}
-            {canGrade && (
-              <NavLink to="/assessments/grade" className={({ isActive }) => isActive ? 'is-active' : ''}>Grading</NavLink>
-            )}
-            {canIssue && (
-              <NavLink to="/certificates/issue" className={({ isActive }) => isActive ? 'is-active' : ''}>Issue</NavLink>
-            )}
-            {canViewCerts && (
-              <NavLink to="/certificates" className={({ isActive }) => isActive ? 'is-active' : ''}>Certificates</NavLink>
-            )}
-            {canManageCentres && (
-              <NavLink to="/admin/centres" className={({ isActive }) => isActive ? 'is-active' : ''}>Manage centres</NavLink>
-            )}
+            <NavLink to="/dashboard" className={navClass}>Dashboard</NavLink>
+            <details className="mas-tools">
+              <summary>Tools</summary>
+              <div className="mas-tools-menu">
+                {canRegister && <NavLink to="/candidates/register" className={navClass}>Register candidate</NavLink>}
+                {canSchedule && <NavLink to="/assessments/schedule" className={navClass}>Schedule assessment</NavLink>}
+                {canGrade && <NavLink to="/assessments/grade" className={navClass}>Grading</NavLink>}
+                {canIssue && <NavLink to="/certificates/issue" className={navClass}>Issue certificates</NavLink>}
+                {canViewCerts && <NavLink to="/certificates" className={navClass}>Certificates</NavLink>}
+                {isGovernance && <NavLink to="/assessments/oversight" className={navClass}>Oversight</NavLink>}
+                {canManageCentres && <NavLink to="/admin/centres" className={navClass}>Manage centres</NavLink>}
+                {canManageMembers && <NavLink to="/admin/memberships" className={navClass}>Memberships</NavLink>}
+                <NavLink to="/account" className={navClass}>Account</NavLink>
+              </div>
+            </details>
             <button className="mas-signout" onClick={handleSignOut}>Sign out</button>
           </>
         ) : (
-          <NavLink to="/login" className={({ isActive }) => isActive ? 'is-active' : ''}>Sign in</NavLink>
+          <NavLink to="/login" className={navClass}>Sign in</NavLink>
         )}
       </nav>
     </header>
@@ -88,6 +91,7 @@ export default function App() {
               <Route path="/verify/:serial" element={<Verify />} />
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+              <Route path="/account" element={<Protected><AccountSettings /></Protected>} />
               <Route
                 path="/candidates/register"
                 element={
@@ -113,6 +117,14 @@ export default function App() {
                 }
               />
               <Route
+                path="/assessments/oversight"
+                element={
+                  <RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}>
+                    <AssessmentsOversight />
+                  </RequireRole>
+                }
+              />
+              <Route
                 path="/certificates/issue"
                 element={
                   <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
@@ -133,6 +145,14 @@ export default function App() {
                 element={
                   <RequireRole roles={['chairperson', 'board_member']}>
                     <CentreManagement />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/admin/memberships"
+                element={
+                  <RequireRole roles={['chairperson', 'board_member']}>
+                    <MembershipManagement />
                   </RequireRole>
                 }
               />
