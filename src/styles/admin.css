@@ -308,6 +308,9 @@
   cursor: pointer;
   list-style: none;
   user-select: none;
+  font: inherit;        /* root cause: summary was using the browser default font */
+  font-weight: 600;     /* match the weight of the sibling nav links */
+  color: inherit;       /* white, from the nav */
 }
 .mas-app .mas-tools > summary::-webkit-details-marker {
   display: none;
@@ -343,4 +346,21 @@
 .mas-app .mas-nav-auth .mas-tools-menu a.is-active {
   background: #eef2f8 !important;
   color: #0b1f3a !important;
+}
+
+/* ---- Logo in header + auth screens ----------------------------------------- */
+
+.mas-app .mas-brand img {
+  height: 44px;
+  width: auto;
+  display: block;
+}
+
+/* Centre a logo above the sign-in / claim headings */
+.mas-app .mas-auth-logo {
+  display: block;
+  width: 200px;
+  max-width: 70%;
+  height: auto;
+  margin: 0 auto 1.25rem;
 }
