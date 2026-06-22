@@ -53,9 +53,13 @@ const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'is-active
 
 function Brand() {
   return (
-    <Link to="/" className="mas-brand">
-      <span className="mas-brand-mark">MAS</span>
-      <span className="mas-brand-text">Swim Badges</span>
+    <Link to="/" className="mas-brand" aria-label="MAS Swim Badges — home">
+      <img
+        src="/mas-logo.png"
+        alt="MAS Swim Badges"
+        className="mas-logo"
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+      />
     </Link>
   );
 }
