@@ -83,7 +83,8 @@ function Sidebar() {
   return (
     <aside className="mas-sidebar">
       <Link to="/" className="mas-brand">
-        <img src="/mas-logo.png" alt="MAS Badges — Malaysia Aquatics" />
+        <span className="mas-brand-mark">MAS</span>
+        <span className="mas-brand-text">Swim Badges</span>
       </Link>
 
       <nav className="mas-sidenav">
