@@ -22,6 +22,7 @@ import ClaimCandidate from './pages/ClaimCandidate';
 import Invitations from './pages/Invitations';
 import InviteExaminer from './pages/InviteExaminer';
 import Accounts from './pages/Accounts';
+import MyInvoices from './pages/MyInvoices';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -50,6 +51,7 @@ function TopBar() {
   const canInvitations = hasRole('examiner');
   const canInvite = isGovernance;
   const canAccounts = hasRole('system_admin');
+  const canMyInvoices = hasRole('instructor') || hasRole('partner_center_admin');
 
   return (
     <header className="mas-topbar">
@@ -74,6 +76,7 @@ function TopBar() {
                 {canViewCerts && <NavLink to="/certificates" className={navClass}>Certificates</NavLink>}
                 {isGovernance && <NavLink to="/assessments/oversight" className={navClass}>Oversight</NavLink>}
                 {canAccounts && <NavLink to="/admin/accounts" className={navClass}>Accounts</NavLink>}
+                {canMyInvoices && <NavLink to="/invoices" className={navClass}>My invoices</NavLink>}
                 {canManageCentres && <NavLink to="/admin/centres" className={navClass}>Manage centres</NavLink>}
                 {canManageMembers && <NavLink to="/admin/memberships" className={navClass}>Memberships</NavLink>}
                 {canCentreAdmin && <NavLink to="/centre" className={navClass}>My centre</NavLink>}
@@ -109,6 +112,7 @@ export default function App() {
               <Route path="/account" element={<Protected><AccountSettings /></Protected>} />
               <Route path="/centres/apply" element={<Protected><ApplyCentre /></Protected>} />
               <Route path="/claim" element={<Protected><ClaimCandidate /></Protected>} />
+              <Route path="/invoices" element={<RequireRole roles={['instructor', 'partner_center_admin']}><MyInvoices /></RequireRole>} />
               <Route
                 path="/centre"
                 element={
