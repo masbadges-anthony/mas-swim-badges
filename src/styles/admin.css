@@ -350,8 +350,13 @@
 
 /* ---- Logo in header + auth screens ----------------------------------------- */
 
+.mas-app .mas-brand {
+  background: transparent;
+  padding: 0;
+  line-height: 0;          /* removes the inline-image gap under the logo */
+}
 .mas-app .mas-brand img {
-  height: 44px;
+  height: 42px;
   width: auto;
   display: block;
 }
@@ -363,4 +368,38 @@
   max-width: 70%;
   height: auto;
   margin: 0 auto 1.25rem;
+}
+
+/* ---- Light header theme ---------------------------------------------------- */
+/* Flip the top bar from navy to white so the full-colour logo reads, and
+   restyle the nav/controls to navy. Overrides the original navy-bar rules in
+   public.css / auth.css (admin.css is imported last). */
+
+.mas-app .mas-topbar {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e6e9f0;
+  box-shadow: 0 1px 3px rgba(21, 32, 67, 0.06);
+}
+
+/* Top-level nav links + the Tools control → navy on white */
+.mas-app .mas-nav-auth a,
+.mas-app .mas-nav-auth .mas-tools > summary {
+  color: #1E2752 !important;
+}
+
+/* Hover / active → brand red accent */
+.mas-app .mas-nav-auth > a:hover,
+.mas-app .mas-nav-auth > a.is-active {
+  color: #C62026 !important;
+}
+
+/* Sign out → outlined navy button on light, fills navy on hover */
+.mas-app .mas-signout {
+  background: transparent !important;
+  color: #1E2752 !important;
+  border: 1px solid #1E2752 !important;
+}
+.mas-app .mas-signout:hover {
+  background: #1E2752 !important;
+  color: #ffffff !important;
 }
