@@ -1,0 +1,108 @@
+/* home.css — marketing landing blocks. Reuses public.css tokens and the
+   existing .mas-hero / .mas-entry / .mas-btn styles; adds the pathway,
+   audience-grid, verify strip, and trust bar. Scoped under .mas-app. */
+
+/* Hero CTAs (on the navy hero, buttons must be light) */
+.mas-app .mas-hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.35rem;
+}
+.mas-app .mas-hero-cta .mas-btn { background: #fff; color: var(--mas-navy); }
+.mas-app .mas-hero-cta .mas-btn:hover { background: #eef3fb; }
+.mas-app .mas-hero-cta .mas-btn-ghost-light {
+  background: transparent;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+.mas-app .mas-hero-cta .mas-btn-ghost-light:hover { background: rgba(255, 255, 255, 0.12); }
+
+/* Pathway at a glance */
+.mas-app .mas-pathway-wrap { margin: 0 0 2rem; }
+.mas-app .mas-pathway {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+  padding: 1.1rem 1.25rem;
+  background: var(--mas-card);
+  border: 1px solid var(--mas-line);
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--mas-ink);
+  transition: box-shadow .12s ease;
+}
+.mas-app .mas-pathway:hover { box-shadow: 0 8px 24px rgba(10, 31, 68, .08); }
+.mas-app .mas-path-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--mas-navy);
+}
+.mas-app .mas-path-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.mas-app .mas-path-arrow { margin-left: 0.5rem; color: var(--mas-muted); }
+
+/* Audience grid (three across) */
+.mas-app .mas-entry-grid.is-three { grid-template-columns: repeat(3, 1fr); }
+
+/* Verify strip */
+.mas-app .mas-verify-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--mas-card);
+  border: 1px solid var(--mas-line);
+  border-left: 6px solid var(--mas-navy);
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow .12s ease;
+}
+.mas-app .mas-verify-strip:hover { box-shadow: 0 8px 24px rgba(10, 31, 68, .08); }
+.mas-app .mas-verify-strip h2 { color: var(--mas-navy); font-size: 1.4rem; }
+.mas-app .mas-verify-strip p { color: var(--mas-muted); margin: 0.25rem 0 0; }
+
+/* Trust bar */
+.mas-app .mas-trustbar {
+  list-style: none;
+  padding: 0;
+  margin: 1.75rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.mas-app .mas-trustbar li {
+  background: #eef3fb;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.mas-app .mas-trustbar strong {
+  font-family: 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--mas-navy);
+  font-size: 1.05rem;
+}
+.mas-app .mas-trustbar span { color: var(--mas-muted); font-size: 0.85rem; }
+
+@media (max-width: 820px) {
+  .mas-app .mas-entry-grid.is-three { grid-template-columns: 1fr 1fr; }
+  .mas-app .mas-trustbar { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .mas-app .mas-entry-grid.is-three { grid-template-columns: 1fr; }
+  .mas-app .mas-verify-strip { flex-direction: column; align-items: flex-start; }
+}
