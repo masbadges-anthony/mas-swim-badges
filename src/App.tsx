@@ -7,10 +7,12 @@ import Directory from './pages/Directory';
 import Verify from './pages/Verify';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import CentreRecognition from './pages/CentreRecognition';
 import RegisterCandidate from './pages/RegisterCandidate';
+import CreateSession from './pages/CreateSession';
 import ExaminerGrading from './pages/ExaminerGrading';
 import CertificateIssuance from './pages/CertificateIssuance';
+import Certificates from './pages/Certificates';
+import CentreManagement from './pages/CentreManagement';
 import './styles/public.css';
 import './styles/auth.css';
 
@@ -25,10 +27,12 @@ function TopBar() {
 
   const isGovernance =
     hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner');
-  const canRecognise = hasRole('chairperson') || hasRole('board_member');
+  const canManageCentres = hasRole('chairperson') || hasRole('board_member');
   const canRegister = hasRole('instructor') || isGovernance;
+  const canSchedule = isGovernance;
   const canGrade = hasRole('examiner') || isGovernance;
   const canIssue = hasRole('examiner') || isGovernance;
+  const canViewCerts = hasRole('examiner') || isGovernance;
 
   return (
     <header className="mas-topbar">
@@ -43,16 +47,22 @@ function TopBar() {
           <>
             <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'is-active' : ''}>Dashboard</NavLink>
             {canRegister && (
-              <NavLink to="/candidates/register" className={({ isActive }) => isActive ? 'is-active' : ''}>Register candidate</NavLink>
+              <NavLink to="/candidates/register" className={({ isActive }) => isActive ? 'is-active' : ''}>Register</NavLink>
+            )}
+            {canSchedule && (
+              <NavLink to="/assessments/schedule" className={({ isActive }) => isActive ? 'is-active' : ''}>Schedule</NavLink>
             )}
             {canGrade && (
               <NavLink to="/assessments/grade" className={({ isActive }) => isActive ? 'is-active' : ''}>Grading</NavLink>
             )}
             {canIssue && (
-              <NavLink to="/certificates/issue" className={({ isActive }) => isActive ? 'is-active' : ''}>Issue certificates</NavLink>
+              <NavLink to="/certificates/issue" className={({ isActive }) => isActive ? 'is-active' : ''}>Issue</NavLink>
             )}
-            {canRecognise && (
-              <NavLink to="/admin/centres" className={({ isActive }) => isActive ? 'is-active' : ''}>Centre recognition</NavLink>
+            {canViewCerts && (
+              <NavLink to="/certificates" className={({ isActive }) => isActive ? 'is-active' : ''}>Certificates</NavLink>
+            )}
+            {canManageCentres && (
+              <NavLink to="/admin/centres" className={({ isActive }) => isActive ? 'is-active' : ''}>Manage centres</NavLink>
             )}
             <button className="mas-signout" onClick={handleSignOut}>Sign out</button>
           </>
@@ -87,6 +97,14 @@ export default function App() {
                 }
               />
               <Route
+                path="/assessments/schedule"
+                element={
+                  <RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}>
+                    <CreateSession />
+                  </RequireRole>
+                }
+              />
+              <Route
                 path="/assessments/grade"
                 element={
                   <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
@@ -103,10 +121,18 @@ export default function App() {
                 }
               />
               <Route
+                path="/certificates"
+                element={
+                  <RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}>
+                    <Certificates />
+                  </RequireRole>
+                }
+              />
+              <Route
                 path="/admin/centres"
                 element={
                   <RequireRole roles={['chairperson', 'board_member']}>
-                    <CentreRecognition />
+                    <CentreManagement />
                   </RequireRole>
                 }
               />
