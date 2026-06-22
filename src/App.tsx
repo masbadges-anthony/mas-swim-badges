@@ -17,6 +17,7 @@ import MembershipManagement from './pages/MembershipManagement';
 import AssessmentsOversight from './pages/AssessmentsOversight';
 import AccountSettings from './pages/AccountSettings';
 import ApplyCentre from './pages/ApplyCentre';
+import CentreAdmin from './pages/CentreAdmin';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -36,6 +37,7 @@ function TopBar() {
     hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner');
   const canManageCentres = hasRole('chairperson') || hasRole('board_member');
   const canManageMembers = hasRole('chairperson') || hasRole('board_member');
+  const canCentreAdmin = hasRole('partner_center_admin');
   const canRegister = hasRole('instructor') || isGovernance;
   const canSchedule = isGovernance;
   const canGrade = hasRole('examiner') || isGovernance;
@@ -65,6 +67,7 @@ function TopBar() {
                 {isGovernance && <NavLink to="/assessments/oversight" className={navClass}>Oversight</NavLink>}
                 {canManageCentres && <NavLink to="/admin/centres" className={navClass}>Manage centres</NavLink>}
                 {canManageMembers && <NavLink to="/admin/memberships" className={navClass}>Memberships</NavLink>}
+                {canCentreAdmin && <NavLink to="/centre" className={navClass}>My centre</NavLink>}
                 <NavLink to="/centres/apply" className={navClass}>Apply as a centre</NavLink>
                 <NavLink to="/account" className={navClass}>Account</NavLink>
               </div>
@@ -95,6 +98,14 @@ export default function App() {
               <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
               <Route path="/account" element={<Protected><AccountSettings /></Protected>} />
               <Route path="/centres/apply" element={<Protected><ApplyCentre /></Protected>} />
+              <Route
+                path="/centre"
+                element={
+                  <RequireRole roles={['partner_center_admin']}>
+                    <CentreAdmin />
+                  </RequireRole>
+                }
+              />
               <Route
                 path="/candidates/register"
                 element={
