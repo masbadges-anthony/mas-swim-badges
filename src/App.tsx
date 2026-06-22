@@ -48,8 +48,7 @@ function TopBar() {
   return (
     <header className="mas-topbar">
       <Link to="/" className="mas-brand">
-        <span className="mas-brand-mark">MAS</span>
-        <span className="mas-brand-text">Swim Badges</span>
+        <img src="/mas-logo.png" alt="MAS Badges — Malaysia Aquatics" />
       </Link>
       <nav className="mas-nav mas-nav-auth">
         <NavLink to="/directory" className={navClass}>Centres</NavLink>
