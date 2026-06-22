@@ -21,6 +21,7 @@ import ClaimCandidate from './pages/ClaimCandidate';
 import ClaimSlips from './pages/ClaimSlips';
 import Invitations from './pages/Invitations';
 import InviteExaminer from './pages/InviteExaminer';
+import InstructorOnboarding from './pages/InstructorOnboarding';
 import Accounts from './pages/Accounts';
 import MyInvoices from './pages/MyInvoices';
 import './styles/public.css';
@@ -53,11 +54,13 @@ function Sidebar() {
   const canAccounts = hasRole('system_admin');
   const canMyInvoices = hasRole('instructor') || hasRole('partner_center_admin');
   const canClaimSlips = canRegister;
+  const canOnboard =
+    hasRole('instructor_trainer') || hasRole('chairperson') || hasRole('board_member');
 
   const assessmentsGroup =
     canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips;
   const billingGroup = canAccounts || canMyInvoices;
-  const adminGroup = canManageCentres || canManageMembers || canCentreAdmin;
+  const adminGroup = canManageCentres || canManageMembers || canCentreAdmin || canOnboard;
 
   return (
     <aside className="mas-sidebar">
@@ -87,6 +90,7 @@ function Sidebar() {
         {session && adminGroup && <p className="mas-sidenav-group">Administration</p>}
         {session && canManageCentres && <NavLink to="/admin/centres" className={navClass}>Manage centres</NavLink>}
         {session && canManageMembers && <NavLink to="/admin/memberships" className={navClass}>Memberships</NavLink>}
+        {session && canOnboard && <NavLink to="/admin/instructors" className={navClass}>Instructor onboarding</NavLink>}
         {session && canCentreAdmin && <NavLink to="/centre" className={navClass}>My centre</NavLink>}
 
         {session && <p className="mas-sidenav-group">Account</p>}
@@ -203,6 +207,14 @@ export default function App() {
                     element={
                       <RequireRole roles={['system_admin']}>
                         <Accounts />
+                      </RequireRole>
+                    }
+                  />
+                  <Route
+                    path="/admin/instructors"
+                    element={
+                      <RequireRole roles={['instructor_trainer', 'chairperson', 'board_member']}>
+                        <InstructorOnboarding />
                       </RequireRole>
                     }
                   />
