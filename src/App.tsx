@@ -3,6 +3,15 @@ import { AuthProvider, useAuth } from './lib/auth';
 import Protected from './components/Protected';
 import RequireRole from './components/RequireRole';
 import Home from './pages/Home';
+import TheProgramme from './pages/TheProgramme';
+import ForCentres from './pages/ForCentres';
+import ForParents from './pages/ForParents';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import FAQ from './pages/FAQ';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import Safeguarding from './pages/Safeguarding';
 import Directory from './pages/Directory';
 import InstructorDirectory from './pages/InstructorDirectory';
 import Courses from './pages/Courses';
@@ -78,9 +87,13 @@ function Sidebar() {
       </Link>
 
       <nav className="mas-sidenav">
-        <NavLink to="/directory" className={navClass}>Centres</NavLink>
+        <NavLink to="/the-programme" className={navClass}>The programme</NavLink>
+        <NavLink to="/directory" className={navClass}>Find a centre</NavLink>
         <NavLink to="/instructors" className={navClass}>Instructors</NavLink>
         <NavLink to="/courses" className={navClass}>Courses</NavLink>
+        <NavLink to="/for-centres" className={navClass}>For centres</NavLink>
+        <NavLink to="/for-parents" className={navClass}>For parents</NavLink>
+        <NavLink to="/about" className={navClass}>About</NavLink>
         <NavLink to="/verify" className={navClass}>Verify</NavLink>
         {session && <NavLink to="/dashboard" className={navClass}>Dashboard</NavLink>}
 
@@ -116,7 +129,7 @@ function Sidebar() {
         {session ? (
           <button className="mas-signout" onClick={handleSignOut}>Sign out</button>
         ) : (
-          <NavLink to="/login" className={navClass}>Sign in</NavLink>
+          <NavLink to="/login" className={navClass}>Member login</NavLink>
         )}
       </div>
     </aside>
@@ -134,6 +147,15 @@ export default function App() {
               <main className="mas-main">
                 <Routes>
                   <Route path="/" element={<Home />} />
+                  <Route path="/the-programme" element={<TheProgramme />} />
+                  <Route path="/for-centres" element={<ForCentres />} />
+                  <Route path="/for-parents" element={<ForParents />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/faq" element={<FAQ />} />
+                  <Route path="/privacy" element={<Privacy />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/safeguarding" element={<Safeguarding />} />
                   <Route path="/directory" element={<Directory />} />
                   <Route path="/instructors" element={<InstructorDirectory />} />
                   <Route path="/courses" element={<Courses />} />
@@ -145,71 +167,33 @@ export default function App() {
                   <Route path="/centres/apply" element={<Protected><ApplyCentre /></Protected>} />
                   <Route path="/claim" element={<Protected><ClaimCandidate /></Protected>} />
                   <Route path="/invoices" element={<RequireRole roles={['instructor', 'partner_center_admin']}><MyInvoices /></RequireRole>} />
-                  <Route
-                    path="/centre"
-                    element={<RequireRole roles={['partner_center_admin']}><CentreAdmin /></RequireRole>}
-                  />
-                  <Route
-                    path="/candidates/register"
-                    element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RegisterCandidate /></RequireRole>}
-                  />
-                  <Route
-                    path="/candidates/claim-slips"
-                    element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><ClaimSlips /></RequireRole>}
-                  />
-                  <Route
-                    path="/assessments/schedule"
-                    element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><CreateSession /></RequireRole>}
-                  />
-                  <Route
-                    path="/assessments/invite"
-                    element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><InviteExaminer /></RequireRole>}
-                  />
-                  <Route
-                    path="/assessments/grade"
-                    element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><ExaminerGrading /></RequireRole>}
-                  />
-                  <Route
-                    path="/assessments/invitations"
-                    element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>}
-                  />
-                  <Route
-                    path="/assessments/oversight"
-                    element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><AssessmentsOversight /></RequireRole>}
-                  />
-                  <Route
-                    path="/certificates"
-                    element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>}
-                  />
-                  <Route
-                    path="/admin/accounts"
-                    element={<RequireRole roles={['system_admin']}><Accounts /></RequireRole>}
-                  />
-                  <Route
-                    path="/admin/instructors"
-                    element={<RequireRole roles={['instructor_trainer', 'chairperson', 'board_member']}><InstructorOnboarding /></RequireRole>}
-                  />
-                  <Route
-                    path="/admin/instructor-blacklist"
-                    element={<RequireRole roles={['chairperson', 'board_member']}><InstructorBlacklist /></RequireRole>}
-                  />
-                  <Route
-                    path="/admin/courses"
-                    element={<RequireRole roles={['instructor_trainer', 'examiner_trainer', 'chairperson', 'board_member']}><CourseManagement /></RequireRole>}
-                  />
-                  <Route
-                    path="/admin/centres"
-                    element={<RequireRole roles={['chairperson', 'board_member']}><CentreManagement /></RequireRole>}
-                  />
-                  <Route
-                    path="/admin/memberships"
-                    element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>}
-                  />
+                  <Route path="/centre" element={<RequireRole roles={['partner_center_admin']}><CentreAdmin /></RequireRole>} />
+                  <Route path="/candidates/register" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RegisterCandidate /></RequireRole>} />
+                  <Route path="/candidates/claim-slips" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><ClaimSlips /></RequireRole>} />
+                  <Route path="/assessments/schedule" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><CreateSession /></RequireRole>} />
+                  <Route path="/assessments/invite" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><InviteExaminer /></RequireRole>} />
+                  <Route path="/assessments/grade" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><ExaminerGrading /></RequireRole>} />
+                  <Route path="/assessments/invitations" element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>} />
+                  <Route path="/assessments/oversight" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><AssessmentsOversight /></RequireRole>} />
+                  <Route path="/certificates" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>} />
+                  <Route path="/admin/accounts" element={<RequireRole roles={['system_admin']}><Accounts /></RequireRole>} />
+                  <Route path="/admin/instructors" element={<RequireRole roles={['instructor_trainer', 'chairperson', 'board_member']}><InstructorOnboarding /></RequireRole>} />
+                  <Route path="/admin/instructor-blacklist" element={<RequireRole roles={['chairperson', 'board_member']}><InstructorBlacklist /></RequireRole>} />
+                  <Route path="/admin/courses" element={<RequireRole roles={['instructor_trainer', 'examiner_trainer', 'chairperson', 'board_member']}><CourseManagement /></RequireRole>} />
+                  <Route path="/admin/centres" element={<RequireRole roles={['chairperson', 'board_member']}><CentreManagement /></RequireRole>} />
+                  <Route path="/admin/memberships" element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>} />
                   <Route path="*" element={<Home />} />
                 </Routes>
               </main>
               <footer className="mas-footer">
-                <p>Malaysia Aquatics · Swim Badges programme</p>
+                <nav className="mas-footer-links">
+                  <Link to="/contact">Contact</Link>
+                  <Link to="/faq">FAQ</Link>
+                  <Link to="/privacy">Privacy</Link>
+                  <Link to="/terms">Terms</Link>
+                  <Link to="/safeguarding">Child safeguarding</Link>
+                </nav>
+                <p>© Malaysia Aquatics · Swim Badges programme</p>
               </footer>
             </div>
           </div>
