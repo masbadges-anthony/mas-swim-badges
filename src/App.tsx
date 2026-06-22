@@ -44,7 +44,7 @@ function TopBar() {
   const canManageMembers = hasRole('chairperson') || hasRole('board_member');
   const canCentreAdmin = hasRole('partner_center_admin');
   const canRegister = hasRole('instructor') || isGovernance;
-  const canSchedule = isGovernance;
+  const canSchedule = hasRole('instructor') || isGovernance;
   const canGrade = hasRole('examiner') || isGovernance;
   const canIssue = hasRole('examiner') || isGovernance;
   const canViewCerts = hasRole('examiner') || isGovernance;
@@ -132,7 +132,7 @@ export default function App() {
               <Route
                 path="/assessments/schedule"
                 element={
-                  <RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}>
+                  <RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}>
                     <CreateSession />
                   </RequireRole>
                 }
