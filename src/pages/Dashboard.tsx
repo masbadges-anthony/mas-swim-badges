@@ -60,6 +60,8 @@ export default function Dashboard() {
   const canOnboard = hasRole('instructor_trainer') || hasRole('chairperson') || hasRole('board_member');
   const canManageCourses =
     hasRole('instructor_trainer') || hasRole('examiner_trainer') || hasRole('chairperson') || hasRole('board_member');
+  const canEnquiries =
+    hasRole('chairperson') || hasRole('board_member') || hasRole('instructor_trainer') || hasRole('system_admin');
 
   const tiles: Tile[] = [
     { to: '/candidates/register', title: 'Register candidate', desc: 'Enrol a swimmer for assessment.', accent: '#1d6fd6', show: canRegister },
@@ -73,6 +75,7 @@ export default function Dashboard() {
     { to: '/admin/accounts', title: 'Accounts', desc: 'Invoicing, payments, payouts.', accent: '#dc2626', show: canAccounts },
     { to: '/invoices', title: 'My invoices', desc: 'See your assessment fees.', accent: '#16a34a', show: canMyInvoices },
     { to: '/admin/centres', title: 'Manage centres', desc: 'Recognise and manage centres.', accent: '#1d6fd6', show: canManageCentres },
+    { to: '/admin/enquiries', title: 'Enquiries', desc: 'First-contact enquiry inbox.', accent: '#0ea5e9', show: canEnquiries },
     { to: '/admin/memberships', title: 'Memberships', desc: 'Grant and manage roles.', accent: '#8e44ad', show: canManageMembers },
     { to: '/admin/instructors', title: 'Instructor onboarding', desc: 'Invite instructors by email.', accent: '#0ea5a4', show: canOnboard },
     { to: '/admin/instructor-blacklist', title: 'Instructor blacklist', desc: 'Suspend and review instructors.', accent: '#dc2626', show: canManageMembers },

@@ -54,7 +54,7 @@ export default function ForCentres() {
       </ul>
 
       <div className="mas-form-actions" style={{ marginTop: '1.25rem' }}>
-        <Link className="mas-btn-primary" to="/contact">Enquire about partnership</Link>
+        <Link className="mas-btn-primary" to="/contact?topic=centre">Enquire about partnership</Link>
         <Link className="mas-btn-ghost" to="/courses">See instructor courses</Link>
       </div>
     </section>
