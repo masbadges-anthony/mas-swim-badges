@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './lib/auth';
+import { AuthProvider, useAuth, ROLE_LABELS } from './lib/auth';
 import Protected from './components/Protected';
 import RequireRole from './components/RequireRole';
+import Icon from './components/Icon';
 import Home from './pages/Home';
 import TheProgramme from './pages/TheProgramme';
 import ForCentres from './pages/ForCentres';
@@ -44,13 +45,17 @@ import './styles/site.css';
 import './styles/shell.css';
 import './styles/theme.css';
 
-// Where the marketing site's "Member login" button points. In production set
-// VITE_PORTAL_LOGIN_URL=https://apps.masbadges.org/login on the www build so the
-// button crosses to the portal; locally/preview it falls back to a relative route.
 const PORTAL_LOGIN: string =
   (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_PORTAL_LOGIN_URL ?? '/login';
 
 const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'is-active' : '');
+
+function initials(email?: string | null): string {
+  if (!email) return 'U';
+  const name = email.split('@')[0];
+  const parts = name.split(/[._-]/).filter(Boolean);
+  return ((parts[0]?.[0] ?? 'U') + (parts[1]?.[0] ?? '')).toUpperCase();
+}
 
 function Brand() {
   return (
@@ -127,15 +132,9 @@ function PublicLayout() {
   );
 }
 
-/* ---------- Authenticated portal layout (apps) ---------- */
+/* ---------- Portal sidebar (apps) ---------- */
 function Sidebar() {
-  const { hasRole, signOut } = useAuth();
-  const navigate = useNavigate();
-
-  async function handleSignOut() {
-    await signOut();
-    navigate('/');
-  }
+  const { user, memberships, hasRole } = useAuth();
 
   const isGovernance =
     hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner');
@@ -164,25 +163,28 @@ function Sidebar() {
   const adminGroup =
     canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses;
 
+  const primaryRole = memberships[0]?.role;
+  const roleLabel = primaryRole ? (ROLE_LABELS[primaryRole] ?? primaryRole) : 'Member';
+
   return (
     <aside className="mas-sidebar">
       <Brand />
 
       <nav className="mas-sidenav">
-        <NavLink to="/dashboard" className={navClass}>Dashboard</NavLink>
+        <NavLink to="/dashboard" className={navClass}><Icon name="grid" /><span>Dashboard</span></NavLink>
 
         {assessmentsGroup && (
           <details className="mas-navgroup" open>
             <summary>Assessments</summary>
             <div className="mas-navgroup-items">
-              {canRegister && <NavLink to="/candidates/register" className={navClass}>Register candidate</NavLink>}
-              {canSchedule && <NavLink to="/assessments/schedule" className={navClass}>Schedule assessment</NavLink>}
-              {canInvite && <NavLink to="/assessments/invite" className={navClass}>Invite examiner</NavLink>}
-              {canGrade && <NavLink to="/assessments/grade" className={navClass}>Grading</NavLink>}
-              {canInvitations && <NavLink to="/assessments/invitations" className={navClass}>Invitations</NavLink>}
-              {canViewCerts && <NavLink to="/certificates" className={navClass}>Certificates</NavLink>}
-              {isGovernance && <NavLink to="/assessments/oversight" className={navClass}>Oversight</NavLink>}
-              {canClaimSlips && <NavLink to="/candidates/claim-slips" className={navClass}>Claim slips</NavLink>}
+              {canRegister && <NavLink to="/candidates/register" className={navClass}><Icon name="userPlus" /><span>Register candidate</span></NavLink>}
+              {canSchedule && <NavLink to="/assessments/schedule" className={navClass}><Icon name="calendar" /><span>Schedule assessment</span></NavLink>}
+              {canInvite && <NavLink to="/assessments/invite" className={navClass}><Icon name="mail" /><span>Invite examiner</span></NavLink>}
+              {canGrade && <NavLink to="/assessments/grade" className={navClass}><Icon name="check" /><span>Grading</span></NavLink>}
+              {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Invitations</span></NavLink>}
+              {canViewCerts && <NavLink to="/certificates" className={navClass}><Icon name="award" /><span>Certificates</span></NavLink>}
+              {isGovernance && <NavLink to="/assessments/oversight" className={navClass}><Icon name="eye" /><span>Oversight</span></NavLink>}
+              {canClaimSlips && <NavLink to="/candidates/claim-slips" className={navClass}><Icon name="printer" /><span>Claim slips</span></NavLink>}
             </div>
           </details>
         )}
@@ -191,8 +193,8 @@ function Sidebar() {
           <details className="mas-navgroup" open>
             <summary>Billing</summary>
             <div className="mas-navgroup-items">
-              {canAccounts && <NavLink to="/admin/accounts" className={navClass}>Accounts</NavLink>}
-              {canMyInvoices && <NavLink to="/invoices" className={navClass}>My invoices</NavLink>}
+              {canAccounts && <NavLink to="/admin/accounts" className={navClass}><Icon name="card" /><span>Accounts</span></NavLink>}
+              {canMyInvoices && <NavLink to="/invoices" className={navClass}><Icon name="file" /><span>My invoices</span></NavLink>}
             </div>
           </details>
         )}
@@ -201,12 +203,12 @@ function Sidebar() {
           <details className="mas-navgroup" open>
             <summary>Administration</summary>
             <div className="mas-navgroup-items">
-              {canManageCentres && <NavLink to="/admin/centres" className={navClass}>Manage centres</NavLink>}
-              {canManageMembers && <NavLink to="/admin/memberships" className={navClass}>Memberships</NavLink>}
-              {canOnboard && <NavLink to="/admin/instructors" className={navClass}>Instructor onboarding</NavLink>}
-              {canBlacklist && <NavLink to="/admin/instructor-blacklist" className={navClass}>Instructor blacklist</NavLink>}
-              {canManageCourses && <NavLink to="/admin/courses" className={navClass}>Manage courses</NavLink>}
-              {canCentreAdmin && <NavLink to="/centre" className={navClass}>My centre</NavLink>}
+              {canManageCentres && <NavLink to="/admin/centres" className={navClass}><Icon name="building" /><span>Manage centres</span></NavLink>}
+              {canManageMembers && <NavLink to="/admin/memberships" className={navClass}><Icon name="users" /><span>Memberships</span></NavLink>}
+              {canOnboard && <NavLink to="/admin/instructors" className={navClass}><Icon name="userPlus" /><span>Instructor onboarding</span></NavLink>}
+              {canBlacklist && <NavLink to="/admin/instructor-blacklist" className={navClass}><Icon name="userX" /><span>Instructor blacklist</span></NavLink>}
+              {canManageCourses && <NavLink to="/admin/courses" className={navClass}><Icon name="book" /><span>Manage courses</span></NavLink>}
+              {canCentreAdmin && <NavLink to="/centre" className={navClass}><Icon name="building" /><span>My centre</span></NavLink>}
             </div>
           </details>
         )}
@@ -214,20 +216,25 @@ function Sidebar() {
         <details className="mas-navgroup" open>
           <summary>Account</summary>
           <div className="mas-navgroup-items">
-            <NavLink to="/claim" className={navClass}>My child&rsquo;s badges</NavLink>
-            <NavLink to="/centres/apply" className={navClass}>Apply as a centre</NavLink>
-            <NavLink to="/account" className={navClass}>Account</NavLink>
+            <NavLink to="/claim" className={navClass}><Icon name="star" /><span>My child&rsquo;s badges</span></NavLink>
+            <NavLink to="/centres/apply" className={navClass}><Icon name="plus" /><span>Apply as a centre</span></NavLink>
+            <NavLink to="/account" className={navClass}><Icon name="settings" /><span>Account</span></NavLink>
           </div>
         </details>
       </nav>
 
-      <div className="mas-sidebar-foot">
-        <button className="mas-signout" onClick={handleSignOut}>Sign out</button>
-      </div>
+      <Link to="/account" className="mas-profile">
+        <span className="mas-avatar">{initials(user?.email)}</span>
+        <span className="mas-profile-meta">
+          <span className="mas-profile-name">{user?.email ?? 'Account'}</span>
+          <span className="mas-profile-role">{roleLabel}</span>
+        </span>
+      </Link>
     </aside>
   );
 }
 
+/* ---------- Portal layout (apps) ---------- */
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/account': 'Account',
@@ -267,11 +274,15 @@ function AppLayout() {
       <Sidebar />
       <div className="mas-shell-main">
         <header className="mas-topbar-app">
-          <div className="mas-topbar-title">{title}</div>
+          <div className="mas-breadcrumb">
+            <span className="mas-crumb-muted">Portal</span>
+            <span className="mas-crumb-sep">›</span>
+            <span className="mas-crumb-here">{title}</span>
+          </div>
           <div className="mas-topbar-right">
-            {user?.email && <span className="mas-topbar-user">{user.email}</span>}
             <Link to="/" className="mas-topbar-link">View site</Link>
             <button className="mas-signout" onClick={handleSignOut}>Sign out</button>
+            <span className="mas-avatar mas-avatar-sm" title={user?.email ?? ''}>{initials(user?.email)}</span>
           </div>
         </header>
         <main className="mas-main"><Outlet /></main>
@@ -289,7 +300,6 @@ export default function App() {
       <BrowserRouter>
         <div className="mas-app">
           <Routes>
-            {/* Public marketing site (www) */}
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/the-programme" element={<TheProgramme />} />
@@ -310,7 +320,6 @@ export default function App() {
               <Route path="*" element={<Home />} />
             </Route>
 
-            {/* Authenticated portal (apps) */}
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
               <Route path="/account" element={<Protected><AccountSettings /></Protected>} />
