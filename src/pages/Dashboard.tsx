@@ -64,6 +64,7 @@ export default function Dashboard() {
     hasRole('chairperson') || hasRole('board_member') || hasRole('instructor_trainer') || hasRole('system_admin');
   const canRegisterCentre = hasRole('instructor');
   const canPartnerApps = hasRole('chairperson') || hasRole('board_member');
+  const canRoleRegistry = hasRole('system_admin');
 
   const tiles: Tile[] = [
     { to: '/candidates/register', title: 'Register candidate', desc: 'Enrol a swimmer for assessment.', accent: '#1d6fd6', show: canRegister },
@@ -80,6 +81,7 @@ export default function Dashboard() {
     { to: '/admin/enquiries', title: 'Enquiries', desc: 'First-contact enquiry inbox.', accent: '#0ea5e9', show: canEnquiries },
     { to: '/centres/register', title: 'Register a centre', desc: 'Register the centre you’re appointed to.', accent: '#1d6fd6', show: canRegisterCentre },
     { to: '/admin/partner-applications', title: 'Centre applications', desc: 'Approve centre partnership cases.', accent: '#0a1f44', show: canPartnerApps },
+    { to: '/admin/role-registry', title: 'Roles & policies', desc: 'Role catalog and assignment warnings.', accent: '#64748b', show: canRoleRegistry },
     { to: '/admin/memberships', title: 'Memberships', desc: 'Grant and manage roles.', accent: '#8e44ad', show: canManageMembers },
     { to: '/admin/instructors', title: 'Instructor onboarding', desc: 'Invite instructors by email.', accent: '#0ea5a4', show: canOnboard },
     { to: '/admin/instructor-blacklist', title: 'Instructor blacklist', desc: 'Suspend and review instructors.', accent: '#dc2626', show: canManageMembers },
