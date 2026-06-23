@@ -294,3 +294,98 @@
   .mas-app .mas-topbar-app { padding: 0.75rem 1rem; }
   .mas-app .mas-topbar-user { display: none; }
 }
+
+/* =====================================================================
+   ADMINATOR REFINEMENTS (portal)
+   ===================================================================== */
+
+/* Cooler canvas */
+.mas-app { --mas-paper: #eef1f6; }
+
+/* Sidebar items with leading icons */
+.mas-app .mas-sidenav a {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.46rem 0.7rem;
+  border-radius: 9px;
+}
+.mas-app .mas-sidenav a svg { flex: 0 0 auto; color: #94a3b8; }
+.mas-app .mas-sidenav a:hover { background: #eef2f8; color: var(--mas-navy); }
+.mas-app .mas-sidenav a:hover svg { color: var(--brand); }
+.mas-app .mas-sidenav a.is-active {
+  background: #e9eef6;
+  color: var(--mas-navy);
+  box-shadow: none;
+  font-weight: 600;
+}
+.mas-app .mas-sidenav a.is-active svg { color: var(--brand); }
+
+/* Section labels */
+.mas-app .mas-navgroup { margin-top: 0.9rem; }
+.mas-app .mas-navgroup > summary {
+  color: #9aa4b8;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  padding: 0.35rem 0.7rem;
+}
+.mas-app .mas-navgroup-items { gap: 1px; }
+
+/* Profile card at sidebar foot */
+.mas-app .mas-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--mas-line);
+  text-decoration: none;
+}
+.mas-app .mas-avatar {
+  width: 38px; height: 38px; border-radius: 11px;
+  background: var(--brand); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.82rem; flex: 0 0 auto;
+}
+.mas-app .mas-avatar-sm { width: 34px; height: 34px; border-radius: 50%; font-size: 0.78rem; }
+.mas-app .mas-profile-meta { display: flex; flex-direction: column; min-width: 0; }
+.mas-app .mas-profile-name {
+  font-size: 0.8rem; font-weight: 600; color: var(--mas-ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;
+}
+.mas-app .mas-profile-role { font-size: 0.72rem; color: var(--mas-muted); }
+
+/* Top app-bar: breadcrumb + avatar */
+.mas-app .mas-breadcrumb { display: flex; align-items: center; gap: 0.5rem; }
+.mas-app .mas-crumb-muted { color: var(--mas-muted); font-size: 0.9rem; }
+.mas-app .mas-crumb-sep { color: #cbd5e1; }
+.mas-app .mas-crumb-here { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--mas-navy); font-size: 1.05rem; }
+.mas-app .mas-topbar-right .mas-signout { padding: 0.4rem 0.9rem; }
+
+/* Welcome header + stat cards */
+.mas-app .mas-shell-main .mas-dash-head h1 { font-size: clamp(1.8rem, 3vw, 2.3rem); }
+.mas-app .mas-welcome-name { color: var(--brand); }
+
+.mas-app .mas-statgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 1.75rem;
+}
+.mas-app .mas-stat {
+  background: #fff;
+  border: 1px solid var(--mas-line);
+  border-radius: var(--r);
+  box-shadow: var(--sh-sm);
+  padding: 1.1rem 1.25rem;
+}
+.mas-app .mas-stat-top { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
+.mas-app .mas-stat-icon {
+  width: 38px; height: 38px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+}
+.mas-app .mas-stat-label { color: var(--mas-muted); font-size: 0.85rem; font-weight: 600; }
+.mas-app .mas-stat-value {
+  font-family: 'Poppins', sans-serif; font-weight: 700;
+  font-size: 1.95rem; color: var(--mas-navy); line-height: 1;
+}
