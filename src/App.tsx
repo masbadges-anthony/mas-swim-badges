@@ -44,6 +44,7 @@ import Enquiries from './pages/Enquiries';
 import RegisterCentre from './pages/RegisterCentre';
 import PartnerApplications from './pages/PartnerApplications';
 import RoleRegistry from './pages/RoleRegistry';
+import ExaminerRegistry from './pages/ExaminerRegistry';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -165,6 +166,7 @@ function Sidebar() {
   const canRegisterCentre = hasRole('instructor');
   const canPartnerApps = hasRole('chairperson') || hasRole('board_member');
   const canRoleRegistry = hasRole('system_admin');
+  const canExaminerRegistry = hasRole('chief_examiner');
 
   const assessmentsGroup =
     canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips;
@@ -194,6 +196,7 @@ function Sidebar() {
               {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Invitations</span></NavLink>}
               {canViewCerts && <NavLink to="/certificates" className={navClass}><Icon name="award" /><span>Certificates</span></NavLink>}
               {isGovernance && <NavLink to="/assessments/oversight" className={navClass}><Icon name="eye" /><span>Oversight</span></NavLink>}
+              {canExaminerRegistry && <NavLink to="/assessments/examiners" className={navClass}><Icon name="users" /><span>Examiner registry</span></NavLink>}
               {canClaimSlips && <NavLink to="/candidates/claim-slips" className={navClass}><Icon name="printer" /><span>Claim slips</span></NavLink>}
             </div>
           </details>
@@ -260,6 +263,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/assessments/grade': 'Grading',
   '/assessments/invitations': 'Invitations',
   '/assessments/oversight': 'Assessments oversight',
+  '/assessments/examiners': 'Examiner registry',
   '/certificates': 'Certificates',
   '/admin/accounts': 'Accounts',
   '/admin/instructors': 'Instructor onboarding',
@@ -347,6 +351,7 @@ export default function App() {
               <Route path="/assessments/grade" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><ExaminerGrading /></RequireRole>} />
               <Route path="/assessments/invitations" element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>} />
               <Route path="/assessments/oversight" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><AssessmentsOversight /></RequireRole>} />
+              <Route path="/assessments/examiners" element={<RequireRole roles={['chief_examiner']}><ExaminerRegistry /></RequireRole>} />
               <Route path="/certificates" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>} />
               <Route path="/admin/accounts" element={<RequireRole roles={['system_admin']}><Accounts /></RequireRole>} />
               <Route path="/admin/instructors" element={<RequireRole roles={['instructor_trainer', 'chairperson', 'board_member']}><InstructorOnboarding /></RequireRole>} />
