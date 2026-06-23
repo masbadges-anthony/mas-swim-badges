@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import Protected from './components/Protected';
 import RequireRole from './components/RequireRole';
@@ -42,6 +42,7 @@ import './styles/auth.css';
 import './styles/admin.css';
 import './styles/site.css';
 import './styles/shell.css';
+import './styles/theme.css';
 
 // Where the marketing site's "Member login" button points. In production set
 // VITE_PORTAL_LOGIN_URL=https://apps.masbadges.org/login on the www build so the
@@ -221,18 +222,58 @@ function Sidebar() {
       </nav>
 
       <div className="mas-sidebar-foot">
-        <Link to="/" className="mas-foot-link">View public site</Link>
         <button className="mas-signout" onClick={handleSignOut}>Sign out</button>
       </div>
     </aside>
   );
 }
 
+const PAGE_TITLES: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/account': 'Account',
+  '/centres/apply': 'Apply as a centre',
+  '/claim': "My child's badges",
+  '/invoices': 'My invoices',
+  '/centre': 'My centre',
+  '/candidates/register': 'Register candidate',
+  '/candidates/claim-slips': 'Claim slips',
+  '/assessments/schedule': 'Schedule assessment',
+  '/assessments/invite': 'Invite examiner',
+  '/assessments/grade': 'Grading',
+  '/assessments/invitations': 'Invitations',
+  '/assessments/oversight': 'Assessments oversight',
+  '/certificates': 'Certificates',
+  '/admin/accounts': 'Accounts',
+  '/admin/instructors': 'Instructor onboarding',
+  '/admin/instructor-blacklist': 'Instructor blacklist',
+  '/admin/courses': 'Manage courses',
+  '/admin/centres': 'Manage centres',
+  '/admin/memberships': 'Memberships',
+};
+
 function AppLayout() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const title = PAGE_TITLES[location.pathname] ?? 'Portal';
+
+  async function handleSignOut() {
+    await signOut();
+    navigate('/');
+  }
+
   return (
     <div className="mas-layout">
       <Sidebar />
       <div className="mas-shell-main">
+        <header className="mas-topbar-app">
+          <div className="mas-topbar-title">{title}</div>
+          <div className="mas-topbar-right">
+            {user?.email && <span className="mas-topbar-user">{user.email}</span>}
+            <Link to="/" className="mas-topbar-link">View site</Link>
+            <button className="mas-signout" onClick={handleSignOut}>Sign out</button>
+          </div>
+        </header>
         <main className="mas-main"><Outlet /></main>
         <footer className="mas-footer">
           <p>© Malaysia Aquatics · Swim Badges programme</p>
