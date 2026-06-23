@@ -626,3 +626,41 @@
   .mas-app .mas-form-grid { grid-template-columns: 1fr; }
   .mas-app .mas-error-card { padding: 2.25rem 1.5rem; }
 }
+
+/* =====================================================================
+   PORTAL LAYOUT CORRECTIONS  (left-align, colours, logo)
+   Loaded last so these win. Fixes content centring inherited from the
+   public reading column, nav colours, canvas tint, and logo size.
+   ===================================================================== */
+
+/* Neutral cool-grey canvas + slightly softer portal text */
+.mas-app { --mas-paper: #f1f2f6; }
+.mas-app .mas-shell-main { color: #2b3444; }
+
+/* LEFT-ALIGN portal content — it was inheriting the public site's centred
+   column (margin:0 auto), which made pages float in the middle. */
+.mas-app .mas-shell-main .mas-main { padding: 1.5rem 2rem 3rem; }
+.mas-app .mas-shell-main .mas-page {
+  max-width: 1040px;
+  margin: 0;            /* was auto-centred */
+  text-align: left;
+}
+.mas-app .mas-shell-main .mas-page-head { text-align: left; margin-bottom: 1.5rem; }
+.mas-app .mas-shell-main .mas-page-head h1 { color: #18212f; }
+.mas-app .mas-shell-main .mas-page > * { margin-left: 0; margin-right: 0; }
+
+/* Forms: a left-aligned card at a comfortable width, not a tiny floating box */
+.mas-app .mas-shell-main .mas-form { max-width: 640px; margin: 0; }
+
+/* Sidebar nav colours to match Adminator: lighter inactive text, grey icons,
+   blue icon + soft-grey pill on the active item */
+.mas-app .mas-sidenav a { color: #5b6b84; font-weight: 500; }
+.mas-app .mas-sidenav a > svg { color: #aab4c5; }
+.mas-app .mas-sidenav a:hover { background: #f2f5fa; color: #0a1f44; }
+.mas-app .mas-sidenav a:hover > svg { color: var(--brand); }
+.mas-app .mas-sidenav a.is-active { background: #e9eef6; color: #0a1f44; font-weight: 600; }
+.mas-app .mas-sidenav a.is-active > svg { color: var(--brand); }
+
+/* Logo: 60% of current size (170px → ~102px), centred in the sidebar */
+.mas-app .mas-sidebar .mas-brand { display: flex; justify-content: center; padding: 0.4rem 0 1.1rem; }
+.mas-app .mas-sidebar .mas-logo { width: 102px; height: auto; }
