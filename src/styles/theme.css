@@ -1,0 +1,296 @@
+/* theme.css — unified design layer, loaded LAST. Restyles both properties:
+   • Public site (www)  -> Docmed/Knuford-style: airy, trustworthy, modern sans.
+   • Portal (apps)      -> Adminator-style: light canvas, soft white cards.
+   Scoped under .mas-app; public vs portal split via .mas-site / .mas-shell-main.
+   Builds on the tokens in public.css and overrides where needed. */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Nunito+Sans:wght@400;600;700&display=swap');
+
+/* ---------- Tokens ---------- */
+.mas-app {
+  --mas-navy: #0a1f44;
+  --mas-navy-light: #16407e;
+  --mas-ink: #11213f;
+  --mas-muted: #64748b;
+  --mas-line: #e6ebf2;
+  --mas-paper: #f4f7fb;
+  --mas-card: #ffffff;
+  --mas-good: #16a34a;
+  --mas-bad: #dc2626;
+
+  --brand: #1d6fd6;
+  --brand-dark: #1559ad;
+  --brand-tint: #eaf2fc;
+  --amber: #f4b400;
+
+  --r: 14px;
+  --r-sm: 10px;
+  --sh-sm: 0 1px 2px rgba(16, 30, 61, .05);
+  --sh: 0 6px 20px rgba(16, 30, 61, .08);
+  --sh-lg: 0 16px 40px rgba(16, 30, 61, .12);
+
+  background: var(--mas-paper);
+  color: var(--mas-ink);
+}
+
+/* ---------- Typography ---------- */
+.mas-app h1, .mas-app h2, .mas-app h3, .mas-app h4 {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.mas-app .mas-eyebrow {
+  font-family: 'Poppins', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+.mas-app .mas-lede { color: var(--mas-muted); font-size: 1.06rem; line-height: 1.6; }
+
+/* =====================================================================
+   PUBLIC SITE
+   ===================================================================== */
+
+/* Top nav */
+.mas-app .mas-topnav {
+  padding: 0.75rem 2rem;
+  box-shadow: var(--sh-sm);
+  border-bottom: 1px solid var(--mas-line);
+}
+.mas-app .mas-topnav-links { gap: 1.4rem; margin-left: 1rem; }
+.mas-app .mas-topnav-links a {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--mas-ink);
+  border-bottom: none;
+  padding: 0.35rem 0;
+  position: relative;
+}
+.mas-app .mas-topnav-links a:hover { color: var(--brand); }
+.mas-app .mas-topnav-links a.is-active { color: var(--brand); border-bottom: none; }
+.mas-app .mas-topnav-links a.is-active::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -2px;
+  height: 2px; background: var(--brand); border-radius: 2px;
+}
+.mas-app .mas-login-btn {
+  background: var(--brand);
+  border-radius: 999px;
+  padding: 0.6rem 1.4rem;
+  box-shadow: 0 4px 12px rgba(29, 111, 214, .28);
+  font-family: 'Poppins', sans-serif;
+}
+.mas-app .mas-login-btn:hover { background: var(--brand-dark); }
+
+/* Hero */
+.mas-app .mas-hero {
+  background:
+    radial-gradient(1200px 400px at 85% -10%, rgba(244, 180, 0, .18), transparent 60%),
+    linear-gradient(135deg, var(--mas-navy), var(--mas-navy-light));
+  border-radius: 24px;
+  padding: 3.5rem 2.75rem;
+  margin-bottom: 2.5rem;
+  box-shadow: var(--sh-lg);
+}
+.mas-app .mas-hero .mas-eyebrow { color: #8fc0ff; }
+.mas-app .mas-hero-title { font-size: clamp(2.4rem, 5.5vw, 3.6rem); color: #fff; max-width: 18ch; }
+.mas-app .mas-hero .mas-lede { color: #cfe0f7; font-size: 1.15rem; max-width: 56ch; }
+.mas-app .mas-hero-cta .mas-btn {
+  border-radius: 999px;
+  padding: 0.7rem 1.6rem;
+  font-family: 'Poppins', sans-serif;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+}
+
+/* Pathway */
+.mas-app .mas-pathway { border-radius: var(--r); box-shadow: var(--sh-sm); padding: 1.25rem 1.5rem; }
+.mas-app .mas-path-step { font-family: 'Poppins', sans-serif; font-size: 0.9rem; }
+.mas-app .mas-path-dot { width: 14px; height: 14px; box-shadow: 0 0 0 4px rgba(0, 0, 0, .03); }
+
+/* Audience / feature cards */
+.mas-app .mas-entry {
+  border-radius: var(--r);
+  border: 1px solid var(--mas-line);
+  box-shadow: var(--sh-sm);
+  padding: 1.75rem;
+  position: relative;
+  overflow: hidden;
+}
+.mas-app .mas-entry::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--brand), var(--amber));
+  opacity: 0; transition: opacity .15s ease;
+}
+.mas-app .mas-entry:hover { transform: translateY(-4px); box-shadow: var(--sh); }
+.mas-app .mas-entry:hover::before { opacity: 1; }
+.mas-app .mas-entry h2 { font-size: 1.35rem; }
+.mas-app .mas-entry-go { color: var(--brand); font-family: 'Poppins', sans-serif; }
+
+/* Verify strip */
+.mas-app .mas-verify-strip {
+  border-radius: var(--r);
+  border-left: 5px solid var(--brand);
+  box-shadow: var(--sh-sm);
+}
+.mas-app .mas-verify-strip:hover { box-shadow: var(--sh); }
+.mas-app .mas-verify-strip .mas-entry-go { color: var(--brand); }
+
+/* Trust bar */
+.mas-app .mas-trustbar li {
+  background: #fff;
+  border: 1px solid var(--mas-line);
+  box-shadow: var(--sh-sm);
+  border-radius: var(--r);
+  padding: 1.25rem 1rem;
+}
+.mas-app .mas-trustbar strong { font-family: 'Poppins', sans-serif; color: var(--mas-navy); }
+
+/* Public page headings */
+.mas-app .mas-site .mas-page-head h1 { color: var(--mas-navy); font-size: clamp(2rem, 4.5vw, 2.7rem); }
+
+/* Directory + verify cards (public surfaces) */
+.mas-app .mas-card { border-radius: var(--r); box-shadow: var(--sh-sm); border: 1px solid var(--mas-line); }
+.mas-app .mas-card:hover { box-shadow: var(--sh); }
+.mas-app .mas-card-title { font-family: 'Poppins', sans-serif; }
+.mas-app .mas-card-state { background: var(--brand-tint); color: var(--brand-dark); }
+.mas-app .mas-result { border-radius: var(--r); box-shadow: var(--sh); }
+
+/* Footer */
+.mas-app .mas-site-footer { background: var(--mas-navy); }
+
+/* Shared buttons (public) */
+.mas-app .mas-btn { border-radius: 999px; font-family: 'Poppins', sans-serif; background: var(--brand); }
+.mas-app .mas-btn:hover { background: var(--brand-dark); }
+
+/* =====================================================================
+   PORTAL (Adminator-style)
+   ===================================================================== */
+
+/* Canvas */
+.mas-app .mas-shell-main { background: var(--mas-paper); }
+.mas-app .mas-shell-main .mas-main { padding: 0; }
+
+/* Top app-bar */
+.mas-app .mas-topbar-app {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.75rem;
+  background: #fff;
+  border-bottom: 1px solid var(--mas-line);
+  box-shadow: var(--sh-sm);
+  position: sticky;
+  top: 0;
+  z-index: 15;
+}
+.mas-app .mas-topbar-title { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--mas-navy); font-size: 1.1rem; }
+.mas-app .mas-topbar-right { display: flex; align-items: center; gap: 1rem; }
+.mas-app .mas-topbar-user { color: var(--mas-muted); font-size: 0.88rem; }
+.mas-app .mas-topbar-link { color: var(--brand); text-decoration: none; font-weight: 600; font-size: 0.88rem; }
+.mas-app .mas-topbar-link:hover { text-decoration: underline; }
+
+/* Sidebar refinements */
+.mas-app .mas-sidebar { box-shadow: var(--sh-sm); }
+.mas-app .mas-sidenav a { font-family: 'Poppins', sans-serif; font-size: 0.88rem; font-weight: 500; }
+.mas-app .mas-sidenav a.is-active { background: var(--brand-tint); color: var(--brand-dark); box-shadow: inset 3px 0 0 var(--brand); }
+.mas-app .mas-sidenav a:hover { background: #f1f5fb; color: var(--brand-dark); }
+.mas-app .mas-navgroup > summary { color: var(--mas-muted); }
+.mas-app .mas-navgroup > summary:hover { color: var(--brand-dark); }
+
+/* Portal page = padded canvas; panels become cards */
+.mas-app .mas-shell-main .mas-page { max-width: 1100px; padding: 1.75rem 1.75rem 3rem; }
+.mas-app .mas-shell-main .mas-page-head { margin-bottom: 1.5rem; }
+.mas-app .mas-shell-main .mas-page-head h1 { color: var(--mas-navy); font-size: 1.7rem; }
+.mas-app .mas-shell-main .mas-section-head { margin-top: 2rem; }
+
+/* Forms as cards */
+.mas-app .mas-shell-main .mas-form {
+  background: var(--mas-card);
+  border: 1px solid var(--mas-line);
+  border-radius: var(--r);
+  box-shadow: var(--sh-sm);
+  padding: 1.5rem;
+}
+.mas-app .mas-input, .mas-app .mas-select {
+  border-radius: var(--r-sm);
+  border: 1px solid var(--mas-line);
+  padding: 0.6rem 0.8rem;
+}
+.mas-app .mas-input:focus-visible, .mas-app .mas-select:focus-visible {
+  outline: 3px solid var(--brand-tint); border-color: var(--brand);
+}
+.mas-app .mas-field-label { color: var(--mas-ink); font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.9rem; }
+
+/* Buttons (portal) */
+.mas-app .mas-btn-primary {
+  background: var(--brand); color: #fff; border: none;
+  border-radius: var(--r-sm); padding: 0.55rem 1.1rem;
+  font-family: 'Poppins', sans-serif; font-weight: 600; cursor: pointer;
+  box-shadow: 0 3px 10px rgba(29, 111, 214, .22);
+}
+.mas-app .mas-btn-primary:hover { background: var(--brand-dark); }
+.mas-app .mas-btn-primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.mas-app .mas-btn-ghost {
+  background: #fff; color: var(--mas-ink);
+  border: 1px solid var(--mas-line); border-radius: var(--r-sm);
+  padding: 0.5rem 1rem; font-family: 'Poppins', sans-serif; font-weight: 600; cursor: pointer;
+}
+.mas-app .mas-btn-ghost:hover { border-color: var(--brand); color: var(--brand-dark); background: var(--brand-tint); }
+
+/* Lists become card rows */
+.mas-app .mas-shell-main .mas-admin-list { display: flex; flex-direction: column; gap: 0.6rem; padding: 0; margin: 0; list-style: none; }
+.mas-app .mas-shell-main .mas-admin-row {
+  background: var(--mas-card);
+  border: 1px solid var(--mas-line);
+  border-radius: var(--r);
+  box-shadow: var(--sh-sm);
+  padding: 1rem 1.15rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.mas-app .mas-shell-main .mas-admin-name { font-family: 'Poppins', sans-serif; font-size: 1.02rem; color: var(--mas-navy); }
+.mas-app .mas-admin-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+.mas-app .mas-admin-count { color: var(--mas-muted); font-size: 0.85rem; }
+
+/* Badges */
+.mas-app .mas-pill {
+  background: var(--brand-tint); color: var(--brand-dark);
+  border-radius: 999px; padding: 0.2rem 0.7rem; font-size: 0.74rem; font-weight: 700;
+  font-family: 'Poppins', sans-serif; text-transform: none; letter-spacing: 0;
+}
+.mas-app .mas-outcome { border-radius: 999px; padding: 0.2rem 0.7rem; font-size: 0.74rem; font-weight: 700; }
+.mas-app .mas-outcome.is-pass { background: #e7f6ed; color: var(--mas-good); }
+.mas-app .mas-outcome.is-refer { background: #fdeaea; color: var(--mas-bad); }
+.mas-app .mas-status-good { color: var(--mas-good); }
+.mas-app .mas-status-bad { color: var(--mas-bad); }
+
+/* ---------- Dashboard ---------- */
+.mas-app .mas-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.mas-app .mas-dash-card {
+  display: block; text-decoration: none; color: inherit;
+  background: var(--mas-card); border: 1px solid var(--mas-line);
+  border-radius: var(--r); box-shadow: var(--sh-sm);
+  padding: 1.25rem 1.25rem 1.1rem; position: relative; overflow: hidden;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.mas-app .mas-dash-card:hover { transform: translateY(-3px); box-shadow: var(--sh); }
+.mas-app .mas-dash-accent { display: block; width: 38px; height: 38px; border-radius: 10px; margin-bottom: 0.75rem; }
+.mas-app .mas-dash-card h3 { font-family: 'Poppins', sans-serif; font-size: 1.02rem; color: var(--mas-navy); margin-bottom: 0.25rem; }
+.mas-app .mas-dash-card p { color: var(--mas-muted); font-size: 0.88rem; line-height: 1.45; margin: 0; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 820px) {
+  .mas-app .mas-topnav { padding: 0.75rem 1rem; }
+  .mas-app .mas-hero { padding: 2.25rem 1.5rem; }
+  .mas-app .mas-topbar-app { padding: 0.75rem 1rem; }
+  .mas-app .mas-topbar-user { display: none; }
+}
