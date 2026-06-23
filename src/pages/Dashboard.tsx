@@ -66,6 +66,7 @@ export default function Dashboard() {
   const canPartnerApps = hasRole('chairperson') || hasRole('board_member');
   const canRoleRegistry = hasRole('system_admin');
   const canExaminerRegistry = hasRole('chief_examiner');
+  const canCentreBilling = hasRole('chairperson') || hasRole('board_member') || hasRole('system_admin');
 
   const tiles: Tile[] = [
     { to: '/candidates/register', title: 'Register candidate', desc: 'Enrol a swimmer for assessment.', accent: '#1d6fd6', show: canRegister },
@@ -78,6 +79,7 @@ export default function Dashboard() {
     { to: '/assessments/examiners', title: 'Examiner registry', desc: 'Invite examiners; auto-issue UIDs.', accent: '#8e44ad', show: canExaminerRegistry },
     { to: '/candidates/claim-slips', title: 'Claim slips', desc: 'Print parent claim slips.', accent: '#2f9ee0', show: canRegister },
     { to: '/admin/accounts', title: 'Accounts', desc: 'Invoicing, payments, payouts.', accent: '#dc2626', show: canAccounts },
+    { to: '/admin/centre-billing', title: 'Centre billing', desc: 'Invoice & recognise approved centres.', accent: '#16a34a', show: canCentreBilling },
     { to: '/invoices', title: 'My invoices', desc: 'See your assessment fees.', accent: '#16a34a', show: canMyInvoices },
     { to: '/admin/centres', title: 'Manage centres', desc: 'Recognise and manage centres.', accent: '#1d6fd6', show: canManageCentres },
     { to: '/admin/enquiries', title: 'Enquiries', desc: 'First-contact enquiry inbox.', accent: '#0ea5e9', show: canEnquiries },
