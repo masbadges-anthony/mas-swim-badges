@@ -45,6 +45,7 @@ import RegisterCentre from './pages/RegisterCentre';
 import PartnerApplications from './pages/PartnerApplications';
 import RoleRegistry from './pages/RoleRegistry';
 import ExaminerRegistry from './pages/ExaminerRegistry';
+import CentreBilling from './pages/CentreBilling';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -167,10 +168,11 @@ function Sidebar() {
   const canPartnerApps = hasRole('chairperson') || hasRole('board_member');
   const canRoleRegistry = hasRole('system_admin');
   const canExaminerRegistry = hasRole('chief_examiner');
+  const canCentreBilling = hasRole('chairperson') || hasRole('board_member') || hasRole('system_admin');
 
   const assessmentsGroup =
     canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips;
-  const billingGroup = canAccounts || canMyInvoices;
+  const billingGroup = canAccounts || canMyInvoices || canCentreBilling;
   const adminGroup =
     canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries;
 
@@ -207,6 +209,7 @@ function Sidebar() {
             <summary>Billing</summary>
             <div className="mas-navgroup-items">
               {canAccounts && <NavLink to="/admin/accounts" className={navClass}><Icon name="card" /><span>Accounts</span></NavLink>}
+              {canCentreBilling && <NavLink to="/admin/centre-billing" className={navClass}><Icon name="building" /><span>Centre billing</span></NavLink>}
               {canMyInvoices && <NavLink to="/invoices" className={navClass}><Icon name="file" /><span>My invoices</span></NavLink>}
             </div>
           </details>
@@ -266,6 +269,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/assessments/examiners': 'Examiner registry',
   '/certificates': 'Certificates',
   '/admin/accounts': 'Accounts',
+  '/admin/centre-billing': 'Centre billing',
   '/admin/instructors': 'Instructor onboarding',
   '/admin/instructor-blacklist': 'Instructor blacklist',
   '/admin/courses': 'Manage courses',
@@ -354,6 +358,7 @@ export default function App() {
               <Route path="/assessments/examiners" element={<RequireRole roles={['chief_examiner']}><ExaminerRegistry /></RequireRole>} />
               <Route path="/certificates" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>} />
               <Route path="/admin/accounts" element={<RequireRole roles={['system_admin']}><Accounts /></RequireRole>} />
+              <Route path="/admin/centre-billing" element={<RequireRole roles={['chairperson', 'board_member', 'system_admin']}><CentreBilling /></RequireRole>} />
               <Route path="/admin/instructors" element={<RequireRole roles={['instructor_trainer', 'chairperson', 'board_member']}><InstructorOnboarding /></RequireRole>} />
               <Route path="/admin/instructor-blacklist" element={<RequireRole roles={['chairperson', 'board_member']}><InstructorBlacklist /></RequireRole>} />
               <Route path="/admin/courses" element={<RequireRole roles={['instructor_trainer', 'examiner_trainer', 'chairperson', 'board_member']}><CourseManagement /></RequireRole>} />
