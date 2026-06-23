@@ -65,6 +65,7 @@ export default function Dashboard() {
   const canRegisterCentre = hasRole('instructor');
   const canPartnerApps = hasRole('chairperson') || hasRole('board_member');
   const canRoleRegistry = hasRole('system_admin');
+  const canExaminerRegistry = hasRole('chief_examiner');
 
   const tiles: Tile[] = [
     { to: '/candidates/register', title: 'Register candidate', desc: 'Enrol a swimmer for assessment.', accent: '#1d6fd6', show: canRegister },
@@ -74,6 +75,7 @@ export default function Dashboard() {
     { to: '/assessments/invitations', title: 'Invitations', desc: 'Respond to assessment invitations.', accent: '#f4b400', show: canInvitations },
     { to: '/certificates', title: 'Certificates', desc: 'View the certificate registry.', accent: '#0a1f44', show: canViewCerts },
     { to: '/assessments/oversight', title: 'Oversight', desc: 'Monitor sessions and results.', accent: '#3b5bdb', show: isGovernance },
+    { to: '/assessments/examiners', title: 'Examiner registry', desc: 'Invite examiners; auto-issue UIDs.', accent: '#8e44ad', show: canExaminerRegistry },
     { to: '/candidates/claim-slips', title: 'Claim slips', desc: 'Print parent claim slips.', accent: '#2f9ee0', show: canRegister },
     { to: '/admin/accounts', title: 'Accounts', desc: 'Invoicing, payments, payouts.', accent: '#dc2626', show: canAccounts },
     { to: '/invoices', title: 'My invoices', desc: 'See your assessment fees.', accent: '#16a34a', show: canMyInvoices },
