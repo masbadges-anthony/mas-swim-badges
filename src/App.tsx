@@ -41,6 +41,8 @@ import CourseManagement from './pages/CourseManagement';
 import Accounts from './pages/Accounts';
 import MyInvoices from './pages/MyInvoices';
 import Enquiries from './pages/Enquiries';
+import RegisterCentre from './pages/RegisterCentre';
+import PartnerApplications from './pages/PartnerApplications';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -159,6 +161,8 @@ function Sidebar() {
   const canEnquiries =
     hasRole('chairperson') || hasRole('board_member') ||
     hasRole('instructor_trainer') || hasRole('system_admin');
+  const canRegisterCentre = hasRole('instructor');
+  const canPartnerApps = hasRole('chairperson') || hasRole('board_member');
 
   const assessmentsGroup =
     canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips;
@@ -181,6 +185,7 @@ function Sidebar() {
             <summary>Assessments</summary>
             <div className="mas-navgroup-items">
               {canRegister && <NavLink to="/candidates/register" className={navClass}><Icon name="userPlus" /><span>Register candidate</span></NavLink>}
+              {canRegisterCentre && <NavLink to="/centres/register" className={navClass}><Icon name="building" /><span>Register a centre</span></NavLink>}
               {canSchedule && <NavLink to="/assessments/schedule" className={navClass}><Icon name="calendar" /><span>Schedule assessment</span></NavLink>}
               {canInvite && <NavLink to="/assessments/invite" className={navClass}><Icon name="mail" /><span>Invite examiner</span></NavLink>}
               {canGrade && <NavLink to="/assessments/grade" className={navClass}><Icon name="check" /><span>Grading</span></NavLink>}
@@ -207,6 +212,7 @@ function Sidebar() {
             <summary>Administration</summary>
             <div className="mas-navgroup-items">
               {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span></NavLink>}
+              {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span></NavLink>}
               {canManageCentres && <NavLink to="/admin/centres" className={navClass}><Icon name="building" /><span>Manage centres</span></NavLink>}
               {canManageMembers && <NavLink to="/admin/memberships" className={navClass}><Icon name="users" /><span>Memberships</span></NavLink>}
               {canOnboard && <NavLink to="/admin/instructors" className={navClass}><Icon name="userPlus" /><span>Instructor onboarding</span></NavLink>}
@@ -259,6 +265,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/centres': 'Manage centres',
   '/admin/memberships': 'Memberships',
   '/admin/enquiries': 'Enquiries',
+  '/centres/register': 'Register a centre',
+  '/admin/partner-applications': 'Centre applications',
 };
 
 function AppLayout() {
@@ -342,6 +350,8 @@ export default function App() {
               <Route path="/admin/courses" element={<RequireRole roles={['instructor_trainer', 'examiner_trainer', 'chairperson', 'board_member']}><CourseManagement /></RequireRole>} />
               <Route path="/admin/centres" element={<RequireRole roles={['chairperson', 'board_member']}><CentreManagement /></RequireRole>} />
               <Route path="/admin/enquiries" element={<RequireRole roles={['chairperson', 'board_member', 'instructor_trainer', 'system_admin']}><Enquiries /></RequireRole>} />
+              <Route path="/centres/register" element={<RequireRole roles={['instructor']}><RegisterCentre /></RequireRole>} />
+              <Route path="/admin/partner-applications" element={<RequireRole roles={['chairperson', 'board_member']}><PartnerApplications /></RequireRole>} />
               <Route path="/admin/memberships" element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>} />
             </Route>
 
