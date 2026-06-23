@@ -1,136 +1,167 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState, type FormEvent } from 'react';
+import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { levelMeta } from '../lib/levels';
-import type { CertificateVerification } from '../lib/types';
+import '../styles/public.css';
 
-type State =
-  | { kind: 'idle' }
-  | { kind: 'loading' }
-  | { kind: 'found'; cert: CertificateVerification }
-  | { kind: 'notfound' }
-  | { kind: 'error' };
+// Display names + placeholder accent colours per badge level.
+// Swap the colours for the official badge artwork colours when ready.
+const LEVELS: Record<string, { label: string; color: string }> = {
+  starfish:   { label: 'Starfish',   color: '#E8662B' },
+  sea_turtle: { label: 'Sea Turtle', color: '#1FA36B' },
+  guppy:      { label: 'Guppy',      color: '#1F9ED1' },
+  octopus:    { label: 'Octopus',    color: '#8E44AD' },
+  frog:       { label: 'Frog',       color: '#6AA84F' },
+  swordfish:  { label: 'Swordfish',  color: '#C62026' },
+  dolphin:    { label: 'Dolphin',    color: '#0a1f44' },
+};
 
-function formatDate(d: string | null): string {
-  if (!d) return '';
-  const date = new Date(d);
-  return Number.isNaN(date.getTime())
-    ? d
-    : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+interface VerifyRow {
+  serial: string;
+  level: string;
+  centre_name: string | null;
+  issued_on: string;
+  revoked: boolean;
+}
+
+type Status = 'idle' | 'searching' | 'found' | 'revoked' | 'notfound' | 'error';
+
+function fmtDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch {
+    return iso;
+  }
 }
 
 export default function Verify() {
-  const params = useParams<{ serial?: string }>();
-  const navigate = useNavigate();
+  const params = useParams();
   const [serial, setSerial] = useState(params.serial ?? '');
-  const [state, setState] = useState<State>({ kind: 'idle' });
+  const [status, setStatus] = useState<Status>('idle');
+  const [result, setResult] = useState<VerifyRow | null>(null);
 
-  async function verify(value: string) {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    setState({ kind: 'loading' });
-
-    const { data, error } = await supabase.rpc('verify_certificate', { _serial: trimmed });
-
+  async function check(value: string) {
+    const s = value.trim();
+    if (!s) return;
+    setStatus('searching');
+    setResult(null);
+    const { data, error } = await supabase.rpc('verify_certificate', { _serial: s });
     if (error) {
-      setState({ kind: 'error' });
+      setStatus('error');
       return;
     }
-    const row = (data as CertificateVerification[] | null)?.[0];
-    setState(row ? { kind: 'found', cert: row } : { kind: 'notfound' });
+    const row = ((data ?? []) as VerifyRow[])[0];
+    if (!row) {
+      setStatus('notfound');
+      return;
+    }
+    setResult(row);
+    setStatus(row.revoked ? 'revoked' : 'found');
   }
 
-  // Auto-verify when arriving via /verify/:serial (e.g. a certificate QR code).
+  // Deep-link / QR support: /verify/:serial auto-checks on load.
   useEffect(() => {
-    if (params.serial) verify(params.serial);
+    if (params.serial) check(params.serial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.serial]);
 
-  function onSubmit() {
-    // Reflect the serial in the URL so the result is shareable.
-    navigate(`/verify/${encodeURIComponent(serial.trim())}`);
-    verify(serial);
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    check(serial);
   }
 
+  const level = result ? LEVELS[result.level] : undefined;
+
   return (
-    <section className="mas-page mas-page-narrow">
+    <section className="mas-page">
       <header className="mas-page-head">
-        <p className="mas-eyebrow">Certificate check</p>
+        <p className="mas-eyebrow">Verify</p>
         <h1>Verify a certificate</h1>
         <p className="mas-lede">
-          Enter the serial printed on a Swim Badges certificate to confirm it’s genuine.
+          Enter the serial printed on a Swim Badges certificate to confirm it is
+          genuine. For the privacy of our young swimmers, no personal details are
+          shown — only that the certificate is authentic.
         </p>
       </header>
 
-      <div className="mas-verify-form">
+      <form className="mas-verify-form" onSubmit={onSubmit}
+            style={{ display: 'flex', gap: '0.6rem', maxWidth: '460px', flexWrap: 'wrap' }}>
         <input
           className="mas-input"
-          placeholder="e.g. MAS-2026-A1B2C3D4E5F6"
+          type="text"
           value={serial}
           onChange={(e) => setSerial(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') onSubmit(); }}
+          placeholder="e.g. MAS-2026-XXXXXXXX"
           aria-label="Certificate serial"
-          autoComplete="off"
-          spellCheck={false}
+          style={{ flex: 1, minWidth: '220px' }}
         />
-        <button className="mas-btn" onClick={onSubmit} disabled={!serial.trim()}>
-          Verify
+        <button className="mas-btn" type="submit" disabled={status === 'searching'}>
+          {status === 'searching' ? 'Checking…' : 'Verify'}
         </button>
-      </div>
+      </form>
 
-      {state.kind === 'loading' && <p className="mas-status">Checking…</p>}
-
-      {state.kind === 'error' && (
-        <p className="mas-status mas-status-bad">
-          Something went wrong. Check the serial and try again.
-        </p>
+      {status === 'notfound' && (
+        <div className="mas-result" style={{ marginTop: '1.5rem' }}>
+          <p className="mas-pill-bad">No certificate found</p>
+          <p className="mas-lede">
+            We couldn’t find a certificate with that serial. Check the serial and
+            try again — it should look like <span className="mas-mono">MAS-2026-XXXXXXXX</span>.
+          </p>
+        </div>
       )}
 
-      {state.kind === 'notfound' && (
-        <p className="mas-status mas-status-bad">
-          No certificate matches that serial.
-        </p>
+      {status === 'error' && (
+        <div className="mas-result" style={{ marginTop: '1.5rem' }}>
+          <p className="mas-pill-bad">Couldn’t check right now</p>
+          <p className="mas-lede">Something went wrong verifying that serial. Please try again in a moment.</p>
+        </div>
       )}
 
-      {state.kind === 'found' && <Result cert={state.cert} onOpen={(s) => {
-        setSerial(s);
-        navigate(`/verify/${encodeURIComponent(s)}`);
-        verify(s);
-      }} />}
+      {(status === 'found' || status === 'revoked') && result && (
+        <div className="mas-result" style={{ marginTop: '1.5rem' }}>
+          <div className="mas-result-band" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <span
+              aria-hidden
+              style={{
+                width: 14, height: 14, borderRadius: '50%', flex: '0 0 auto',
+                background: level?.color ?? '#94a3b8',
+              }}
+            />
+            <span className={status === 'revoked' ? 'mas-pill-bad' : 'mas-pill-good'}>
+              {status === 'revoked' ? 'Revoked' : 'Valid certificate'}
+            </span>
+          </div>
+
+          <div
+            className="mas-result-grid"
+            style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', rowGap: '0.55rem', columnGap: '1.25rem' }}
+          >
+            <span className="mas-muted">Badge level</span>
+            <strong>{level?.label ?? result.level}</strong>
+
+            <span className="mas-muted">Issuing centre</span>
+            <strong>{result.centre_name ?? '—'}</strong>
+
+            <span className="mas-muted">Issued on</span>
+            <strong>{fmtDate(result.issued_on)}</strong>
+
+            <span className="mas-muted">Serial</span>
+            <strong className="mas-mono">{result.serial}</strong>
+          </div>
+
+          {status === 'revoked' && (
+            <p className="mas-lede" style={{ marginTop: '1rem' }}>
+              This serial belonged to a certificate that has since been revoked and
+              is no longer valid. If it was reissued, the swimmer will hold a new
+              certificate with a different serial.
+            </p>
+          )}
+
+          <p className="mas-lede" style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
+            For privacy, the swimmer’s name is not shown. The person holding the
+            certificate can match it by the serial above.
+          </p>
+        </div>
+      )}
     </section>
-  );
-}
-
-function Result({ cert, onOpen }: { cert: CertificateVerification; onOpen: (serial: string) => void }) {
-  const meta = levelMeta(cert.level);
-
-  return (
-    <article className="mas-result" style={{ ['--accent' as string]: meta.accent }}>
-      <div className="mas-result-band">
-        <span className="mas-result-level">Level {meta.order} · {meta.label}</span>
-        <span className={`mas-pill ${cert.is_valid ? 'mas-pill-good' : 'mas-pill-bad'}`}>
-          {cert.is_valid ? 'Valid' : 'Revoked'}
-        </span>
-      </div>
-
-      <dl className="mas-result-grid">
-        <div><dt>Awarded to</dt><dd>{cert.candidate_name}</dd></div>
-        <div><dt>Serial</dt><dd className="mas-mono">{cert.serial}</dd></div>
-        <div><dt>Issued</dt><dd>{formatDate(cert.issued_on)}</dd></div>
-        {cert.center_name && <div><dt>Centre</dt><dd>{cert.center_name}</dd></div>}
-        {!cert.is_valid && cert.revoked_on && (
-          <div><dt>Revoked</dt><dd>{formatDate(cert.revoked_on)}</dd></div>
-        )}
-      </dl>
-
-      {!cert.is_valid && cert.replaced_by_serial && (
-        <p className="mas-result-note">
-          Replaced by{' '}
-          <button className="mas-link" onClick={() => onOpen(cert.replaced_by_serial!)}>
-            {cert.replaced_by_serial}
-          </button>
-        </p>
-      )}
-    </article>
   );
 }
