@@ -18,6 +18,9 @@ import InstructorDirectory from './pages/InstructorDirectory';
 import Courses from './pages/Courses';
 import Verify from './pages/Verify';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
+import NotFound from './pages/NotFound';
+import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import RegisterCandidate from './pages/RegisterCandidate';
 import CreateSession from './pages/CreateSession';
@@ -299,6 +302,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <div className="mas-app">
+          <ErrorBoundary>
           <Routes>
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Home />} />
@@ -316,8 +320,6 @@ export default function App() {
               <Route path="/courses" element={<Courses />} />
               <Route path="/verify" element={<Verify />} />
               <Route path="/verify/:serial" element={<Verify />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="*" element={<Home />} />
             </Route>
 
             <Route element={<AppLayout />}>
@@ -342,7 +344,12 @@ export default function App() {
               <Route path="/admin/centres" element={<RequireRole roles={['chairperson', 'board_member']}><CentreManagement /></RequireRole>} />
               <Route path="/admin/memberships" element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>} />
             </Route>
+
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
+          </ErrorBoundary>
         </div>
       </BrowserRouter>
     </AuthProvider>
