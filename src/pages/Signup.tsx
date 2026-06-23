@@ -4,11 +4,13 @@ import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import Icon from '../components/Icon';
 
-export default function Login() {
-  const { signIn, session } = useAuth();
+export default function Signup() {
+  const { session } = useAuth();
   const navigate = useNavigate();
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [agree, setAgree] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -17,21 +19,22 @@ export default function Login() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    setError(null); setNotice(null); setBusy(true);
-    const { error } = await signIn(email.trim(), password);
-    setBusy(false);
-    if (error) setError(error);
-    else navigate('/dashboard');
-  }
-
-  async function onForgot() {
     setError(null); setNotice(null);
-    if (!email.trim()) { setError('Enter your email above first, then tap Forgot.'); return; }
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/login`,
+    if (!agree) { setError('Please accept the terms and privacy notice to continue.'); return; }
+    if (password.length < 8) { setError('Use at least 8 characters for your password.'); return; }
+    setBusy(true);
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: { full_name: fullName.trim() },
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
     });
-    if (error) setError(error.message);
-    else setNotice('If that email has an account, a reset link is on its way.');
+    setBusy(false);
+    if (error) { setError(error.message); return; }
+    if (data.session) navigate('/dashboard');
+    else setNotice('Account created. Check your email to confirm, then sign in.');
   }
 
   return (
@@ -45,8 +48,8 @@ export default function Login() {
           <p className="mas-auth-eyebrow">National Swim Badge Registry</p>
           <h2 className="mas-auth-headline">One national standard, from Starfish to Dolphin.</h2>
           <p className="mas-auth-sub">
-            Register candidates, run independent assessments, and issue verifiable certificates —
-            all in one place for Malaysia Aquatics partner centres.
+            Create an account to claim your child&rsquo;s badges, or to access the portal if you&rsquo;ve
+            been invited as an instructor, examiner, or centre administrator.
           </p>
           <div className="mas-auth-quote">
             <p>Seven badges. One pathway. Every certificate publicly verifiable.</p>
@@ -59,15 +62,22 @@ export default function Login() {
       <main className="mas-auth-main">
         <div className="mas-auth-topbar">
           <Link to="/"><Icon name="arrowLeft" /> Back to home</Link>
-          <span>New here? <Link to="/signup" className="is-accent">Create account</Link></span>
+          <span>Already have an account? <Link to="/login" className="is-accent">Sign in</Link></span>
         </div>
 
         <form className="mas-auth-form" onSubmit={onSubmit}>
-          <h1 className="mas-auth-title">Welcome back</h1>
-          <p className="mas-auth-lede">Sign in to the MAS Swim Badges portal to pick up where you left off.</p>
+          <h1 className="mas-auth-title">Create your account</h1>
+          <p className="mas-auth-lede">It takes a minute. You can claim a child&rsquo;s record or accept an invitation afterwards.</p>
 
           {error && <div className="mas-auth-error">{error}</div>}
           {notice && <div className="mas-auth-note">{notice}</div>}
+
+          <div className="mas-auth-field">
+            <label htmlFor="name">Full name</label>
+            <input id="name" type="text" className="mas-input" autoComplete="name"
+                   placeholder="Your name" value={fullName}
+                   onChange={(e) => setFullName(e.target.value)} required />
+          </div>
 
           <div className="mas-auth-field">
             <label htmlFor="email">Email</label>
@@ -80,20 +90,23 @@ export default function Login() {
           </div>
 
           <div className="mas-auth-field">
-            <div className="mas-auth-row">
-              <label htmlFor="password">Password</label>
-              <button type="button" className="mas-auth-link" onClick={onForgot}>Forgot?</button>
-            </div>
+            <label htmlFor="password">Password</label>
             <span className="mas-input-icon">
               <Icon name="lock" />
-              <input id="password" type="password" className="mas-input" autoComplete="current-password"
-                     placeholder="••••••••" value={password}
+              <input id="password" type="password" className="mas-input" autoComplete="new-password"
+                     placeholder="At least 8 characters" value={password}
                      onChange={(e) => setPassword(e.target.value)} required />
             </span>
           </div>
 
+          <label className="mas-auth-check" style={{ marginBottom: '1.1rem' }}>
+            <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+            I agree to the <Link to="/terms" className="mas-auth-link">Terms</Link> and{' '}
+            <Link to="/privacy" className="mas-auth-link">Privacy</Link> notice.
+          </label>
+
           <button type="submit" className="mas-btn-primary mas-auth-submit" disabled={busy}>
-            {busy ? <span className="mas-spinner is-sm" /> : <>Sign in <Icon name="arrowRight" /></>}
+            {busy ? <span className="mas-spinner is-sm" /> : <>Create account <Icon name="arrowRight" /></>}
           </button>
         </form>
 
