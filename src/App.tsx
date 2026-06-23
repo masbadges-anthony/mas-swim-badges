@@ -43,6 +43,7 @@ import MyInvoices from './pages/MyInvoices';
 import Enquiries from './pages/Enquiries';
 import RegisterCentre from './pages/RegisterCentre';
 import PartnerApplications from './pages/PartnerApplications';
+import RoleRegistry from './pages/RoleRegistry';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -163,6 +164,7 @@ function Sidebar() {
     hasRole('instructor_trainer') || hasRole('system_admin');
   const canRegisterCentre = hasRole('instructor');
   const canPartnerApps = hasRole('chairperson') || hasRole('board_member');
+  const canRoleRegistry = hasRole('system_admin');
 
   const assessmentsGroup =
     canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips;
@@ -213,6 +215,7 @@ function Sidebar() {
             <div className="mas-navgroup-items">
               {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span></NavLink>}
               {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span></NavLink>}
+              {canRoleRegistry && <NavLink to="/admin/role-registry" className={navClass}><Icon name="settings" /><span>Roles &amp; policies</span></NavLink>}
               {canManageCentres && <NavLink to="/admin/centres" className={navClass}><Icon name="building" /><span>Manage centres</span></NavLink>}
               {canManageMembers && <NavLink to="/admin/memberships" className={navClass}><Icon name="users" /><span>Memberships</span></NavLink>}
               {canOnboard && <NavLink to="/admin/instructors" className={navClass}><Icon name="userPlus" /><span>Instructor onboarding</span></NavLink>}
@@ -267,6 +270,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/enquiries': 'Enquiries',
   '/centres/register': 'Register a centre',
   '/admin/partner-applications': 'Centre applications',
+  '/admin/role-registry': 'Roles & policies',
 };
 
 function AppLayout() {
@@ -352,6 +356,7 @@ export default function App() {
               <Route path="/admin/enquiries" element={<RequireRole roles={['chairperson', 'board_member', 'instructor_trainer', 'system_admin']}><Enquiries /></RequireRole>} />
               <Route path="/centres/register" element={<RequireRole roles={['instructor']}><RegisterCentre /></RequireRole>} />
               <Route path="/admin/partner-applications" element={<RequireRole roles={['chairperson', 'board_member']}><PartnerApplications /></RequireRole>} />
+              <Route path="/admin/role-registry" element={<RequireRole roles={['system_admin']}><RoleRegistry /></RequireRole>} />
               <Route path="/admin/memberships" element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>} />
             </Route>
 
