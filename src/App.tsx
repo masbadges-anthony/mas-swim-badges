@@ -40,6 +40,7 @@ import InstructorBlacklist from './pages/InstructorBlacklist';
 import CourseManagement from './pages/CourseManagement';
 import Accounts from './pages/Accounts';
 import MyInvoices from './pages/MyInvoices';
+import Enquiries from './pages/Enquiries';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -155,12 +156,15 @@ function Sidebar() {
   const canManageCourses =
     hasRole('instructor_trainer') || hasRole('examiner_trainer') ||
     hasRole('chairperson') || hasRole('board_member');
+  const canEnquiries =
+    hasRole('chairperson') || hasRole('board_member') ||
+    hasRole('instructor_trainer') || hasRole('system_admin');
 
   const assessmentsGroup =
     canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips;
   const billingGroup = canAccounts || canMyInvoices;
   const adminGroup =
-    canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses;
+    canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries;
 
   const primaryRole = memberships[0]?.role;
   const roleLabel = primaryRole ? (ROLE_LABELS[primaryRole] ?? primaryRole) : 'Member';
@@ -202,6 +206,7 @@ function Sidebar() {
           <details className="mas-navgroup" open>
             <summary>Administration</summary>
             <div className="mas-navgroup-items">
+              {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span></NavLink>}
               {canManageCentres && <NavLink to="/admin/centres" className={navClass}><Icon name="building" /><span>Manage centres</span></NavLink>}
               {canManageMembers && <NavLink to="/admin/memberships" className={navClass}><Icon name="users" /><span>Memberships</span></NavLink>}
               {canOnboard && <NavLink to="/admin/instructors" className={navClass}><Icon name="userPlus" /><span>Instructor onboarding</span></NavLink>}
@@ -253,6 +258,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/courses': 'Manage courses',
   '/admin/centres': 'Manage centres',
   '/admin/memberships': 'Memberships',
+  '/admin/enquiries': 'Enquiries',
 };
 
 function AppLayout() {
@@ -335,6 +341,7 @@ export default function App() {
               <Route path="/admin/instructor-blacklist" element={<RequireRole roles={['chairperson', 'board_member']}><InstructorBlacklist /></RequireRole>} />
               <Route path="/admin/courses" element={<RequireRole roles={['instructor_trainer', 'examiner_trainer', 'chairperson', 'board_member']}><CourseManagement /></RequireRole>} />
               <Route path="/admin/centres" element={<RequireRole roles={['chairperson', 'board_member']}><CentreManagement /></RequireRole>} />
+              <Route path="/admin/enquiries" element={<RequireRole roles={['chairperson', 'board_member', 'instructor_trainer', 'system_admin']}><Enquiries /></RequireRole>} />
               <Route path="/admin/memberships" element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>} />
             </Route>
 
