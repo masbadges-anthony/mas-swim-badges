@@ -649,8 +649,24 @@
 .mas-app .mas-shell-main .mas-page-head h1 { color: #18212f; }
 .mas-app .mas-shell-main .mas-page > * { margin-left: 0; margin-right: 0; }
 
-/* Forms: a left-aligned card at a comfortable width, not a tiny floating box */
-.mas-app .mas-shell-main .mas-form { max-width: 640px; margin: 0; }
+/* Forms fill the page width (Adminator cards are full-width with 2-col grids) */
+.mas-app .mas-shell-main .mas-form { max-width: none; margin: 0; }
+
+/* Page header as a row: title block left, action buttons right */
+.mas-app .mas-page-head-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1.5rem; flex-wrap: wrap;
+}
+.mas-app .mas-page-head-row > div { min-width: 0; }
+.mas-app .mas-page-actions { display: flex; gap: 0.6rem; flex-shrink: 0; padding-top: 0.4rem; }
+
+/* Card head inside a form: eyebrow + title left, badge right, divider under */
+.mas-app .mas-form-cardhead {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+  padding-bottom: 1.1rem; margin-bottom: 1.4rem; border-bottom: 1px solid var(--mas-line);
+}
+.mas-app .mas-form-cardhead h2 { font-family: 'Poppins', sans-serif; font-size: 1.15rem; color: var(--mas-navy); margin: 0.15rem 0 0; }
+.mas-app .mas-section-rowhead { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 
 /* Sidebar nav colours to match Adminator: lighter inactive text, grey icons,
    blue icon + soft-grey pill on the active item */
@@ -664,3 +680,6 @@
 /* Logo: 60% of current size (170px → ~102px), centred in the sidebar */
 .mas-app .mas-sidebar .mas-brand { display: flex; justify-content: center; padding: 0.4rem 0 1.1rem; }
 .mas-app .mas-sidebar .mas-logo { width: 102px; height: auto; }
+
+/* Inline "(optional)" hint on field labels */
+.mas-app .mas-field-opt { color: #9aa4b8; font-weight: 500; font-size: 0.8rem; }
