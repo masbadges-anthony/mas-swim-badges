@@ -30,7 +30,6 @@ import CentreManagement from './pages/CentreManagement';
 import MembershipManagement from './pages/MembershipManagement';
 import AssessmentsOversight from './pages/AssessmentsOversight';
 import AccountSettings from './pages/AccountSettings';
-import ApplyCentre from './pages/ApplyCentre';
 import CentreAdmin from './pages/CentreAdmin';
 import ClaimCandidate from './pages/ClaimCandidate';
 import ClaimSlips from './pages/ClaimSlips';
@@ -75,7 +74,6 @@ function Brand() {
 
 /* ---------- Public marketing layout (www) ---------- */
 function PublicLayout() {
-  const { session } = useAuth();
   const loginIsExternal = /^https?:\/\//i.test(PORTAL_LOGIN);
 
   return (
@@ -90,12 +88,10 @@ function PublicLayout() {
           <NavLink to="/about" className={navClass}>About</NavLink>
           <NavLink to="/verify" className={navClass}>Verify</NavLink>
         </nav>
-        {session ? (
-          <Link to="/dashboard" className="mas-login-btn">Go to portal</Link>
-        ) : loginIsExternal ? (
-          <a href={PORTAL_LOGIN} className="mas-login-btn">Member login</a>
+        {loginIsExternal ? (
+          <a href={PORTAL_LOGIN} className="mas-login-btn">Login to portal</a>
         ) : (
-          <Link to={PORTAL_LOGIN} className="mas-login-btn">Member login</Link>
+          <Link to={PORTAL_LOGIN} className="mas-login-btn">Login to portal</Link>
         )}
       </header>
 
@@ -220,7 +216,6 @@ function Sidebar() {
           <summary>Account</summary>
           <div className="mas-navgroup-items">
             <NavLink to="/claim" className={navClass}><Icon name="star" /><span>My child&rsquo;s badges</span></NavLink>
-            <NavLink to="/centres/apply" className={navClass}><Icon name="plus" /><span>Apply as a centre</span></NavLink>
             <NavLink to="/account" className={navClass}><Icon name="settings" /><span>Account</span></NavLink>
           </div>
         </details>
@@ -241,7 +236,6 @@ function Sidebar() {
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/account': 'Account',
-  '/centres/apply': 'Apply as a centre',
   '/claim': "My child's badges",
   '/invoices': 'My invoices',
   '/centre': 'My centre',
@@ -325,7 +319,6 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
               <Route path="/account" element={<Protected><AccountSettings /></Protected>} />
-              <Route path="/centres/apply" element={<Protected><ApplyCentre /></Protected>} />
               <Route path="/claim" element={<Protected><ClaimCandidate /></Protected>} />
               <Route path="/invoices" element={<RequireRole roles={['instructor', 'partner_center_admin']}><MyInvoices /></RequireRole>} />
               <Route path="/centre" element={<RequireRole roles={['partner_center_admin']}><CentreAdmin /></RequireRole>} />
