@@ -389,3 +389,240 @@
   font-family: 'Poppins', sans-serif; font-weight: 700;
   font-size: 1.95rem; color: var(--mas-navy); line-height: 1;
 }
+
+/* =====================================================================
+   COMPONENT LIBRARY (Adminator parity) — forms, buttons, alerts,
+   badges, progress, spinners, tables, avatar groups.
+   ===================================================================== */
+
+/* ---------- Forms ---------- */
+.mas-app .mas-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.25rem; }
+.mas-app .mas-form-grid .mas-col-2 { grid-column: 1 / -1; }
+.mas-app .mas-req { color: var(--mas-bad); margin-left: 2px; }
+.mas-app .mas-field-note { color: var(--mas-muted); font-size: 0.8rem; margin-top: 0.35rem; }
+
+.mas-app .mas-input-icon { position: relative; display: block; }
+.mas-app .mas-input-icon > svg {
+  position: absolute; left: 0.78rem; top: 50%; transform: translateY(-50%);
+  width: 18px; height: 18px; color: #94a3b8; pointer-events: none;
+}
+.mas-app .mas-input-icon .mas-input { padding-left: 2.45rem; width: 100%; }
+
+.mas-app .mas-input-group { display: flex; align-items: stretch; }
+.mas-app .mas-input-prefix {
+  display: flex; align-items: center; padding: 0 0.85rem;
+  background: #f1f5f9; border: 1px solid var(--mas-line); border-right: none;
+  border-radius: var(--r-sm) 0 0 var(--r-sm); color: var(--mas-muted);
+  font-family: ui-monospace, monospace; font-size: 0.82rem; white-space: nowrap;
+}
+.mas-app .mas-input-group .mas-input { border-radius: 0 var(--r-sm) var(--r-sm) 0; flex: 1; }
+
+.mas-app .mas-switch { display: inline-flex; align-items: center; gap: 0.65rem; cursor: pointer; }
+.mas-app .mas-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.mas-app .mas-switch-slider {
+  width: 40px; height: 22px; border-radius: 999px; background: #cbd5e1;
+  position: relative; transition: background .15s ease; flex: 0 0 auto;
+}
+.mas-app .mas-switch-slider::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+  border-radius: 50%; background: #fff; transition: transform .15s ease; box-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+.mas-app .mas-switch input:checked + .mas-switch-slider { background: var(--brand); }
+.mas-app .mas-switch input:checked + .mas-switch-slider::after { transform: translateX(18px); }
+.mas-app .mas-switch input:focus-visible + .mas-switch-slider { outline: 3px solid var(--brand-tint); }
+.mas-app .mas-switch-text { font-size: 0.9rem; color: var(--mas-ink); }
+
+.mas-app .mas-section-count { color: #cbd5e1; font-family: ui-monospace, monospace; font-size: 0.8rem; margin-left: 0.5rem; }
+
+/* ---------- Buttons (full set) ---------- */
+.mas-app [class*="mas-btn-"] {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.9rem;
+  border-radius: var(--r-sm); padding: 0.55rem 1.1rem; border: 1px solid transparent;
+  cursor: pointer; line-height: 1.2; text-decoration: none; transition: filter .12s ease, background .12s ease;
+}
+.mas-app [class*="mas-btn-"]:disabled { opacity: .55; cursor: not-allowed; }
+.mas-app .mas-btn-secondary { background: #fff; color: var(--mas-ink); border-color: var(--mas-line); }
+.mas-app .mas-btn-secondary:hover { background: #f8fafc; }
+.mas-app .mas-btn-success { background: #16a34a; color: #fff; box-shadow: 0 3px 10px rgba(22,163,74,.22); }
+.mas-app .mas-btn-warning { background: #f59e0b; color: #fff; box-shadow: 0 3px 10px rgba(245,158,11,.22); }
+.mas-app .mas-btn-danger  { background: #dc2626; color: #fff; box-shadow: 0 3px 10px rgba(220,38,38,.22); }
+.mas-app .mas-btn-info    { background: #0ea5e9; color: #fff; box-shadow: 0 3px 10px rgba(14,165,233,.22); }
+.mas-app .mas-btn-success:hover, .mas-app .mas-btn-warning:hover,
+.mas-app .mas-btn-danger:hover,  .mas-app .mas-btn-info:hover { filter: brightness(.94); }
+
+/* soft / tonal */
+.mas-app .mas-btn-soft { background: var(--brand-tint); color: var(--brand-dark); }
+.mas-app .mas-btn-soft.is-success { background: #e7f6ed; color: #15803d; }
+.mas-app .mas-btn-soft.is-warning { background: #fdf2dd; color: #b45309; }
+.mas-app .mas-btn-soft.is-danger  { background: #fdeaea; color: #b91c1c; }
+.mas-app .mas-btn-soft.is-info    { background: #e6f6fe; color: #0369a1; }
+.mas-app .mas-btn-soft:hover { filter: brightness(.97); }
+
+/* outline */
+.mas-app .mas-btn-outline { background: #fff; color: var(--brand-dark); border-color: var(--brand); }
+.mas-app .mas-btn-outline.is-success { color: #15803d; border-color: #16a34a; }
+.mas-app .mas-btn-outline.is-danger  { color: #b91c1c; border-color: #dc2626; }
+.mas-app .mas-btn-outline.is-ghost   { color: var(--mas-ink); border-color: var(--mas-line); }
+.mas-app .mas-btn-outline:hover { background: var(--brand-tint); }
+
+/* sizes */
+.mas-app .mas-btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+.mas-app .mas-btn-lg { padding: 0.7rem 1.5rem; font-size: 1rem; }
+
+/* segmented control */
+.mas-app .mas-segmented { display: inline-flex; background: #eef2f7; border-radius: var(--r-sm); padding: 3px; gap: 2px; }
+.mas-app .mas-segmented button {
+  border: none; background: transparent; cursor: pointer; padding: 0.4rem 0.9rem;
+  border-radius: 8px; font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.85rem; color: var(--mas-muted);
+}
+.mas-app .mas-segmented button.is-active { background: #fff; color: var(--mas-navy); box-shadow: var(--sh-sm); }
+
+/* ---------- Alerts ---------- */
+.mas-app .mas-alert {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  padding: 0.95rem 1.1rem; border-radius: var(--r); margin-bottom: 0.85rem;
+  border-left: 4px solid var(--brand); background: var(--brand-tint);
+}
+.mas-app .mas-alert > svg { flex: 0 0 auto; width: 20px; height: 20px; margin-top: 1px; color: var(--brand); }
+.mas-app .mas-alert-body { flex: 1; min-width: 0; }
+.mas-app .mas-alert-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.92rem; color: var(--mas-navy); }
+.mas-app .mas-alert-text { color: #475569; font-size: 0.88rem; margin-top: 1px; }
+.mas-app .mas-alert-x { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.1rem; line-height: 1; }
+.mas-app .mas-alert.is-success { background: #ecfdf3; border-color: #16a34a; } .mas-app .mas-alert.is-success > svg { color: #16a34a; }
+.mas-app .mas-alert.is-warning { background: #fffbeb; border-color: #f59e0b; } .mas-app .mas-alert.is-warning > svg { color: #d97706; }
+.mas-app .mas-alert.is-danger  { background: #fef2f2; border-color: #dc2626; } .mas-app .mas-alert.is-danger  > svg { color: #dc2626; }
+
+/* ---------- Badges ---------- */
+.mas-app .mas-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.74rem; font-weight: 700;
+  font-family: 'Poppins', sans-serif; background: #eef2f7; color: #475569;
+}
+.mas-app .mas-badge.is-primary { background: var(--brand-tint); color: var(--brand-dark); }
+.mas-app .mas-badge.is-success { background: #e7f6ed; color: #15803d; }
+.mas-app .mas-badge.is-warning { background: #fdf2dd; color: #b45309; }
+.mas-app .mas-badge.is-danger  { background: #fdeaea; color: #b91c1c; }
+.mas-app .mas-badge.is-info    { background: #e6f6fe; color: #0369a1; }
+.mas-app .mas-badge.is-purple  { background: #f3eafe; color: #7c3aed; }
+.mas-app .mas-badge.is-solid   { background: var(--brand); color: #fff; }
+.mas-app .mas-badge-dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.mas-app .mas-badge.is-live  { color: #2563eb; } .mas-app .mas-badge.is-online { color: #16a34a; }
+.mas-app .mas-badge.is-idle  { color: #d97706; } .mas-app .mas-badge.is-down   { color: #dc2626; }
+
+/* ---------- Progress ---------- */
+.mas-app .mas-progress { height: 8px; background: #e9eef5; border-radius: 999px; overflow: hidden; }
+.mas-app .mas-progress.is-thin { height: 4px; }
+.mas-app .mas-progress-bar { height: 100%; background: var(--brand); border-radius: 999px; transition: width .3s ease; }
+.mas-app .mas-progress-bar.is-success { background: #16a34a; }
+.mas-app .mas-progress-bar.is-warning { background: #f59e0b; }
+.mas-app .mas-progress-bar.is-danger  { background: #dc2626; }
+.mas-app .mas-progress-bar.is-striped {
+  background-image: linear-gradient(45deg, rgba(255,255,255,.25) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.25) 50%, rgba(255,255,255,.25) 75%, transparent 75%, transparent);
+  background-size: 1rem 1rem; animation: mas-stripes 1s linear infinite;
+}
+@keyframes mas-stripes { from { background-position: 1rem 0; } to { background-position: 0 0; } }
+
+/* ---------- Spinner ---------- */
+.mas-app .mas-spinner {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 3px solid #e2e8f0; border-top-color: var(--brand);
+  animation: mas-spin .7s linear infinite; display: inline-block;
+}
+.mas-app .mas-spinner.is-sm { width: 16px; height: 16px; border-width: 2px; }
+@keyframes mas-spin { to { transform: rotate(360deg); } }
+
+/* ---------- Tables ---------- */
+.mas-app .mas-table-card {
+  background: #fff; border: 1px solid var(--mas-line); border-radius: var(--r);
+  box-shadow: var(--sh-sm); padding: 1.25rem 1.4rem;
+}
+.mas-app .mas-table { width: 100%; border-collapse: collapse; }
+.mas-app .mas-table thead th {
+  text-align: left; font-family: 'Poppins', sans-serif; font-weight: 700;
+  font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: #9aa4b8;
+  padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--mas-line);
+}
+.mas-app .mas-table tbody td { padding: 0.7rem 0.75rem; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; color: var(--mas-ink); }
+.mas-app .mas-table tbody tr:hover { background: #f8fafc; }
+.mas-app .mas-table tbody tr.is-selected { background: var(--brand-tint); }
+.mas-app .mas-table .mas-num { text-align: right; font-variant-numeric: tabular-nums; }
+.mas-app .mas-table-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 0.85rem; color: var(--mas-muted); font-size: 0.85rem; }
+.mas-app .mas-table-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.mas-app .mas-table-toolbar .mas-input { flex: 1; min-width: 200px; }
+.mas-app .mas-cell-user { display: flex; align-items: center; gap: 0.65rem; }
+.mas-app .mas-cell-user .mas-avatar { width: 32px; height: 32px; border-radius: 50%; font-size: 0.72rem; }
+.mas-app .mas-cell-user-meta { display: flex; flex-direction: column; line-height: 1.25; }
+.mas-app .mas-cell-user-name { font-weight: 600; color: var(--mas-navy); }
+.mas-app .mas-cell-user-sub { color: var(--mas-muted); font-size: 0.78rem; }
+.mas-app .mas-row-actions { display: flex; align-items: center; gap: 0.6rem; color: #94a3b8; }
+.mas-app .mas-row-actions button { background: none; border: none; cursor: pointer; color: inherit; padding: 2px; }
+.mas-app .mas-row-actions button:hover { color: var(--brand); }
+
+/* ---------- Avatar group ---------- */
+.mas-app .mas-avatar-group { display: inline-flex; }
+.mas-app .mas-avatar-group .mas-avatar { width: 34px; height: 34px; border-radius: 50%; border: 2px solid #fff; margin-left: -10px; font-size: 0.72rem; }
+.mas-app .mas-avatar-group .mas-avatar:first-child { margin-left: 0; }
+
+/* =====================================================================
+   AUTH (split-screen) + ERROR PAGES
+   ===================================================================== */
+.mas-app .mas-auth { display: grid; grid-template-columns: 1.05fr 1fr; min-height: 100vh; }
+.mas-app .mas-auth-brand {
+  position: relative; overflow: hidden; padding: 2.5rem 3rem;
+  display: flex; flex-direction: column; justify-content: space-between; color: #fff;
+  background:
+    radial-gradient(900px 380px at 80% -10%, rgba(244,180,0,.22), transparent 60%),
+    linear-gradient(150deg, var(--mas-navy), var(--brand));
+}
+.mas-app .mas-auth-brand-logo { background: #fff; border-radius: 14px; padding: 0.6rem 0.9rem; align-self: flex-start; box-shadow: var(--sh); }
+.mas-app .mas-auth-brand-logo img { height: 46px; width: auto; display: block; }
+.mas-app .mas-auth-eyebrow { font-family: 'Poppins', sans-serif; letter-spacing: 0.18em; text-transform: uppercase; font-size: 0.72rem; color: #bcd4f7; }
+.mas-app .mas-auth-headline { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: clamp(1.9rem, 3vw, 2.6rem); line-height: 1.12; margin: 0.6rem 0 0.9rem; max-width: 16ch; }
+.mas-app .mas-auth-sub { color: #d3e2f7; max-width: 44ch; line-height: 1.55; }
+.mas-app .mas-auth-quote { margin-top: 1.5rem; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: var(--r); padding: 1.1rem 1.25rem; max-width: 42ch; }
+.mas-app .mas-auth-quote p { font-style: italic; line-height: 1.5; }
+.mas-app .mas-auth-quote span { display: block; margin-top: 0.6rem; font-size: 0.82rem; color: #bcd4f7; }
+.mas-app .mas-auth-foot { font-family: ui-monospace, monospace; font-size: 0.72rem; letter-spacing: 0.08em; color: #9fc0ef; }
+
+.mas-app .mas-auth-main { background: var(--mas-paper); display: flex; flex-direction: column; padding: 2.5rem 3rem; }
+.mas-app .mas-auth-topbar { display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; }
+.mas-app .mas-auth-topbar a { color: var(--mas-muted); text-decoration: none; }
+.mas-app .mas-auth-topbar a.is-accent { color: var(--brand); font-weight: 600; }
+.mas-app .mas-auth-form { margin: auto; width: 100%; max-width: 380px; }
+.mas-app .mas-auth-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.7rem; color: var(--mas-navy); }
+.mas-app .mas-auth-lede { color: var(--mas-muted); margin: 0.45rem 0 1.5rem; line-height: 1.5; }
+.mas-app .mas-auth-field { margin-bottom: 1.1rem; }
+.mas-app .mas-auth-field label { display: block; font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.85rem; color: var(--mas-ink); margin-bottom: 0.4rem; }
+.mas-app .mas-auth-row { display: flex; align-items: center; justify-content: space-between; }
+.mas-app .mas-auth-link { color: var(--brand); font-size: 0.82rem; text-decoration: none; font-weight: 600; }
+.mas-app .mas-auth-submit { width: 100%; margin-top: 0.4rem; padding: 0.7rem; }
+.mas-app .mas-auth-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: var(--r-sm); padding: 0.6rem 0.8rem; font-size: 0.85rem; margin-bottom: 1rem; }
+.mas-app .mas-auth-note { background: #ecfdf3; border: 1px solid #bbf7d0; color: #15803d; border-radius: var(--r-sm); padding: 0.6rem 0.8rem; font-size: 0.85rem; margin-bottom: 1rem; }
+.mas-app .mas-auth-check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--mas-ink); }
+
+.mas-app .mas-error {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;
+  background:
+    radial-gradient(700px 320px at 70% 10%, rgba(29,111,214,.10), transparent 60%),
+    var(--mas-paper);
+}
+.mas-app .mas-error-card { background: #fff; border-radius: 22px; box-shadow: var(--sh-lg); padding: 3rem 3.5rem; max-width: 540px; width: 100%; text-align: center; }
+.mas-app .mas-error-eyebrow { font-family: ui-monospace, monospace; letter-spacing: 0.18em; text-transform: uppercase; font-size: 0.72rem; color: #94a3b8; }
+.mas-app .mas-error-code {
+  font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 5.5rem; line-height: 1; margin: 0.4rem 0;
+  background: linear-gradient(135deg, var(--brand), #7c5cff); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.mas-app .mas-error-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.5rem; color: var(--mas-navy); }
+.mas-app .mas-error-text { color: var(--mas-muted); line-height: 1.55; margin: 0.75rem auto 1.5rem; max-width: 40ch; }
+.mas-app .mas-error-actions { display: flex; gap: 0.75rem; justify-content: center; }
+.mas-app .mas-error-meta { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--mas-line); font-family: ui-monospace, monospace; font-size: 0.74rem; color: #94a3b8; letter-spacing: 0.06em; }
+.mas-app .mas-error-meta b { color: var(--mas-muted); }
+
+@media (max-width: 860px) {
+  .mas-app .mas-auth { grid-template-columns: 1fr; }
+  .mas-app .mas-auth-brand { display: none; }
+  .mas-app .mas-auth-main { padding: 1.75rem 1.25rem; }
+  .mas-app .mas-form-grid { grid-template-columns: 1fr; }
+  .mas-app .mas-error-card { padding: 2.25rem 1.5rem; }
+}
