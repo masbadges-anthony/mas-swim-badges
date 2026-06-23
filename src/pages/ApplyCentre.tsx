@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
+import Icon from '../components/Icon';
 import '../styles/admin.css';
 
 interface StateRow { state: string; }
@@ -69,6 +70,16 @@ export default function ApplyCentre() {
   const canSubmit =
     name.trim().length > 1 && !!state && !!email.trim() && !submitting && !!me;
 
+  function clearForm() {
+    setName('');
+    setState('');
+    setEmail('');
+    setPhone('');
+    setAddress('');
+    setError(null);
+    setOk(false);
+  }
+
   async function submit() {
     if (!canSubmit || !me) return;
     setSubmitting(true);
@@ -100,54 +111,77 @@ export default function ApplyCentre() {
   }
 
   return (
-    <section className="mas-page mas-page-narrow">
-      <header className="mas-page-head">
-        <p className="mas-eyebrow">Partner centres</p>
-        <h1>Apply for recognition</h1>
-        <p className="mas-lede">
-          Submit your swim centre for review. Once recognised by Malaysia
-          Aquatics, it appears in the public directory.
-        </p>
+    <section className="mas-page">
+      <header className="mas-page-head mas-page-head-row">
+        <div>
+          <p className="mas-eyebrow">Partner centres</p>
+          <h1>Apply for recognition</h1>
+          <p className="mas-lede">
+            Submit your swim centre for review. Once recognised by Malaysia
+            Aquatics, it appears in the public directory.
+          </p>
+        </div>
+        <div className="mas-page-actions">
+          <button className="mas-btn-ghost" onClick={clearForm} disabled={submitting}>Clear</button>
+          <button className="mas-btn-primary" onClick={submit} disabled={!canSubmit}>
+            {submitting ? 'Submitting…' : 'Submit application'}
+          </button>
+        </div>
       </header>
 
       <div className="mas-form">
-        <div className="mas-field">
-          <label htmlFor="name" className="mas-field-label">Centre name</label>
-          <input id="name" className="mas-input" type="text" value={name}
-            onChange={(e) => { setName(e.target.value); setOk(false); }}
-            placeholder="e.g. Splash Aquatics Centre" />
+        <div className="mas-form-cardhead">
+          <div>
+            <p className="mas-eyebrow">Application</p>
+            <h2>Centre details</h2>
+          </div>
+          <span className="mas-badge is-primary">Recognition</span>
         </div>
 
-        <div className="mas-field">
-          <label htmlFor="state" className="mas-field-label">State</label>
-          <select id="state" className="mas-select" value={state}
-            onChange={(e) => { setState(e.target.value); setOk(false); }}>
-            <option value="">Select a state…</option>
-            {states.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
+        <div className="mas-form-grid">
+          <div className="mas-field">
+            <label htmlFor="name" className="mas-field-label">Centre name <span className="mas-req">*</span></label>
+            <input id="name" className="mas-input" type="text" value={name}
+              onChange={(e) => { setName(e.target.value); setOk(false); }}
+              placeholder="e.g. Splash Aquatics Centre" />
+          </div>
 
-        <div className="mas-field">
-          <label htmlFor="email" className="mas-field-label">Contact email</label>
-          <input id="email" className="mas-input" type="email" value={email}
-            onChange={(e) => { setEmail(e.target.value); setOk(false); }}
-            placeholder="centre@example.com" />
-        </div>
+          <div className="mas-field">
+            <label htmlFor="state" className="mas-field-label">State <span className="mas-req">*</span></label>
+            <select id="state" className="mas-select" value={state}
+              onChange={(e) => { setState(e.target.value); setOk(false); }}>
+              <option value="">Select a state…</option>
+              {states.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
 
-        <div className="mas-field">
-          <label htmlFor="phone" className="mas-field-label">Contact phone (optional)</label>
-          <input id="phone" className="mas-input" type="tel" value={phone}
-            onChange={(e) => { setPhone(e.target.value); setOk(false); }}
-            placeholder="e.g. 03-1234 5678" />
-        </div>
+          <div className="mas-field">
+            <label htmlFor="email" className="mas-field-label">Contact email <span className="mas-req">*</span></label>
+            <span className="mas-input-icon">
+              <Icon name="mail" />
+              <input id="email" className="mas-input" type="email" value={email}
+                onChange={(e) => { setEmail(e.target.value); setOk(false); }}
+                placeholder="centre@example.com" />
+            </span>
+            <p className="mas-field-note">Used to reach your centre about this application.</p>
+          </div>
 
-        <div className="mas-field">
-          <label htmlFor="address" className="mas-field-label">Address (optional)</label>
-          <input id="address" className="mas-input" type="text" value={address}
-            onChange={(e) => { setAddress(e.target.value); setOk(false); }}
-            placeholder="Street, city, postcode" />
+          <div className="mas-field">
+            <label htmlFor="phone" className="mas-field-label">Contact phone <span className="mas-field-opt">(optional)</span></label>
+            <input id="phone" className="mas-input" type="tel" value={phone}
+              onChange={(e) => { setPhone(e.target.value); setOk(false); }}
+              placeholder="e.g. 03-1234 5678" />
+          </div>
+
+          <div className="mas-field mas-col-2">
+            <label htmlFor="address" className="mas-field-label">Address <span className="mas-field-opt">(optional)</span></label>
+            <input id="address" className="mas-input" type="text" value={address}
+              onChange={(e) => { setAddress(e.target.value); setOk(false); }}
+              placeholder="Street, city, postcode" />
+            <p className="mas-field-note">Helps parents find you once you&rsquo;re listed in the directory.</p>
+          </div>
         </div>
 
         {error && <p className="mas-status mas-status-bad">Couldn’t submit: {error}</p>}
@@ -156,16 +190,13 @@ export default function ApplyCentre() {
             Application submitted. It’s now pending review.
           </p>
         )}
-
-        <div className="mas-form-actions">
-          <button className="mas-btn-primary" onClick={submit} disabled={!canSubmit}>
-            {submitting ? 'Submitting…' : 'Submit application'}
-          </button>
-        </div>
       </div>
 
-      <header className="mas-page-head mas-section-head">
+      <header className="mas-page-head mas-section-head mas-section-rowhead">
         <h2>Your applications</h2>
+        {load === 'ready' && mine.length > 0 && (
+          <span className="mas-badge is-primary">{mine.length} total</span>
+        )}
       </header>
 
       {load === 'loading' && <p className="mas-status">Loading…</p>}
