@@ -46,6 +46,8 @@ import PartnerApplications from './pages/PartnerApplications';
 import RoleRegistry from './pages/RoleRegistry';
 import ExaminerRegistry from './pages/ExaminerRegistry';
 import CentreBilling from './pages/CentreBilling';
+import Store from './pages/Store';
+import StoreAdmin from './pages/StoreAdmin';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -169,10 +171,12 @@ function Sidebar() {
   const canRoleRegistry = hasRole('system_admin');
   const canExaminerRegistry = hasRole('chief_examiner');
   const canCentreBilling = hasRole('chairperson') || hasRole('board_member') || hasRole('system_admin');
+  const canBuyStore = hasRole('instructor') || hasRole('partner_center_admin');
+  const canManageStore = hasRole('system_admin') || hasRole('chairperson') || hasRole('board_member');
 
   const assessmentsGroup =
     canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips;
-  const billingGroup = canAccounts || canMyInvoices || canCentreBilling;
+  const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore;
   const adminGroup =
     canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries;
 
@@ -185,6 +189,7 @@ function Sidebar() {
 
       <nav className="mas-sidenav">
         <NavLink to="/dashboard" className={navClass}><Icon name="grid" /><span>Dashboard</span></NavLink>
+        {canBuyStore && <NavLink to="/store" className={navClass}><Icon name="card" /><span>Store</span></NavLink>}
 
         {assessmentsGroup && (
           <details className="mas-navgroup" open>
@@ -210,6 +215,7 @@ function Sidebar() {
             <div className="mas-navgroup-items">
               {canAccounts && <NavLink to="/admin/accounts" className={navClass}><Icon name="card" /><span>Accounts</span></NavLink>}
               {canCentreBilling && <NavLink to="/admin/centre-billing" className={navClass}><Icon name="building" /><span>Centre billing</span></NavLink>}
+              {canManageStore && <NavLink to="/admin/store" className={navClass}><Icon name="inbox" /><span>Store orders</span></NavLink>}
               {canMyInvoices && <NavLink to="/invoices" className={navClass}><Icon name="file" /><span>My invoices</span></NavLink>}
             </div>
           </details>
@@ -270,6 +276,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/certificates': 'Certificates',
   '/admin/accounts': 'Accounts',
   '/admin/centre-billing': 'Centre billing',
+  '/store': 'Store',
+  '/admin/store': 'Store orders',
   '/admin/instructors': 'Instructor onboarding',
   '/admin/instructor-blacklist': 'Instructor blacklist',
   '/admin/courses': 'Manage courses',
@@ -359,6 +367,8 @@ export default function App() {
               <Route path="/certificates" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>} />
               <Route path="/admin/accounts" element={<RequireRole roles={['system_admin']}><Accounts /></RequireRole>} />
               <Route path="/admin/centre-billing" element={<RequireRole roles={['chairperson', 'board_member', 'system_admin']}><CentreBilling /></RequireRole>} />
+              <Route path="/store" element={<RequireRole roles={['instructor', 'partner_center_admin']}><Store /></RequireRole>} />
+              <Route path="/admin/store" element={<RequireRole roles={['system_admin', 'chairperson', 'board_member']}><StoreAdmin /></RequireRole>} />
               <Route path="/admin/instructors" element={<RequireRole roles={['instructor_trainer', 'chairperson', 'board_member']}><InstructorOnboarding /></RequireRole>} />
               <Route path="/admin/instructor-blacklist" element={<RequireRole roles={['chairperson', 'board_member']}><InstructorBlacklist /></RequireRole>} />
               <Route path="/admin/courses" element={<RequireRole roles={['instructor_trainer', 'examiner_trainer', 'chairperson', 'board_member']}><CourseManagement /></RequireRole>} />
