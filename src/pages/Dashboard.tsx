@@ -5,8 +5,10 @@ import { useAuth } from '../lib/auth';
 import Icon from '../components/Icon';
 import '../styles/admin.css';
 
-interface Tile { to: string; title: string; desc: string; accent: string; show: boolean; }
+interface Tile { to: string; title: string; icon: string; accent: string; group: string; show: boolean; }
 interface Stat { label: string; value: number; icon: string; tint: string; color: string; }
+
+const GROUPS = ['Assessments', 'Centres & partnerships', 'Billing & store', 'Administration', 'You'];
 
 function displayName(email?: string | null): string {
   if (!email) return 'there';
@@ -14,10 +16,7 @@ function displayName(email?: string | null): string {
   return h ? h.charAt(0).toUpperCase() + h.slice(1) : 'there';
 }
 function todayLabel(): string {
-  return new Date()
-    .toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-    .toUpperCase()
-    .replace(/,/g, ' ·');
+  return new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 export default function Dashboard() {
@@ -58,10 +57,8 @@ export default function Dashboard() {
   const canAccounts = hasRole('system_admin');
   const canMyInvoices = hasRole('instructor') || hasRole('partner_center_admin');
   const canOnboard = hasRole('instructor_trainer') || hasRole('chairperson') || hasRole('board_member');
-  const canManageCourses =
-    hasRole('instructor_trainer') || hasRole('examiner_trainer') || hasRole('chairperson') || hasRole('board_member');
-  const canEnquiries =
-    hasRole('chairperson') || hasRole('board_member') || hasRole('instructor_trainer') || hasRole('system_admin');
+  const canManageCourses = hasRole('instructor_trainer') || hasRole('examiner_trainer') || hasRole('chairperson') || hasRole('board_member');
+  const canEnquiries = hasRole('chairperson') || hasRole('board_member') || hasRole('instructor_trainer') || hasRole('system_admin');
   const canRegisterCentre = hasRole('instructor');
   const canPartnerApps = hasRole('chairperson') || hasRole('board_member');
   const canRoleRegistry = hasRole('system_admin');
@@ -71,68 +68,73 @@ export default function Dashboard() {
   const canManageStore = hasRole('system_admin') || hasRole('chairperson') || hasRole('board_member');
 
   const tiles: Tile[] = [
-    { to: '/candidates/register', title: 'Register candidate', desc: 'Enrol a swimmer for assessment.', accent: '#1d6fd6', show: canRegister },
-    { to: '/assessments/schedule', title: 'Schedule assessment', desc: 'Create a session and roster candidates.', accent: '#0ea5a4', show: canSchedule },
-    { to: '/assessments/invite', title: 'Invite examiner', desc: 'Assign an independent examiner.', accent: '#8e44ad', show: canInvite },
-    { to: '/assessments/grade', title: 'Grading', desc: 'Record assessment outcomes.', accent: '#16a34a', show: canGrade },
-    { to: '/assessments/invitations', title: 'Invitations', desc: 'Respond to assessment invitations.', accent: '#f4b400', show: canInvitations },
-    { to: '/certificates', title: 'Certificates', desc: 'View the certificate registry.', accent: '#0a1f44', show: canViewCerts },
-    { to: '/assessments/oversight', title: 'Oversight', desc: 'Monitor sessions and results.', accent: '#3b5bdb', show: isGovernance },
-    { to: '/assessments/examiners', title: 'Examiner registry', desc: 'Invite examiners; auto-issue UIDs.', accent: '#8e44ad', show: canExaminerRegistry },
-    { to: '/candidates/claim-slips', title: 'Claim slips', desc: 'Print parent claim slips.', accent: '#2f9ee0', show: canRegister },
-    { to: '/admin/accounts', title: 'Accounts', desc: 'Invoicing, payments, payouts.', accent: '#dc2626', show: canAccounts },
-    { to: '/admin/centre-billing', title: 'Centre billing', desc: 'Invoice & recognise approved centres.', accent: '#16a34a', show: canCentreBilling },
-    { to: '/store', title: 'Store', desc: 'Order branding & teaching materials.', accent: '#1d6fd6', show: canBuyStore },
-    { to: '/admin/store', title: 'Store orders', desc: 'Fulfil orders; manage catalogue.', accent: '#d97706', show: canManageStore },
-    { to: '/invoices', title: 'My invoices', desc: 'See your assessment fees.', accent: '#16a34a', show: canMyInvoices },
-    { to: '/admin/centres', title: 'Manage centres', desc: 'Recognise and manage centres.', accent: '#1d6fd6', show: canManageCentres },
-    { to: '/admin/enquiries', title: 'Enquiries', desc: 'First-contact enquiry inbox.', accent: '#0ea5e9', show: canEnquiries },
-    { to: '/centres/register', title: 'Register a centre', desc: 'Register the centre you’re appointed to.', accent: '#1d6fd6', show: canRegisterCentre },
-    { to: '/admin/partner-applications', title: 'Centre applications', desc: 'Approve centre partnership cases.', accent: '#0a1f44', show: canPartnerApps },
-    { to: '/admin/role-registry', title: 'Roles & policies', desc: 'Role catalog and assignment warnings.', accent: '#64748b', show: canRoleRegistry },
-    { to: '/admin/memberships', title: 'Memberships', desc: 'Grant and manage roles.', accent: '#8e44ad', show: canManageMembers },
-    { to: '/admin/instructors', title: 'Instructor onboarding', desc: 'Invite instructors by email.', accent: '#0ea5a4', show: canOnboard },
-    { to: '/admin/instructor-blacklist', title: 'Instructor blacklist', desc: 'Suspend and review instructors.', accent: '#dc2626', show: canManageMembers },
-    { to: '/admin/courses', title: 'Manage courses', desc: 'Schedule certification courses.', accent: '#f4b400', show: canManageCourses },
-    { to: '/centre', title: 'My centre', desc: 'Manage your centre and staff.', accent: '#0a1f44', show: canCentreAdmin },
-    { to: '/claim', title: "My child's badges", desc: 'Claim and view your child’s record.', accent: '#2f9ee0', show: true },
-    { to: '/account', title: 'Account', desc: 'Your profile and settings.', accent: '#64748b', show: true },
+    { to: '/candidates/register', title: 'Register candidate', icon: 'userPlus', accent: '#1d6fd6', group: 'Assessments', show: canRegister },
+    { to: '/assessments/schedule', title: 'Schedule assessment', icon: 'calendar', accent: '#0ea5a4', group: 'Assessments', show: canSchedule },
+    { to: '/assessments/invite', title: 'Invite examiner', icon: 'mail', accent: '#8e44ad', group: 'Assessments', show: canInvite },
+    { to: '/assessments/grade', title: 'Grading', icon: 'check', accent: '#16a34a', group: 'Assessments', show: canGrade },
+    { to: '/assessments/invitations', title: 'Invitations', icon: 'inbox', accent: '#f4b400', group: 'Assessments', show: canInvitations },
+    { to: '/certificates', title: 'Certificates', icon: 'award', accent: '#0a1f44', group: 'Assessments', show: canViewCerts },
+    { to: '/assessments/oversight', title: 'Oversight', icon: 'eye', accent: '#3b5bdb', group: 'Assessments', show: isGovernance },
+    { to: '/assessments/examiners', title: 'Examiner registry', icon: 'users', accent: '#8e44ad', group: 'Assessments', show: canExaminerRegistry },
+    { to: '/candidates/claim-slips', title: 'Claim slips', icon: 'printer', accent: '#2f9ee0', group: 'Assessments', show: canRegister },
+    { to: '/admin/centres', title: 'Manage centres', icon: 'building', accent: '#1d6fd6', group: 'Centres & partnerships', show: canManageCentres },
+    { to: '/admin/partner-applications', title: 'Centre applications', icon: 'check', accent: '#0a1f44', group: 'Centres & partnerships', show: canPartnerApps },
+    { to: '/centres/register', title: 'Register a centre', icon: 'building', accent: '#1d6fd6', group: 'Centres & partnerships', show: canRegisterCentre },
+    { to: '/admin/enquiries', title: 'Enquiries', icon: 'inbox', accent: '#0ea5e9', group: 'Centres & partnerships', show: canEnquiries },
+    { to: '/centre', title: 'My centre', icon: 'building', accent: '#0a1f44', group: 'Centres & partnerships', show: canCentreAdmin },
+    { to: '/admin/accounts', title: 'Accounts', icon: 'card', accent: '#dc2626', group: 'Billing & store', show: canAccounts },
+    { to: '/admin/centre-billing', title: 'Centre billing', icon: 'building', accent: '#16a34a', group: 'Billing & store', show: canCentreBilling },
+    { to: '/invoices', title: 'My invoices', icon: 'file', accent: '#16a34a', group: 'Billing & store', show: canMyInvoices },
+    { to: '/store', title: 'Store', icon: 'card', accent: '#1d6fd6', group: 'Billing & store', show: canBuyStore },
+    { to: '/admin/store', title: 'Store orders', icon: 'inbox', accent: '#d97706', group: 'Billing & store', show: canManageStore },
+    { to: '/admin/memberships', title: 'Memberships', icon: 'users', accent: '#8e44ad', group: 'Administration', show: canManageMembers },
+    { to: '/admin/instructors', title: 'Instructor onboarding', icon: 'userPlus', accent: '#0ea5a4', group: 'Administration', show: canOnboard },
+    { to: '/admin/instructor-blacklist', title: 'Instructor blacklist', icon: 'userX', accent: '#dc2626', group: 'Administration', show: canManageMembers },
+    { to: '/admin/courses', title: 'Manage courses', icon: 'book', accent: '#f4b400', group: 'Administration', show: canManageCourses },
+    { to: '/admin/role-registry', title: 'Roles & policies', icon: 'settings', accent: '#64748b', group: 'Administration', show: canRoleRegistry },
+    { to: '/claim', title: "My child's badges", icon: 'star', accent: '#2f9ee0', group: 'You', show: true },
+    { to: '/account', title: 'Account', icon: 'settings', accent: '#64748b', group: 'You', show: true },
   ];
   const visible = tiles.filter((t) => t.show);
 
   return (
     <section className="mas-page">
-      <header className="mas-page-head mas-dash-head">
-        <p className="mas-eyebrow">{todayLabel()}</p>
+      <header className="mas-dash-head">
         <h1>Welcome back, <span className="mas-welcome-name">{displayName(user?.email)}</span></h1>
-        <p className="mas-lede">Jump to anything you have access to.</p>
+        <span className="mas-dash-date">{todayLabel()}</span>
       </header>
 
       {stats.length > 0 && (
-        <div className="mas-statgrid">
+        <div className="mas-statbar">
           {stats.map((s) => (
-            <div key={s.label} className="mas-stat">
-              <div className="mas-stat-top">
-                <span className="mas-stat-icon" style={{ background: s.tint, color: s.color }}>
-                  <Icon name={s.icon} />
-                </span>
-                <span className="mas-stat-label">{s.label}</span>
-              </div>
-              <div className="mas-stat-value">{s.value.toLocaleString()}</div>
+            <div key={s.label} className="mas-statpill">
+              <span className="mas-statpill-ic" style={{ background: s.tint, color: s.color }}><Icon name={s.icon} /></span>
+              <span className="mas-statpill-text">
+                <span className="mas-statpill-n">{s.value.toLocaleString()}</span>
+                <span className="mas-statpill-l">{s.label}</span>
+              </span>
             </div>
           ))}
         </div>
       )}
 
-      <div className="mas-dash-grid">
-        {visible.map((t) => (
-          <Link key={t.to} to={t.to} className="mas-dash-card">
-            <span className="mas-dash-accent" style={{ background: t.accent }} />
-            <h3>{t.title}</h3>
-            <p>{t.desc}</p>
-          </Link>
-        ))}
-      </div>
+      {GROUPS.map((g) => {
+        const items = visible.filter((t) => t.group === g);
+        if (items.length === 0) return null;
+        return (
+          <div key={g} className="mas-dash-section">
+            <p className="mas-dash-section-label">{g}</p>
+            <div className="mas-tilegrid">
+              {items.map((t) => (
+                <Link key={t.to} to={t.to} className="mas-tile">
+                  <span className="mas-tile-ic" style={{ background: `${t.accent}1a`, color: t.accent }}><Icon name={t.icon} /></span>
+                  <span className="mas-tile-t">{t.title}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </section>
   );
 }
