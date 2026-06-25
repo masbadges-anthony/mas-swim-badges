@@ -98,9 +98,9 @@ function PublicLayout() {
           <NavLink to="/verify" className={navClass}>Verify</NavLink>
         </nav>
         {loginIsExternal ? (
-          <a href={PORTAL_LOGIN} className="mas-login-btn">Login to portal</a>
+          <a href={PORTAL_LOGIN} className="mas-login-btn">Portal login</a>
         ) : (
-          <Link to={PORTAL_LOGIN} className="mas-login-btn">Login to portal</Link>
+          <Link to={PORTAL_LOGIN} className="mas-login-btn">Portal login</Link>
         )}
         </div>
       </header>
