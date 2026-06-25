@@ -788,3 +788,31 @@
   .mas-app .mas-topnav-links { order: 3; width: 100%; margin-left: 0; }
   .mas-app .mas-site .mas-page { padding: 1.75rem 1rem 2.5rem; }
 }
+
+/* =====================================================================
+   STICKY SHRINK-ON-SCROLL HEADER
+   Expanded at the top of the page (~50% taller, bigger logo); shrinks to
+   the compact size once scrolled. Stays sticky. (.is-scrolled toggled in JS)
+   ===================================================================== */
+.mas-app .mas-topnav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  transition: box-shadow .25s ease;
+}
+/* Expanded (at top): ~50% thicker, larger logo */
+.mas-app .mas-topnav-inner { padding: 0.9rem 1.75rem; transition: padding .25s ease; }
+.mas-app .mas-topnav .mas-logo { height: 64px; transition: height .25s ease; }
+
+/* Compact (scrolled): back to the current size */
+.mas-app .mas-topnav.is-scrolled { box-shadow: 0 4px 16px rgba(10, 31, 68, .08); }
+.mas-app .mas-topnav.is-scrolled .mas-topnav-inner { padding: 0.55rem 1.75rem; }
+.mas-app .mas-topnav.is-scrolled .mas-logo { height: 46px; }
+
+@media (max-width: 720px) {
+  .mas-app .mas-topnav-inner { padding: 0.6rem 1rem; }
+  .mas-app .mas-topnav .mas-logo { height: 48px; }
+  .mas-app .mas-topnav.is-scrolled .mas-topnav-inner { padding: 0.45rem 1rem; }
+  .mas-app .mas-topnav.is-scrolled .mas-logo { height: 38px; }
+}
