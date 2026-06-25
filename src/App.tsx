@@ -87,6 +87,7 @@ function PublicLayout() {
   return (
     <div className="mas-site">
       <header className="mas-topnav">
+        <div className="mas-topnav-inner">
         <Brand />
         <nav className="mas-topnav-links">
           <NavLink to="/the-programme" className={navClass}>The programme</NavLink>
@@ -101,6 +102,7 @@ function PublicLayout() {
         ) : (
           <Link to={PORTAL_LOGIN} className="mas-login-btn">Login to portal</Link>
         )}
+        </div>
       </header>
 
       <main className="mas-main"><Outlet /></main>
