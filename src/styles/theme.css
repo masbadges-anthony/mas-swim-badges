@@ -729,3 +729,62 @@
   .mas-app .mas-site .mas-page { padding: 1.75rem 1rem 2.5rem; }
   .mas-app .mas-site-footer .mas-footer-cols { padding-left: 1rem; padding-right: 1rem; }
 }
+
+/* =====================================================================
+   PUBLIC HEADER + CONTENT REFINEMENT  (supersedes the block above)
+   Single aligned row: [logo] [nav] ............ [Portal login]
+   Header bar is full-bleed; its row + the body share one container.
+   ===================================================================== */
+
+/* Full-bleed bar; the inner row is the container and flexes in one line. */
+.mas-app .mas-topnav { display: flex; align-items: center; padding: 0; background: #fff; }
+.mas-app .mas-topnav-inner {
+  width: 100%;
+  max-width: var(--mas-container);
+  margin: 0 auto;
+  padding: 0.55rem 1.75rem;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: nowrap;
+}
+/* Logo left (header-sized), nav beside it, button pinned to the right edge. */
+.mas-app .mas-topnav .mas-brand { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.mas-app .mas-topnav .mas-logo { height: 46px; width: auto; }
+.mas-app .mas-topnav-links { margin-left: 0.4rem; flex: 0 1 auto; }
+.mas-app .mas-topnav .mas-login-btn { margin-left: auto; flex: 0 0 auto; white-space: nowrap; }
+
+/* Body shares the same container so its edges line up with the header. */
+.mas-app .mas-site .mas-main { max-width: none; width: 100%; padding: 0; }
+.mas-app .mas-site .mas-page {
+  max-width: var(--mas-container);
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.75rem 1.75rem 3.5rem;
+  box-sizing: border-box;
+}
+
+/* Prose keeps a comfortable reading measure (stretching paragraphs to 1200px
+   reads badly); the WIDTH is used by structure — card grids, sections. */
+.mas-app .mas-site .mas-page-head { max-width: 820px; }
+.mas-app .mas-site .mas-lede { max-width: 70ch; }
+
+/* Card collections fill the width as a responsive grid instead of a lonely
+   left column. */
+.mas-app .mas-site .mas-admin-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+.mas-app .mas-site .mas-admin-row { margin: 0; }
+
+@media (max-width: 720px) {
+  .mas-app .mas-topnav-inner { flex-wrap: wrap; gap: 0.75rem 1rem; padding: 0.5rem 1rem; }
+  .mas-app .mas-topnav .mas-logo { height: 38px; }
+  .mas-app .mas-topnav-links { order: 3; width: 100%; margin-left: 0; }
+  .mas-app .mas-site .mas-page { padding: 1.75rem 1rem 2.5rem; }
+}
