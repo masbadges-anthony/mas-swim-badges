@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth, ROLE_LABELS } from './lib/auth';
 import Protected from './components/Protected';
@@ -83,10 +84,17 @@ function Brand() {
 /* ---------- Public marketing layout (www) ---------- */
 function PublicLayout() {
   const loginIsExternal = /^https?:\/\//i.test(PORTAL_LOGIN);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
     <div className="mas-site">
-      <header className="mas-topnav">
+      <header className={`mas-topnav${scrolled ? ' is-scrolled' : ''}`}>
         <div className="mas-topnav-inner">
         <Brand />
         <nav className="mas-topnav-links">
