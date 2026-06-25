@@ -683,3 +683,49 @@
 
 /* Inline "(optional)" hint on field labels */
 .mas-app .mas-field-opt { color: #9aa4b8; font-weight: 500; font-size: 0.8rem; }
+
+/* =====================================================================
+   PUBLIC SITE: widen body + align top menu to one container
+   (SwimSafer-style centred container; tweak --mas-container to taste)
+   ===================================================================== */
+.mas-app { --mas-container: 1200px; }
+
+/* Header stays a full-bleed bar (border/shadow span the page); its row is
+   constrained to the container and aligned with the body below. */
+.mas-app .mas-topnav { display: block; padding-left: 0; padding-right: 0; }
+.mas-app .mas-topnav-inner {
+  max-width: var(--mas-container);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1.75rem;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Wider, centred content body on the SAME container so it lines up with the menu. */
+.mas-app .mas-site .mas-main { max-width: none; width: 100%; padding: 0; }
+.mas-app .mas-site .mas-page {
+  max-width: var(--mas-container);
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.5rem 1.75rem 3.5rem;
+  box-sizing: border-box;
+}
+
+/* Footer columns aligned to the same container too. */
+.mas-app .mas-site-footer .mas-footer-cols {
+  max-width: var(--mas-container);
+  margin: 0 auto;
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .mas-app .mas-topnav-inner { padding: 0 1rem; }
+  .mas-app .mas-site .mas-page { padding: 1.75rem 1rem 2.5rem; }
+  .mas-app .mas-site-footer .mas-footer-cols { padding-left: 1rem; padding-right: 1rem; }
+}
