@@ -48,7 +48,7 @@ export default function Home() {
       </section>
 
       <div className="mas-entry-grid">
-        <Link to="/programme" className="mas-entry">
+        <Link to="/the-programme" className="mas-entry">
           <h2>About the programme</h2>
           <p>How the seven levels work, what each badge means, and how children progress.</p>
           <span className="mas-entry-go">Explore the levels →</span>
