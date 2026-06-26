@@ -104,7 +104,7 @@ function PublicLayout() {
           <NavLink to="/the-programme" className={navClass}>The programme</NavLink>
 
           <div className="mas-navitem mas-has-menu">
-            <NavLink to="/directory" className={`${''} mas-menu-top`}>Find a centre</NavLink>
+            <NavLink to="/directory" className={({ isActive }) => `mas-menu-top${isActive ? ' is-active' : ''}`}>Find a centre</NavLink>
             <div className="mas-submenu">
               <NavLink to="/directory">Browse the directory</NavLink>
               <NavLink to="/for-centres">Become a partner centre</NavLink>
@@ -114,7 +114,7 @@ function PublicLayout() {
           <NavLink to="/instructors" className={navClass}>Instructors</NavLink>
 
           <div className="mas-navitem mas-has-menu">
-            <NavLink to="/guides" className={`${''} mas-menu-top`}>Guides</NavLink>
+            <NavLink to="/guides" className={({ isActive }) => `mas-menu-top${isActive ? ' is-active' : ''}`}>Guides</NavLink>
             <div className="mas-submenu mas-submenu-wide">
               <NavLink to="/guides" className="mas-submenu-head">All guides</NavLink>
               <NavLink to="/guides/how-it-works">How MAS BADGES works</NavLink>
