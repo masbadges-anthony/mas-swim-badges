@@ -55,3 +55,9 @@ read/issue scope to assigned assessments → certificate serial generation.
 
 The certificate lifecycle is now closed end-to-end: assess → pass → issue
 (gated + serialised) → verify (public) → revoke → reissue.
+
+## Content overrides
+
+| File | Adds |
+|---|---|
+| `20260626120000_content_overrides.sql` | `content_overrides` table (key-keyed admin copy overrides) · RLS (public read, `system_admin`-only writes) · `public_content_overrides` view (key + value only) · `set_content_override()` SECURITY DEFINER upsert (admin-gated) |
