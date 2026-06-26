@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { MALAYSIAN_STATES, type DirectoryCenter } from '../lib/types';
+import EditableText from '../components/EditableText';
 
 type Load = 'loading' | 'ready' | 'error';
 
@@ -41,11 +42,13 @@ export default function Directory() {
   return (
     <section className="mas-page">
       <header className="mas-page-head">
-        <p className="mas-eyebrow">Recognised partners</p>
-        <h1>Find a swim centre</h1>
+        <p className="mas-eyebrow"><EditableText keyName="directory.header.eyebrow">Recognised partners</EditableText></p>
+        <h1><EditableText keyName="directory.header.title">Find a swim centre</EditableText></h1>
         <p className="mas-lede">
-          Centres recognised by Malaysia Aquatics to prepare and present candidates
-          for the Swim Badges programme. Only recognised centres appear here.
+          <EditableText keyName="directory.header.lede">
+            Centres recognised by Malaysia Aquatics to prepare and present candidates
+            for the Swim Badges programme. Only recognised centres appear here.
+          </EditableText>
         </p>
       </header>
 
@@ -64,17 +67,25 @@ export default function Directory() {
         </select>
       </div>
 
-      {load === 'loading' && <p className="mas-status">Loading centres…</p>}
+      {load === 'loading' && (
+        <p className="mas-status">
+          <EditableText keyName="directory.status.loading">Loading centres…</EditableText>
+        </p>
+      )}
 
       {load === 'error' && (
         <p className="mas-status mas-status-bad">
-          Couldn’t load the directory just now. Refresh to try again.
+          <EditableText keyName="directory.status.error">
+            Couldn’t load the directory just now. Refresh to try again.
+          </EditableText>
         </p>
       )}
 
       {load === 'ready' && centers.length === 0 && (
         <p className="mas-status">
-          No recognised centres{state ? ` in ${state}` : ''} yet.
+          <EditableText keyName="directory.status.empty">No recognised centres</EditableText>
+          {state ? ` in ${state} ` : ' '}
+          <EditableText keyName="directory.status.emptySuffix">yet.</EditableText>
         </p>
       )}
 
@@ -99,18 +110,20 @@ export default function Directory() {
       {/* ---- Become a partner centre (folded in from For Centres) ---- */}
       <section className="mas-centre-join">
         <div className="mas-centre-join-head">
-          <p className="mas-eyebrow">Run the programme</p>
-          <h2>Become a recognised partner centre</h2>
+          <p className="mas-eyebrow"><EditableText keyName="directory.join.eyebrow">Run the programme</EditableText></p>
+          <h2><EditableText keyName="directory.join.title">Become a recognised partner centre</EditableText></h2>
           <p className="mas-lede">
-            A partner centre is the venue and the umbrella for the programme —
-            recognised by Malaysia Aquatics, listed in this directory, and able to
-            present swimmers for national certification.
+            <EditableText keyName="directory.join.lede">
+              A partner centre is the venue and the umbrella for the programme —
+              recognised by Malaysia Aquatics, listed in this directory, and able to
+              present swimmers for national certification.
+            </EditableText>
           </p>
         </div>
 
         <div className="mas-centre-grid">
           <article className="mas-centre-block" style={{ ['--lvl' as string]: '#1D87E4' }}>
-            <h3>Why join</h3>
+            <h3><EditableText keyName="directory.join.why.title">Why join</EditableText></h3>
             <ul>
               <li>National recognition by Malaysia Aquatics</li>
               <li>A listing in this public centre directory</li>
@@ -120,7 +133,7 @@ export default function Directory() {
           </article>
 
           <article className="mas-centre-block" style={{ ['--lvl' as string]: '#26A59A' }}>
-            <h3>What’s required</h3>
+            <h3><EditableText keyName="directory.join.required.title">What’s required</EditableText></h3>
             <ul>
               <li>A certified BADGES instructor on your roster <strong>at all times</strong> — ideally the owner or manager</li>
               <li>A suitable, approved pool facility</li>
@@ -130,7 +143,7 @@ export default function Directory() {
           </article>
 
           <article className="mas-centre-block" style={{ ['--lvl' as string]: '#FF7042' }}>
-            <h3>How recognition works</h3>
+            <h3><EditableText keyName="directory.join.how.title">How recognition works</EditableText></h3>
             <ol>
               <li>Your certified instructor registers the centre in the portal</li>
               <li>The Chairperson reviews it against the published criteria</li>
@@ -142,7 +155,7 @@ export default function Directory() {
 
         <div className="mas-centre-note mas-alert is-info">
           <div className="mas-alert-body">
-            <p className="mas-alert-title">Don’t have a certified instructor yet?</p>
+            <p className="mas-alert-title"><EditableText keyName="directory.join.note.title">Don’t have a certified instructor yet?</EditableText></p>
             <p className="mas-alert-text">
               A centre can only deliver the syllabus through a certified instructor —
               so appoint, train, or partner with one first. Partner-centre membership
