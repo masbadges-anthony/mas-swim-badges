@@ -805,8 +805,13 @@
   background: #fff;
   transition: box-shadow .25s ease;
 }
-/* Content clears the fixed header with a CONSTANT offset (= compact height). */
-.mas-app .mas-main { padding-top: 64px; }
+/* Content clears the fixed header with a CONSTANT offset. Scoped to
+   `.mas-site .mas-main` (specificity 0,3,0) so it beats the alignment rule
+   `.mas-site .mas-main { padding: 0 }` above — a bare `.mas-main` selector lost
+   the cascade, leaving zero offset and the fixed header overlapping the page.
+   The value clears the EXPANDED (top-of-page) header height (~93px) plus a
+   small breathing gap; it stays constant as the header shrinks on scroll. */
+.mas-app .mas-site .mas-main { padding-top: 100px; }
 
 .mas-app .mas-topnav-inner { min-height: 64px; }
 /* Expanded (at top): taller, larger logo */
@@ -819,7 +824,9 @@
 .mas-app .mas-topnav.is-scrolled .mas-logo { height: 46px; }
 
 @media (max-width: 720px) {
-  .mas-app .mas-main { padding-top: 54px; }
+  /* The nav links wrap to their own full-width row here, so the expanded
+     header is taller than on desktop; reserve enough to clear it. */
+  .mas-app .mas-site .mas-main { padding-top: 116px; }
   .mas-app .mas-topnav-inner { padding: 0.6rem 1rem; min-height: 54px; }
   .mas-app .mas-topnav .mas-logo { height: 48px; }
   .mas-app .mas-topnav.is-scrolled .mas-topnav-inner { padding: 0.45rem 1rem; }
