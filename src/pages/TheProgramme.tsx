@@ -59,11 +59,12 @@ export default function TheProgramme() {
         </section>
         <section className="mas-prog-info-card">
           <h2>Fees</h2>
-          <p>
-            Assessment fees are set nationally: RM 50 per level for Starfish, Sea Turtle
-            and Guppy, and RM 75 per level for Octopus, Frog, Swordfish and Dolphin.
-            Centres set their own tuition separately.
-          </p>
+          <p>Assessment fees are set nationally, per level:</p>
+          <ul className="mas-prog-criteria">
+            <li><strong>RM 50 per level</strong> — Starfish, Sea Turtle, Guppy</li>
+            <li><strong>RM 75 per level</strong> — Octopus, Frog, Swordfish, Dolphin</li>
+          </ul>
+          <p>Centres set their own tuition separately.</p>
         </section>
       </div>
 
