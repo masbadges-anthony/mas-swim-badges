@@ -965,3 +965,63 @@
   .mas-app .mas-levelstrip { grid-template-columns: repeat(2, 1fr); }
   .mas-app .mas-levelcard-badge { width: 76px; height: 76px; }
 }
+
+/* =====================================================================
+   HERO TEXTURE  (subtle waves + halftone) and FAQ accordion
+   ===================================================================== */
+.mas-app .mas-home .mas-home-hero { position: relative; }
+.mas-app .mas-home-hero-inner { position: relative; z-index: 2; }
+.mas-app .mas-hero-halftone {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.22) 1.4px, transparent 1.6px);
+  background-size: 15px 15px;
+  -webkit-mask-image: radial-gradient(120% 110% at 100% 0%, #000 0%, transparent 58%);
+          mask-image: radial-gradient(120% 110% at 100% 0%, #000 0%, transparent 58%);
+  opacity: 0.55;
+}
+.mas-app .mas-hero-waves {
+  position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 58%;
+  z-index: 1; pointer-events: none;
+}
+
+/* ---- FAQ ---- */
+.mas-app .mas-faq-jump { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 2rem; }
+.mas-app .mas-faq-chip {
+  --lvl: var(--mas-teal);
+  display: inline-block; text-decoration: none; font-weight: 700; font-size: 0.82rem;
+  color: var(--mas-navy); background: #fff; border: 1px solid var(--mas-line);
+  border-bottom: 2px solid var(--lvl); border-radius: 999px; padding: 0.45rem 0.9rem;
+  transition: background .15s ease, transform .15s ease;
+}
+.mas-app .mas-faq-chip:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--lvl) 8%, #fff); }
+
+.mas-app .mas-faq-cat { --lvl: var(--mas-teal); margin-bottom: 2.25rem; scroll-margin-top: 90px; }
+.mas-app .mas-faq-cat-head { border-left: 4px solid var(--lvl); padding-left: 0.9rem; margin-bottom: 1rem; }
+.mas-app .mas-faq-cat-head h2 { color: var(--mas-navy); font-size: 1.45rem; }
+.mas-app .mas-faq-cat-head p { color: var(--mas-muted); margin: 0.3rem 0 0; text-transform: none; font-size: 0.95rem; }
+
+.mas-app .mas-faq-list { display: flex; flex-direction: column; gap: 0.55rem; }
+.mas-app .mas-faq-item {
+  background: #fff; border: 1px solid var(--mas-line); border-radius: 12px; overflow: hidden;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-faq-item.is-open { border-color: var(--lvl); box-shadow: 0 8px 22px rgba(10,31,68,.07); }
+.mas-app .mas-faq-q {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  background: none; border: 0; cursor: pointer; text-align: left;
+  padding: 1rem 1.15rem; font-family: inherit; font-weight: 700; font-size: 0.98rem;
+  color: var(--mas-navy); text-transform: none;
+}
+.mas-app .mas-faq-mark {
+  flex: 0 0 auto; width: 26px; height: 26px; display: grid; place-items: center;
+  border-radius: 50%; background: color-mix(in srgb, var(--lvl) 12%, #fff); color: var(--lvl);
+  font-weight: 800; font-size: 1.1rem; line-height: 1;
+}
+.mas-app .mas-faq-a { padding: 0 1.15rem 1.1rem; }
+.mas-app .mas-faq-a p { margin: 0; color: var(--mas-muted); line-height: 1.6; text-transform: none; font-size: 0.95rem; }
+
+.mas-app .mas-faq-foot {
+  margin-top: 1rem; padding: 1.25rem 1.4rem; background: #fff;
+  border: 1px solid var(--mas-line); border-radius: 12px; text-align: center;
+}
+.mas-app .mas-faq-foot p { margin: 0; color: var(--mas-muted); text-transform: none; }
