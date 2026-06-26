@@ -11,6 +11,8 @@ import ForParents from './pages/ForParents';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import FAQ from './pages/FAQ';
+import Guides from './pages/Guides';
+import GuideDetail from './pages/GuideDetail';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Safeguarding from './pages/Safeguarding';
@@ -99,6 +101,7 @@ function PublicLayout() {
         <Brand />
         <nav className="mas-topnav-links">
           <NavLink to="/the-programme" className={navClass}>The programme</NavLink>
+          <NavLink to="/guides" className={navClass}>Guides</NavLink>
           <NavLink to="/directory" className={navClass}>Find a centre</NavLink>
           <NavLink to="/courses" className={navClass}>Courses</NavLink>
           <NavLink to="/for-centres" className={navClass}>For centres</NavLink>
@@ -350,6 +353,8 @@ export default function App() {
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/faq" element={<FAQ />} />
+              <Route path="/guides" element={<Guides />} />
+              <Route path="/guides/:slug" element={<GuideDetail />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/safeguarding" element={<Safeguarding />} />
