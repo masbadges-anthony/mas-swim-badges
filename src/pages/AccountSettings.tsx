@@ -18,6 +18,10 @@ export default function AccountSettings() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  const [listing, setListing] = useState(false);
+  const [listingSaving, setListingSaving] = useState(false);
+  const [listingError, setListingError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!me) return;
     let cancelled = false;
@@ -35,12 +39,31 @@ export default function AccountSettings() {
       setEmail(data.email ?? '');
       setFullName(data.full_name ?? '');
       setPhone(data.phone ?? '');
+
+      const { data: listed } = await supabase.rpc('get_my_instructor_listing');
+      if (cancelled) return;
+      setListing(listed === true);
+
       setLoad('ready');
     })();
     return () => {
       cancelled = true;
     };
   }, [me]);
+
+  async function toggleListing() {
+    if (listingSaving) return;
+    const next = !listing;
+    setListingSaving(true);
+    setListingError(null);
+    const { error } = await supabase.rpc('set_my_instructor_listing', { _on: next });
+    setListingSaving(false);
+    if (error) {
+      setListingError(error.message);
+      return;
+    }
+    setListing(next);
+  }
 
   async function save() {
     if (!me) return;
@@ -112,6 +135,28 @@ export default function AccountSettings() {
             <button className="mas-btn-primary" onClick={save} disabled={saving}>
               {saving ? 'Saving…' : 'Save changes'}
             </button>
+          </div>
+
+          <div className="mas-field" style={{ borderTop: '1px solid var(--mas-line)', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
+            <label className="mas-field-label">Public instructor directory</label>
+            <label className="mas-switch">
+              <input
+                type="checkbox"
+                checked={listing}
+                onChange={toggleListing}
+                disabled={listingSaving}
+              />
+              <span className="mas-switch-slider" />
+              <span className="mas-switch-text">
+                {listing ? 'Listed in the public directory' : 'Not listed'}
+              </span>
+            </label>
+            <p className="mas-field-note">
+              When on, your name, state and centre appear in the public instructor
+              directory at masbadges.org. No contact details are shown. Turn it off to
+              remove yourself at any time.
+            </p>
+            {listingError && <p className="mas-status mas-status-bad">{listingError}</p>}
           </div>
         </div>
       )}
