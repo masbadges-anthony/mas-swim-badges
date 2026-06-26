@@ -1246,3 +1246,86 @@
   display: grid; place-items: center; background: var(--lvl); color: #fff; border-radius: 50%; font-size: 0.7rem; font-weight: 800;
 }
 .mas-app .mas-centre-note { margin-top: 1.25rem; }
+
+/* =====================================================================
+   SITEWIDE FACELIFT — shared, subtle public-page polish
+   ===================================================================== */
+/* a small teal tick before every public eyebrow — quiet consistency */
+.mas-app .mas-site .mas-eyebrow { display: inline-flex; align-items: center; gap: 0.55rem; }
+.mas-app .mas-site .mas-eyebrow::before {
+  content: ""; width: 1.5rem; height: 3px; border-radius: 2px;
+  background: var(--mas-teal); flex: 0 0 auto;
+}
+
+/* tinted CTA band with a faint halftone — used to close content pages */
+.mas-app .mas-cta-band {
+  position: relative; overflow: hidden; margin-top: 2.5rem;
+  background:
+    radial-gradient(120% 130% at 90% 10%, rgba(255,255,255,0.16), transparent 55%),
+    linear-gradient(135deg, var(--mas-teal) 0%, var(--mas-teal-deep) 100%);
+  border-radius: 18px; padding: 2rem 2.25rem; color: #fff;
+}
+.mas-app .mas-cta-band::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.22) 1.3px, transparent 1.5px);
+  background-size: 15px 15px;
+  -webkit-mask-image: radial-gradient(120% 110% at 100% 0%, #000 0%, transparent 60%);
+          mask-image: radial-gradient(120% 110% at 100% 0%, #000 0%, transparent 60%);
+  opacity: 0.5;
+}
+.mas-app .mas-cta-band > * { position: relative; z-index: 1; }
+.mas-app .mas-cta-band h2 { color: #fff; font-size: 1.5rem; margin: 0 0 0.4rem; }
+.mas-app .mas-cta-band p { color: rgba(255,255,255,0.92); text-transform: none; margin: 0 0 1.2rem; max-width: 52ch; }
+.mas-app .mas-cta-band .mas-cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.mas-app .mas-cta-band .mas-btn-solid { background: #fff; color: var(--mas-teal-deep); font-weight: 800; padding: 0.7rem 1.3rem; border-radius: 10px; text-decoration: none; }
+.mas-app .mas-cta-band .mas-btn-outline-light { border: 2px solid rgba(255,255,255,0.65); color: #fff; font-weight: 800; padding: 0.62rem 1.3rem; border-radius: 10px; text-decoration: none; }
+
+/* section header with a small diamond tick (public) */
+.mas-app .mas-site .mas-section-head h2,
+.mas-app .mas-headtick {
+  display: flex; align-items: center; gap: 0.6rem; color: var(--mas-navy);
+}
+.mas-app .mas-site .mas-section-head h2::before,
+.mas-app .mas-headtick::before {
+  content: ""; width: 10px; height: 10px; background: var(--mas-teal); border-radius: 3px; transform: rotate(45deg); flex: 0 0 auto;
+}
+
+/* ---- About: governance role cards + trust trio ---- */
+.mas-app .mas-gov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.mas-app .mas-gov-card { background: #fff; border: 1px solid var(--mas-line); border-left: 3px solid var(--mas-teal); border-radius: 12px; padding: 1.1rem 1.2rem; }
+.mas-app .mas-gov-card h3 { color: var(--mas-navy); font-size: 1.05rem; margin-bottom: 0.35rem; }
+.mas-app .mas-gov-card p { color: var(--mas-muted); font-size: 0.9rem; line-height: 1.5; text-transform: none; margin: 0; }
+
+.mas-app .mas-trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.mas-app .mas-trust-card { --lvl: var(--mas-teal); background: #fff; border: 1px solid var(--mas-line); border-top: 3px solid var(--lvl); border-radius: 14px; padding: 1.2rem 1.3rem; }
+.mas-app .mas-trust-card .mas-trust-ico {
+  width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 0.6rem;
+  background: color-mix(in srgb, var(--lvl) 14%, #fff); color: var(--lvl); font-weight: 800;
+}
+.mas-app .mas-trust-card h3 { color: var(--mas-navy); font-size: 1.05rem; margin-bottom: 0.3rem; }
+.mas-app .mas-trust-card p { color: var(--mas-muted); font-size: 0.9rem; line-height: 1.5; text-transform: none; margin: 0; }
+
+/* ---- Courses: cards with kind accent ---- */
+.mas-app .mas-course-list { display: flex; flex-direction: column; gap: 0.85rem; }
+.mas-app .mas-course-card {
+  --lvl: var(--mas-teal); display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap;
+  background: #fff; border: 1px solid var(--mas-line); border-left: 3px solid var(--lvl); border-radius: 14px; padding: 1.1rem 1.3rem;
+}
+.mas-app .mas-course-body { flex: 1; min-width: 240px; }
+.mas-app .mas-course-card h2 { color: var(--mas-navy); font-size: 1.15rem; margin-bottom: 0.4rem; }
+.mas-app .mas-course-kind {
+  display: inline-block; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 800;
+  color: var(--lvl); background: color-mix(in srgb, var(--lvl) 12%, #fff); padding: 0.25rem 0.6rem; border-radius: 999px; margin-bottom: 0.5rem;
+}
+.mas-app .mas-course-meta { color: var(--mas-muted); font-size: 0.88rem; text-transform: none; margin: 0.1rem 0 0; }
+.mas-app .mas-course-desc { color: var(--mas-ink); font-size: 0.9rem; line-height: 1.55; text-transform: none; margin: 0.5rem 0 0; }
+.mas-app .mas-course-register {
+  background: var(--lvl); color: #fff; font-weight: 800; padding: 0.6rem 1.15rem; border-radius: 9px; text-decoration: none; white-space: nowrap;
+}
+
+/* ---- Contact: segmented + form panel polish ---- */
+.mas-app .mas-site .mas-contact-card { background: #fff; border: 1px solid var(--mas-line); border-radius: 16px; padding: 1.5rem 1.6rem; margin-top: 1rem; }
+@media (max-width: 600px) { .mas-app .mas-site .mas-contact-card { padding: 1.2rem 1.1rem; } }
+
+/* fallback for pages that no longer import admin.css */
+.mas-app .mas-site .mas-field-note { color: var(--mas-muted); font-size: 0.85rem; text-transform: none; }
