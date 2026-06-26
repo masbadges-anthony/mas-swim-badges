@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FAQ_CATEGORIES } from '../data/faqs';
 
 export default function FAQ() {
-  const [open, setOpen] = useState<string | null>('parents-0');
+  const [open, setOpen] = useState<string | null>('general-0');
 
   return (
     <section className="mas-page mas-faq">
