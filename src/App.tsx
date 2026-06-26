@@ -18,7 +18,6 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Safeguarding from './pages/Safeguarding';
 import Directory from './pages/Directory';
-import InstructorDirectory from './pages/InstructorDirectory';
 import Courses from './pages/Courses';
 import Verify from './pages/Verify';
 import Login from './pages/Login';
@@ -384,7 +383,6 @@ export default function App() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/safeguarding" element={<Safeguarding />} />
               <Route path="/directory" element={<Directory />} />
-              <Route path="/instructors" element={<InstructorDirectory />} />
               <Route path="/courses" element={<Courses />} />
               <Route path="/verify" element={<Verify />} />
               <Route path="/verify/:serial" element={<Verify />} />
