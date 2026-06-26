@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { GUIDES } from '../data/guides';
+import EditableText from '../components/EditableText';
 
 export default function GuideDetail() {
   const { slug } = useParams();
@@ -9,17 +10,19 @@ export default function GuideDetail() {
     return (
       <section className="mas-page">
         <header className="mas-page-head">
-          <h1>Guide not found</h1>
-          <p className="mas-lede">That guide doesn’t exist or has moved.</p>
+          <h1><EditableText keyName="guides.detail.notfound.title">Guide not found</EditableText></h1>
+          <p className="mas-lede">
+            <EditableText keyName="guides.detail.notfound.lede">That guide doesn’t exist or has moved.</EditableText>
+          </p>
         </header>
-        <Link to="/guides" className="mas-link">← All guides</Link>
+        <Link to="/guides" className="mas-link"><EditableText keyName="guides.detail.notfound.back">← All guides</EditableText></Link>
       </section>
     );
   }
 
   return (
     <section className="mas-page mas-guide" style={{ ['--lvl' as string]: guide.accent }}>
-      <Link to="/guides" className="mas-guide-back">← All guides</Link>
+      <Link to="/guides" className="mas-guide-back"><EditableText keyName="guides.detail.back">← All guides</EditableText></Link>
       <header className="mas-page-head mas-guide-head">
         <p className="mas-eyebrow" style={{ color: guide.accent }}>{guide.audience}</p>
         <h1>{guide.title}</h1>
@@ -45,8 +48,8 @@ export default function GuideDetail() {
       ))}
 
       <div className="mas-guide-foot">
-        <Link to="/guides" className="mas-link">← Back to all guides</Link>
-        <Link to="/faq" className="mas-link">Browse the FAQ →</Link>
+        <Link to="/guides" className="mas-link"><EditableText keyName="guides.detail.foot.back">← Back to all guides</EditableText></Link>
+        <Link to="/faq" className="mas-link"><EditableText keyName="guides.detail.foot.faq">Browse the FAQ →</EditableText></Link>
       </div>
     </section>
   );
