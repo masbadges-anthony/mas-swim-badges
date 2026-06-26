@@ -221,7 +221,16 @@ function PublicLayout() {
         </nav>
         {/* Desktop search: an icon button that reveals an inline input. Hidden on
             mobile, where the search box lives inside the menu panel instead. */}
-        <form className={`mas-search${searchOpen ? ' is-open' : ''}`} role="search" onSubmit={submitSearch}>
+        <form
+          className={`mas-search${searchOpen ? ' is-open' : ''}`}
+          role="search"
+          onSubmit={submitSearch}
+          onBlur={(e) => {
+            // Close when focus leaves the whole control (input + toggle), not when
+            // it merely moves between them.
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) setSearchOpen(false);
+          }}
+        >
           <input
             ref={searchInputRef}
             className="mas-search-input"
@@ -237,9 +246,14 @@ function PublicLayout() {
           <button
             type="submit"
             className="mas-search-toggle"
-            aria-label={searchOpen ? 'Search' : 'Open search'}
+            aria-label={searchOpen ? 'Close search' : 'Open search'}
             aria-expanded={searchOpen}
-            onClick={(e) => { if (!searchOpen) { e.preventDefault(); setSearchOpen(true); } }}
+            onClick={(e) => {
+              // Toggle the reveal. When open the icon dismisses it; submitting is
+              // done with Enter from the input.
+              e.preventDefault();
+              setSearchOpen((o) => !o);
+            }}
           >
             <Icon name="search" />
           </button>
