@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import EditableText from '../components/EditableText';
 
 const ROLES = [
   { title: 'Chairperson', body: 'Leads the programme and is accountable for its governance and direction.' },
@@ -17,26 +18,30 @@ export default function About() {
   return (
     <section className="mas-page mas-about">
       <header className="mas-page-head">
-        <p className="mas-eyebrow">About</p>
-        <h1>About the programme</h1>
+        <p className="mas-eyebrow"><EditableText keyName="about.header.eyebrow">About</EditableText></p>
+        <h1><EditableText keyName="about.header.title">About the programme</EditableText></h1>
         <p className="mas-lede">
-          MAS Swim Badges is the national Learn-to-Swim certification framework of
-          Malaysia Aquatics — built to give every Malaysian child a clear,
-          standardised pathway from their first day in the water through to
-          competitive readiness.
+          <EditableText keyName="about.header.lede">
+            MAS Swim Badges is the national Learn-to-Swim certification framework of
+            Malaysia Aquatics — built to give every Malaysian child a clear,
+            standardised pathway from their first day in the water through to
+            competitive readiness.
+          </EditableText>
         </p>
       </header>
 
-      <header className="mas-page-head mas-section-head"><h2>How it’s run</h2></header>
+      <header className="mas-page-head mas-section-head"><h2><EditableText keyName="about.run.title">How it’s run</EditableText></h2></header>
       <p className="mas-lede">
-        The programme is governed by Malaysia Aquatics through its Board and its
-        Coaching &amp; Technical Board. A Chairperson leads the programme, a Chief
-        Examiner oversees assessment standards, and certified Master Trainers run
-        the instructor and examiner courses. Examiners are selected and deployed by
-        state, and assessments are always independent of the centres being assessed.
+        <EditableText keyName="about.run.body">
+          The programme is governed by Malaysia Aquatics through its Board and its
+          Coaching & Technical Board. A Chairperson leads the programme, a Chief
+          Examiner oversees assessment standards, and certified Master Trainers run
+          the instructor and examiner courses. Examiners are selected and deployed by
+          state, and assessments are always independent of the centres being assessed.
+        </EditableText>
       </p>
 
-      <header className="mas-page-head mas-section-head"><h2>Who governs it</h2></header>
+      <header className="mas-page-head mas-section-head"><h2><EditableText keyName="about.governs.title">Who governs it</EditableText></h2></header>
       <div className="mas-gov-grid">
         {ROLES.map((r) => (
           <article key={r.title} className="mas-gov-card">
@@ -46,10 +51,12 @@ export default function About() {
         ))}
       </div>
       <p className="mas-field-note" style={{ marginTop: '0.85rem' }}>
-        Office-holder names are published in the official MAS Accreditation &amp; Badges Awards booklet.
+        <EditableText keyName="about.governs.note">
+          Office-holder names are published in the official MAS Accreditation & Badges Awards booklet.
+        </EditableText>
       </p>
 
-      <header className="mas-page-head mas-section-head"><h2>What makes a badge trustworthy</h2></header>
+      <header className="mas-page-head mas-section-head"><h2><EditableText keyName="about.trust.title">What makes a badge trustworthy</EditableText></h2></header>
       <div className="mas-trust-grid">
         {TRUST.map((t) => (
           <article key={t.title} className="mas-trust-card" style={{ ['--lvl' as string]: t.lvl }}>
@@ -61,8 +68,8 @@ export default function About() {
       </div>
 
       <div className="mas-cta-band">
-        <h2>Seven badges, one national pathway</h2>
-        <p>See how a child progresses from Starfish to Dolphin — and find a recognised centre near you.</p>
+        <h2><EditableText keyName="about.cta.title">Seven badges, one national pathway</EditableText></h2>
+        <p><EditableText keyName="about.cta.body">See how a child progresses from Starfish to Dolphin — and find a recognised centre near you.</EditableText></p>
         <div className="mas-cta-row">
           <Link className="mas-btn-solid" to="/the-programme">Explore the seven badges</Link>
           <Link className="mas-btn-outline-light" to="/contact">Contact us</Link>
