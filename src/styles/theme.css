@@ -1178,12 +1178,125 @@
   border-bottom: 1px solid var(--mas-line) !important; border-radius: 8px 8px 0 0 !important; margin-bottom: 0.2rem;
 }
 
-/* Mobile: hover menus aren't usable on touch — collapse to the parent link,
-   which already routes to a page containing the sub-content. */
-@media (max-width: 720px) {
-  .mas-app .mas-navitem.mas-has-menu { display: inline-flex; }
-  .mas-app .mas-submenu { display: none; }
-  .mas-app .mas-menu-top::after { display: none; }
+/* =====================================================================
+   MOBILE NAV — hamburger toggle + collapsible menu panel  (≤860px)
+   On tablet width and down the inline nav is replaced by a hamburger button
+   that reveals a dropdown panel. The dropdown sections expand on TAP (not
+   hover, which touch devices can't do). The header stays a compact single row
+   when closed; because it is position:fixed the open panel overlays the page
+   rather than pushing it, so the constant `.mas-main` offset only needs to
+   clear the COLLAPSED bar. Desktop (>860px) is untouched.
+   ===================================================================== */
+
+/* Affordances hidden on desktop; the hover dropdowns above stay in charge. */
+.mas-app .mas-nav-toggle { display: none; }
+.mas-app .mas-submenu-toggle { display: none; }
+.mas-app .mas-navitem-top { display: inline-flex; align-items: center; }
+
+/* Hamburger icon (animates to an X when open) */
+.mas-app .mas-burger {
+  display: inline-flex; flex-direction: column; justify-content: center;
+  gap: 5px; width: 24px; height: 18px;
+}
+.mas-app .mas-burger > span {
+  display: block; height: 2px; width: 100%; border-radius: 2px;
+  background: var(--mas-navy); transition: transform .2s ease, opacity .2s ease;
+}
+.mas-app .mas-burger.is-open > span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.mas-app .mas-burger.is-open > span:nth-child(2) { opacity: 0; }
+.mas-app .mas-burger.is-open > span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* Per-section caret button (shown only inside the mobile panel) */
+.mas-app .mas-submenu-caret {
+  width: 0; height: 0;
+  border-left: 5px solid transparent; border-right: 5px solid transparent;
+  border-top: 6px solid currentColor; opacity: 0.55; transition: transform .18s ease;
+}
+.mas-app .mas-has-menu.is-open .mas-submenu-toggle .mas-submenu-caret { transform: rotate(180deg); }
+
+@media (max-width: 860px) {
+  /* --- Compact single-row header: logo · Portal login · hamburger --- */
+  .mas-app .mas-topnav-inner {
+    position: relative;
+    flex-wrap: nowrap;
+    gap: 0.6rem;
+    padding: 0.5rem 1rem;
+    min-height: 56px;
+  }
+  .mas-app .mas-topnav.is-scrolled .mas-topnav-inner { padding: 0.4rem 1rem; }
+  .mas-app .mas-topnav .mas-logo { height: 44px; }
+  .mas-app .mas-topnav.is-scrolled .mas-logo { height: 38px; }
+
+  /* The open panel overlays the page (fixed header can't push content), so the
+     constant offset only needs to clear the collapsed bar. */
+  .mas-app .mas-site .mas-main { padding-top: 72px; }
+
+  /* Hamburger appears; keep the login button beside it on the right. */
+  .mas-app .mas-nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; padding: 0; flex: 0 0 auto;
+    background: transparent; border: 1px solid var(--mas-line); border-radius: 10px;
+    color: var(--mas-navy); cursor: pointer;
+  }
+  .mas-app .mas-nav-toggle:hover { background: var(--mas-paper); }
+  .mas-app .mas-nav-toggle:focus-visible { outline: 2px solid var(--mas-teal); outline-offset: 2px; }
+  .mas-app .mas-topnav .mas-login-btn { margin-left: auto; }
+
+  /* Nav collapses into a dropdown panel anchored under the bar. */
+  .mas-app .mas-topnav-links {
+    display: none;
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    z-index: 250;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    order: 0;
+    width: auto;
+    margin: 0;
+    padding: 0.25rem 1rem 1rem;
+    background: #fff;
+    border-top: 1px solid var(--mas-line);
+    box-shadow: 0 18px 30px rgba(10, 31, 68, 0.14);
+    max-height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+  .mas-app .mas-topnav-links.is-open { display: flex; }
+
+  /* Plain links and dropdown parents stack as full-width rows. */
+  .mas-app .mas-topnav-links > a,
+  .mas-app .mas-navitem-top .mas-menu-top {
+    display: block; width: 100%;
+    padding: 0.85rem 0.4rem;
+    font-size: 1.05rem;
+  }
+  .mas-app .mas-topnav-links > a { border-bottom: 1px solid var(--mas-line); }
+  .mas-app .mas-topnav-links > a.is-active::after { content: none; } /* drop desktop underline */
+
+  /* Dropdown groups: link + caret toggle on one row, submenu below. */
+  .mas-app .mas-navitem.mas-has-menu { display: block; width: 100%; }
+  .mas-app .mas-navitem-top {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--mas-line);
+  }
+  .mas-app .mas-navitem-top .mas-menu-top { flex: 1 1 auto; }
+  .mas-app .mas-menu-top::after { display: none; } /* hide desktop hover caret */
+  .mas-app .mas-submenu-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 48px; align-self: stretch; padding: 0; flex: 0 0 auto;
+    background: transparent; border: 0; color: var(--mas-navy); cursor: pointer;
+  }
+  .mas-app .mas-submenu-toggle:focus-visible { outline: 2px solid var(--mas-teal); outline-offset: -2px; }
+
+  /* Submenu becomes an inline, indented list revealed on tap (not hover). */
+  .mas-app .mas-submenu {
+    position: static; display: none;
+    opacity: 1; visibility: visible; transform: none;
+    min-width: 0; margin: 0; padding: 0.1rem 0 0.5rem 0.8rem;
+    background: transparent; border: 0; border-radius: 0; box-shadow: none;
+  }
+  .mas-app .mas-navitem.mas-has-menu.is-open .mas-submenu { display: flex; }
+  .mas-app .mas-submenu a { white-space: normal; }
 }
 
 /* =====================================================================
