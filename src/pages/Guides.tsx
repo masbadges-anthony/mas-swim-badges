@@ -1,16 +1,19 @@
 import { Link } from 'react-router-dom';
 import { GUIDES } from '../data/guides';
+import EditableText from '../components/EditableText';
 
 export default function Guides() {
   return (
     <section className="mas-page mas-guides">
       <header className="mas-page-head">
-        <p className="mas-eyebrow">Guides</p>
-        <h1>How the programme works, for you</h1>
+        <p className="mas-eyebrow"><EditableText keyName="guides.index.eyebrow">Guides</EditableText></p>
+        <h1><EditableText keyName="guides.index.title">How the programme works, for you</EditableText></h1>
         <p className="mas-lede">
-          Clear walk-throughs for every part of MAS BADGES — from getting your
-          child started, to becoming an instructor, to how assessment and
-          certification actually run.
+          <EditableText keyName="guides.index.lede">
+            Clear walk-throughs for every part of MAS BADGES — from getting your
+            child started, to becoming an instructor, to how assessment and
+            certification actually run.
+          </EditableText>
         </p>
       </header>
 
