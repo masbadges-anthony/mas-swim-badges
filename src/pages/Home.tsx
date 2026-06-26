@@ -5,6 +5,14 @@ export default function Home() {
   return (
     <section className="mas-page mas-home">
       <header className="mas-home-hero">
+        <span className="mas-hero-halftone" aria-hidden="true" />
+        <svg className="mas-hero-waves" viewBox="0 0 1200 260" preserveAspectRatio="none" aria-hidden="true">
+          <g fill="none" stroke="#ffffff" strokeWidth="2">
+            <path d="M0 150 C 200 110 360 200 560 160 S 980 110 1200 160" strokeOpacity="0.16" />
+            <path d="M0 190 C 220 150 380 240 600 200 S 1000 150 1200 200" strokeOpacity="0.12" />
+            <path d="M0 110 C 180 80 380 150 600 110 S 1020 60 1200 110" strokeOpacity="0.10" />
+          </g>
+        </svg>
         <div className="mas-home-hero-inner">
           <p className="mas-eyebrow-pill">Swimming Proficiency Test</p>
           <h1 className="mas-home-title">Learn-to-Swim Badges</h1>
