@@ -6,7 +6,7 @@
 export interface FaqItem { q: string; a: string; }
 export interface FaqCategory { key: string; title: string; accent: string; intro: string; items: FaqItem[]; }
 
-export const FAQ_CATEGORIES: FaqCategory[
+export const FAQ_CATEGORIES: FaqCategory[] = [
   {
     key: 'general',
     title: 'About the programme',
@@ -23,7 +23,6 @@ export const FAQ_CATEGORIES: FaqCategory[
         a: 'Independence (a firewall between teaching and judging), a single published standard for every level, and certificates that are serialised, issued only on a genuine pass, and publicly verifiable — while never exposing a child’s identity.' },
     ],
   },
-  ] = [
   {
     key: 'parents',
     title: 'For parents & swimmers',
