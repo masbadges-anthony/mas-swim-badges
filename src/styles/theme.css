@@ -1081,3 +1081,34 @@
   display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
   margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--mas-line);
 }
+
+/* =====================================================================
+   INSTRUCTORS — directory + pathway CTAs
+   ===================================================================== */
+.mas-app .mas-inst-cta { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.75rem; }
+.mas-app .mas-inst-cta-card {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  background: #fff; border: 1px solid var(--mas-line); border-left: 3px solid var(--mas-teal);
+  border-radius: 12px; padding: 1.1rem 1.2rem; text-decoration: none; color: var(--mas-ink);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-inst-cta-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(10,31,68,.08); }
+.mas-app .mas-inst-cta-aud { font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 800; color: var(--mas-muted); }
+.mas-app .mas-inst-cta-card strong { color: var(--mas-navy); font-size: 1.1rem; font-family: 'Barlow Condensed','Nunito Sans',sans-serif; text-transform: uppercase; letter-spacing: .015em; }
+.mas-app .mas-inst-cta-go { color: var(--mas-teal); font-weight: 800; font-size: 0.85rem; }
+
+.mas-app .mas-dir-filter { max-width: 280px; margin-bottom: 1.25rem; }
+
+.mas-app .mas-inst-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.85rem; }
+.mas-app .mas-inst-card {
+  display: flex; align-items: center; gap: 0.85rem;
+  background: #fff; border: 1px solid var(--mas-line); border-radius: 12px; padding: 0.9rem 1rem;
+}
+.mas-app .mas-inst-avatar {
+  flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 800; font-size: 1.1rem;
+  color: #fff; background: linear-gradient(135deg, var(--mas-teal), var(--mas-teal-deep));
+}
+.mas-app .mas-inst-body h3 { color: var(--mas-navy); font-size: 1rem; margin: 0; }
+.mas-app .mas-inst-meta { color: var(--mas-muted); font-size: 0.85rem; margin: 0.15rem 0 0; text-transform: none; }
+.mas-app .mas-inst-note { margin-top: 1.5rem; color: var(--mas-muted); font-size: 0.88rem; text-transform: none; }
