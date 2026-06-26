@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import '../styles/admin.css';
 
 interface Course {
   id: string;
@@ -23,6 +22,12 @@ const KIND_LABELS: Record<string, string> = {
   examiner_certification: 'Examiner certification',
   clinic: 'Clinic',
   other: 'Course',
+};
+const KIND_COLORS: Record<string, string> = {
+  instructor_certification: '#26A59A',
+  examiner_certification: '#5D34B1',
+  clinic: '#FF7042',
+  other: '#1D87E4',
 };
 
 function prettyDate(s: string | null): string {
@@ -66,56 +71,56 @@ export default function Courses() {
   );
 
   return (
-    <section className="mas-page">
+    <section className="mas-page mas-courses">
       <header className="mas-page-head">
         <p className="mas-eyebrow">Training</p>
         <h1>Courses &amp; certification</h1>
         <p className="mas-lede">
-          Upcoming instructor and examiner certification courses and clinics
-          under the MAS Swim Badges programme.
+          Upcoming instructor and examiner certification courses and clinics under
+          the MAS Swim Badges programme.
         </p>
       </header>
 
       {load === 'loading' && <p className="mas-status">Loading…</p>}
       {load === 'error' && <p className="mas-status mas-status-bad">Couldn’t load courses.</p>}
       {load === 'ready' && upcoming.length === 0 && (
-        <p className="mas-status">No upcoming courses are scheduled right now.</p>
+        <div className="mas-alert is-info">
+          <div className="mas-alert-body">
+            <p className="mas-alert-title">No upcoming courses are scheduled right now.</p>
+            <p className="mas-alert-text">
+              Check back soon, or <a href="/contact?topic=instructor" className="mas-link">register your interest</a> and
+              we’ll let you know when the next intake opens.
+            </p>
+          </div>
+        </div>
       )}
 
       {load === 'ready' && upcoming.length > 0 && (
-        <ul className="mas-admin-list">
-          {upcoming.map((c) => (
-            <li key={c.id} className="mas-admin-row" style={{ flexWrap: 'wrap' }}>
-              <div className="mas-admin-main">
-                <h2 className="mas-admin-name">{c.title}</h2>
-                <p className="mas-admin-meta">
-                  <span className="mas-pill">{KIND_LABELS[c.kind] ?? c.kind}</span>
-                  <span className="mas-admin-sub">
+        <div className="mas-course-list">
+          {upcoming.map((c) => {
+            const color = KIND_COLORS[c.kind] ?? '#1D87E4';
+            return (
+              <article key={c.id} className="mas-course-card" style={{ ['--lvl' as string]: color }}>
+                <div className="mas-course-body">
+                  <span className="mas-course-kind">{KIND_LABELS[c.kind] ?? c.kind}</span>
+                  <h2>{c.title}</h2>
+                  <p className="mas-course-meta">
                     {dateRange(c.starts_on, c.ends_on)}
                     {c.state ? ` · ${c.state}` : ''}
                     {c.venue ? ` · ${c.venue}` : ''}
                     {c.fee != null ? ` · ${money(c.fee)}` : ''}
-                  </span>
-                </p>
-                {c.description && (
-                  <p className="mas-admin-meta"><span className="mas-admin-sub">{c.description}</span></p>
-                )}
-              </div>
-              {c.registration_url && (
-                <div className="mas-admin-action">
-                  <a
-                    className="mas-btn-primary"
-                    href={c.registration_url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  </p>
+                  {c.description && <p className="mas-course-desc">{c.description}</p>}
+                </div>
+                {c.registration_url && (
+                  <a className="mas-course-register" href={c.registration_url} target="_blank" rel="noreferrer">
                     Register
                   </a>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+                )}
+              </article>
+            );
+          })}
+        </div>
       )}
     </section>
   );
