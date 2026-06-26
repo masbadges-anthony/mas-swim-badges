@@ -1,75 +1,75 @@
 import { Link } from 'react-router-dom';
-import '../styles/admin.css';
+import { LEVELS } from '../data/levels';
 
-// Outcome lines are drawn from the programme manual (Edition 1.4).
-// Accent colours are placeholders — replace with the official badge artwork colours.
-const LEVELS: { name: string; accent: string; outcome: string }[] = [
-  { name: 'Starfish',  accent: '#E8662B', outcome: 'Water familiarisation, breath control, and basic floating and gliding.' },
-  { name: 'Sea Turtle',accent: '#1FA36B', outcome: 'Self-survival to the wall, with the first stroke shapes on front and back.' },
-  { name: 'Guppy',     accent: '#1F9ED1', outcome: 'Front crawl with breathing, backstroke, and deep-water treading.' },
-  { name: 'Octopus',   accent: '#8E44AD', outcome: 'Bilateral breathing, breaststroke kick, sit dive, and survival backstroke.' },
-  { name: 'Frog',      accent: '#6AA84F', outcome: 'Full breaststroke, dolphin kick, sculling, a basic flip turn, and squat dive.' },
-  { name: 'Swordfish', accent: '#C62026', outcome: 'Butterfly, breaststroke pullout, tumble and open turns, and sidestroke.' },
-  { name: 'Dolphin',   accent: '#1E2752', outcome: 'All four strokes to competitive distance, individual medley, backstroke dive, and a timed qualification.' },
-];
+// "What's assessed" — the headline criteria per level, condensed from the
+// official 7-Level Syllabus assessment criteria.
+const CRITERIA: Record<number, string[]> = {
+  1: ['Enter and exit the pool safely', 'Ten submerged exhale-and-inhale repetitions (bobbing)', 'Front and back float, ten seconds each', 'Streamlined flutter kick for 3 m', 'Back push-and-glide for 2 m', 'Lateral rotation, front-to-back and back-to-front'],
+  2: ['Fall in, turn, and grab the wall', 'Front crawl arms with flutter kick, 5 m', 'Back flutter kick, 5 m', 'Backstroke arms with kick, 5 m', 'Reach-and-pull with breath, 5 m'],
+  3: ['Front crawl with unilateral breathing, 10 m', 'Backstroke, 10 m', 'Streamlined underwater push-and-glide, 3 m', 'Tread water for 30 seconds'],
+  4: ['Front crawl with bilateral breathing, 15 m', 'Backstroke, 15 m', 'Breaststroke whip kick, 10 m', 'Sit dive with 3 m underwater glide', 'Survival backstroke, 10 m'],
+  5: ['Front crawl, 25 m', 'Backstroke, 25 m', 'Breaststroke, 25 m', 'Dolphin kick, 10 m', 'Sculling with kick and breathing, 15 m', 'Forward and backward flip turns', 'Squat dive with 5 m dolphin kick'],
+  6: ['Front crawl, 50 m', 'Backstroke, 50 m', 'Breaststroke with pullout, 50 m', 'Butterfly, 10 m', 'Tumble turn and open turn at the wall', 'Standing dive with 5 m dolphin kick', 'Sidestroke, 15 m'],
+  7: ['Front crawl, 100 m under 2:30', 'Backstroke, 100 m', 'Breaststroke with pullout, 100 m', 'Butterfly, 50 m', 'Tumble and open turns', 'Standing and backstroke dives into swim', 'Individual medley, 100 m under 3:00'],
+};
 
 export default function TheProgramme() {
   return (
-    <section className="mas-page">
+    <section className="mas-page mas-programme">
       <header className="mas-page-head">
         <p className="mas-eyebrow">The programme</p>
         <h1>Seven badges, one national pathway</h1>
         <p className="mas-lede">
-          The MAS Swim Badges programme is a national learn-to-swim framework that
-          takes a child from their very first day in the water through to
-          competitive readiness — a clear, standardised pathway with the same
-          meaning at every recognised centre in the country.
+          The MAS Swim Badges programme takes a child from their very first day in
+          the water through to competitive readiness — a clear, standardised pathway
+          with the same meaning at every recognised centre in the country.
         </p>
       </header>
 
-      <ul className="mas-admin-list">
-        {LEVELS.map((l, i) => (
-          <li
-            key={l.name}
-            className="mas-admin-row"
-            style={{ borderLeft: `6px solid ${l.accent}`, paddingLeft: '0.9rem' }}
-          >
-            <div className="mas-admin-main">
-              <h2 className="mas-admin-name">
-                <span style={{ color: l.accent }}>{i + 1}.</span> {l.name}
-              </h2>
-              <p className="mas-admin-meta">
-                <span className="mas-admin-sub">{l.outcome}</span>
-              </p>
+      <div className="mas-prog-levels">
+        {LEVELS.map((l) => (
+          <article key={l.key} className="mas-prog-level" style={{ ['--lvl' as string]: l.color }}>
+            <div className="mas-prog-level-side">
+              <img src={l.badge} alt={`${l.name} badge`} loading="lazy" />
+              <span className="mas-prog-level-no">Level {l.level}</span>
             </div>
-          </li>
+            <div className="mas-prog-level-body">
+              <h2>{l.name}</h2>
+              <p className="mas-prog-outcome">{l.outcome}</p>
+              <p className="mas-prog-assessed-label">What’s assessed</p>
+              <ul className="mas-prog-criteria">
+                {CRITERIA[l.level].map((c, i) => <li key={i}>{c}</li>)}
+              </ul>
+            </div>
+          </article>
         ))}
-      </ul>
+      </div>
 
-      <header className="mas-page-head mas-section-head">
-        <h2>How assessment works</h2>
-      </header>
-      <p className="mas-lede">
-        A child is prepared by their instructor, then assessed by an independent
-        examiner who has no conflict of interest with the candidate. On a pass,
-        a certificate is issued with a unique serial that anyone can verify
-        online. The badge certifies the swimmer — it is the same standard
-        wherever it is earned, and progression follows the pathway in order
-        without skipping levels.
-      </p>
+      <div className="mas-prog-info">
+        <section className="mas-prog-info-card">
+          <h2>How assessment works</h2>
+          <p>
+            A child is prepared by their instructor, then assessed by an independent
+            examiner with no conflict of interest with the candidate. On a pass, a
+            certificate is issued with a unique serial that anyone can verify online.
+            The badge certifies the swimmer — the same standard wherever it is earned —
+            and progression follows the pathway in order, without skipping levels.
+          </p>
+          <Link to="/guides/assessment" className="mas-link">Read the full assessment guide →</Link>
+        </section>
+        <section className="mas-prog-info-card">
+          <h2>Fees</h2>
+          <p>
+            Assessment fees are set nationally: RM 50 per level for Starfish, Sea Turtle
+            and Guppy, and RM 75 per level for Octopus, Frog, Swordfish and Dolphin.
+            Centres set their own tuition separately.
+          </p>
+        </section>
+      </div>
 
-      <header className="mas-page-head mas-section-head">
-        <h2>Fees</h2>
-      </header>
-      <p className="mas-lede">
-        Assessment fees are set nationally — RM 50 per level for Starfish, Sea
-        Turtle and Guppy, and RM 75 per level for Octopus, Frog, Swordfish and
-        Dolphin. Centres may set their own tuition separately.
-      </p>
-
-      <div className="mas-form-actions" style={{ marginTop: '1.25rem' }}>
-        <Link className="mas-btn-primary" to="/directory">Find a recognised centre</Link>
-        <Link className="mas-btn-ghost" to="/verify">Verify a certificate</Link>
+      <div className="mas-prog-cta">
+        <Link className="mas-btn-solid-navy" to="/directory">Find a recognised centre</Link>
+        <Link className="mas-btn-ghost-navy" to="/guides/how-it-works">How the programme works</Link>
       </div>
     </section>
   );
