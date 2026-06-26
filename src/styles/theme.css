@@ -1112,3 +1112,58 @@
 .mas-app .mas-inst-body h3 { color: var(--mas-navy); font-size: 1rem; margin: 0; }
 .mas-app .mas-inst-meta { color: var(--mas-muted); font-size: 0.85rem; margin: 0.15rem 0 0; text-transform: none; }
 .mas-app .mas-inst-note { margin-top: 1.5rem; color: var(--mas-muted); font-size: 0.88rem; text-transform: none; }
+
+/* =====================================================================
+   NAV DROPDOWNS  (Find a centre ▾, Guides ▾) — CSS-only hover/focus
+   ===================================================================== */
+.mas-app .mas-navitem.mas-has-menu { position: relative; display: inline-flex; align-items: center; }
+
+/* caret on dropdown parents */
+.mas-app .mas-menu-top { display: inline-flex; align-items: center; gap: 0.28rem; }
+.mas-app .mas-menu-top::after {
+  content: ""; width: 0; height: 0;
+  border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-top: 5px solid currentColor; opacity: 0.55; transition: transform .15s ease;
+}
+.mas-app .mas-navitem.mas-has-menu:hover .mas-menu-top::after,
+.mas-app .mas-navitem.mas-has-menu:focus-within .mas-menu-top::after { transform: rotate(180deg); }
+
+.mas-app .mas-submenu {
+  position: absolute; top: calc(100% + 8px); left: 0; min-width: 210px;
+  background: #fff; border: 1px solid var(--mas-line); border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(10, 31, 68, 0.14); padding: 0.4rem;
+  display: flex; flex-direction: column; gap: 0.05rem;
+  opacity: 0; visibility: hidden; transform: translateY(6px);
+  transition: opacity .16s ease, transform .16s ease, visibility .16s; z-index: 300;
+}
+/* hover bridge so the gap doesn't drop the menu */
+.mas-app .mas-navitem.mas-has-menu::before {
+  content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 10px;
+}
+.mas-app .mas-navitem.mas-has-menu:hover .mas-submenu,
+.mas-app .mas-navitem.mas-has-menu:focus-within .mas-submenu {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+.mas-app .mas-submenu-wide { min-width: 250px; }
+.mas-app .mas-submenu a {
+  display: block; padding: 0.5rem 0.7rem; border-radius: 8px; white-space: nowrap;
+  color: var(--mas-ink); text-decoration: none; font-size: 0.9rem; font-weight: 600;
+  border-bottom: 0;
+}
+.mas-app .mas-submenu a:hover,
+.mas-app .mas-submenu a.is-active {
+  background: color-mix(in srgb, var(--mas-teal) 10%, #fff); color: var(--mas-teal-deep);
+}
+.mas-app .mas-submenu a.is-active::after { content: none; }  /* cancel public underline marker */
+.mas-app .mas-submenu-head {
+  font-weight: 800 !important; color: var(--mas-navy) !important;
+  border-bottom: 1px solid var(--mas-line) !important; border-radius: 8px 8px 0 0 !important; margin-bottom: 0.2rem;
+}
+
+/* Mobile: hover menus aren't usable on touch — collapse to the parent link,
+   which already routes to a page containing the sub-content. */
+@media (max-width: 720px) {
+  .mas-app .mas-navitem.mas-has-menu { display: inline-flex; }
+  .mas-app .mas-submenu { display: none; }
+  .mas-app .mas-menu-top::after { display: none; }
+}
