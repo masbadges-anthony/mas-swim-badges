@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { LEVELS } from '../data/levels';
+import EditableText from '../components/EditableText';
 
 export default function Home() {
   return (
@@ -14,12 +15,16 @@ export default function Home() {
           </g>
         </svg>
         <div className="mas-home-hero-inner">
-          <p className="mas-eyebrow-pill">Swimming Proficiency Test</p>
-          <h1 className="mas-home-title">Learn-to-Swim Badges</h1>
+          <p className="mas-eyebrow-pill">
+            <EditableText keyName="home.hero.eyebrow">Swimming Proficiency Test</EditableText>
+          </p>
+          <h1 className="mas-home-title">
+            <EditableText keyName="home.hero.title">Learn-to-Swim Badges</EditableText>
+          </h1>
           <p className="mas-home-sub">
-            A skill-progression programme for swimmers aged 5–12 — from first
-            water familiarisation through to competitive readiness, across seven
-            levels.
+            <EditableText keyName="home.hero.subtitle">
+              A skill-progression programme for swimmers aged 5–12 — from first water familiarisation through to competitive readiness, across seven levels.
+            </EditableText>
           </p>
           <div className="mas-home-cta">
             <Link to="/directory" className="mas-btn-solid">Find a swim centre</Link>
@@ -30,7 +35,7 @@ export default function Home() {
 
       <section className="mas-levels">
         <div className="mas-levels-head">
-          <h2>Seven levels</h2>
+          <h2><EditableText keyName="home.levels.title">Seven levels</EditableText></h2>
           <span className="mas-levels-arrow">Starfish → Dolphin</span>
         </div>
         <div className="mas-levelstrip">
@@ -56,29 +61,35 @@ export default function Home() {
       <section className="mas-home-teasers" aria-label="Explore the programme">
         <article className="mas-teaser">
           <span className="mas-eyebrow">How it works</span>
-          <h2>From first splash to finish line</h2>
+          <h2>
+            <EditableText keyName="home.teaser.howitworks.title">From first splash to finish line</EditableText>
+          </h2>
           <p>
-            Seven levels take a child from water familiarisation to competitive
-            readiness — each one a clear, assessed step with a badge to show for
-            it. No guesswork, just steady progress.
+            <EditableText keyName="home.teaser.howitworks.body">
+              Seven levels take a child from water familiarisation to competitive readiness — each one a clear, assessed step with a badge to show for it. No guesswork, just steady progress.
+            </EditableText>
           </p>
           <Link to="/the-programme" className="mas-btn-solid-navy">See the programme</Link>
         </article>
 
         <article className="mas-teaser">
           <span className="mas-eyebrow">Find a centre near you</span>
-          <h2>Learn at a centre you can trust</h2>
+          <h2>
+            <EditableText keyName="home.teaser.findcentre.title">Learn at a centre you can trust</EditableText>
+          </h2>
           <p>
-            BADGES is taught at partner centres across Malaysia, each one
-            accredited to the national standard. Find one near you and enrol your
-            child.
+            <EditableText keyName="home.teaser.findcentre.body">
+              BADGES is taught at partner centres across Malaysia, each one accredited to the national standard. Find one near you and enrol your child.
+            </EditableText>
           </p>
           <Link to="/directory" className="mas-btn-solid-navy">Find a swim centre</Link>
         </article>
 
         <article className="mas-teaser">
           <span className="mas-eyebrow">Teach with BADGES</span>
-          <h2>Bring BADGES to your centre</h2>
+          <h2>
+            <EditableText keyName="home.teaser.teach.title">Bring BADGES to your centre</EditableText>
+          </h2>
           <p>
             Become an accredited instructor or partner centre and deliver a
             structured national curriculum, backed by a full teaching and
@@ -89,7 +100,9 @@ export default function Home() {
 
         <article className="mas-teaser">
           <span className="mas-eyebrow">Keep levelling up</span>
-          <h2>Every level is a reason to keep going</h2>
+          <h2>
+            <EditableText keyName="home.teaser.levelup.title">Every level is a reason to keep going</EditableText>
+          </h2>
           <p>
             Each badge marks real, assessed progress — a milestone a child can
             see and be proud of, and a clear next step to aim for. Good teaching
