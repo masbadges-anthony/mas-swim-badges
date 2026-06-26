@@ -6,7 +6,24 @@
 export interface FaqItem { q: string; a: string; }
 export interface FaqCategory { key: string; title: string; accent: string; intro: string; items: FaqItem[]; }
 
-export const FAQ_CATEGORIES: FaqCategory[] = [
+export const FAQ_CATEGORIES: FaqCategory[
+  {
+    key: 'general',
+    title: 'About the programme',
+    accent: '#FF7042',
+    intro: 'For anyone wanting to understand how the system is set up, taught, and assessed.',
+    items: [
+      { q: 'What is MAS BADGES?',
+        a: 'A national Learn-to-Swim certification framework run by Malaysia Aquatics: seven progressive levels — Starfish, Sea Turtle, Guppy, Octopus, Frog, Swordfish, Dolphin — primarily for children aged 5–12, from first water familiarisation through to competitive readiness.' },
+      { q: 'Who runs and governs the programme?',
+        a: 'Malaysia Aquatics, through its Board and its Coaching & Technical Board. A Chairperson leads the programme, a Chief Examiner oversees assessment standards, and certified Master Trainers run the instructor and examiner courses.' },
+      { q: 'How is a swimmer assessed?',
+        a: 'Their instructor prepares and books the assessment; an independent examiner — never the swimmer’s own teacher — assesses them against the published criteria for that level. A Pass is recorded and a verifiable certificate is issued. There is no partial pass: either the full standard is met, or the swimmer is referred to re-attempt.' },
+      { q: 'What makes a BADGES certificate trustworthy?',
+        a: 'Independence (a firewall between teaching and judging), a single published standard for every level, and certificates that are serialised, issued only on a genuine pass, and publicly verifiable — while never exposing a child’s identity.' },
+    ],
+  },
+  ] = [
   {
     key: 'parents',
     title: 'For parents & swimmers',
@@ -87,22 +104,6 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
         a: 'The conflict-of-interest firewall: an examiner may never assess a candidate they have personally taught or coached. The portal enforces this in data — an examiner is only able to grade the candidates they were assigned, never their own.' },
       { q: 'What’s the term, and how is standing maintained?',
         a: 'Appointment is for two years, aligned with the MAS governance term. Continuing in good standing means conducting at least one assessment per year (or notifying leave), attending the annual meeting, passing periodic audits, and keeping current instructor and lifesaving certifications.' },
-    ],
-  },
-  {
-    key: 'general',
-    title: 'About the programme',
-    accent: '#FF7042',
-    intro: 'For anyone wanting to understand how the system is set up, taught, and assessed.',
-    items: [
-      { q: 'What is MAS BADGES?',
-        a: 'A national Learn-to-Swim certification framework run by Malaysia Aquatics: seven progressive levels — Starfish, Sea Turtle, Guppy, Octopus, Frog, Swordfish, Dolphin — primarily for children aged 5–12, from first water familiarisation through to competitive readiness.' },
-      { q: 'Who runs and governs the programme?',
-        a: 'Malaysia Aquatics, through its Board and its Coaching & Technical Board. A Chairperson leads the programme, a Chief Examiner oversees assessment standards, and certified Master Trainers run the instructor and examiner courses.' },
-      { q: 'How is a swimmer assessed?',
-        a: 'Their instructor prepares and books the assessment; an independent examiner — never the swimmer’s own teacher — assesses them against the published criteria for that level. A Pass is recorded and a verifiable certificate is issued. There is no partial pass: either the full standard is met, or the swimmer is referred to re-attempt.' },
-      { q: 'What makes a BADGES certificate trustworthy?',
-        a: 'Independence (a firewall between teaching and judging), a single published standard for every level, and certificates that are serialised, issued only on a genuine pass, and publicly verifiable — while never exposing a child’s identity.' },
     ],
   },
 ];
