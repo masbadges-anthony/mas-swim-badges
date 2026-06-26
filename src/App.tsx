@@ -13,6 +13,7 @@ import Contact from './pages/Contact';
 import FAQ from './pages/FAQ';
 import Guides from './pages/Guides';
 import GuideDetail from './pages/GuideDetail';
+import Instructors from './pages/Instructors';
 import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import Safeguarding from './pages/Safeguarding';
@@ -101,10 +102,33 @@ function PublicLayout() {
         <Brand />
         <nav className="mas-topnav-links">
           <NavLink to="/the-programme" className={navClass}>The programme</NavLink>
-          <NavLink to="/guides" className={navClass}>Guides</NavLink>
-          <NavLink to="/directory" className={navClass}>Find a centre</NavLink>
+
+          <div className="mas-navitem mas-has-menu">
+            <NavLink to="/directory" className={`${''} mas-menu-top`}>Find a centre</NavLink>
+            <div className="mas-submenu">
+              <NavLink to="/directory">Browse the directory</NavLink>
+              <NavLink to="/for-centres">Become a partner centre</NavLink>
+            </div>
+          </div>
+
+          <NavLink to="/instructors" className={navClass}>Instructors</NavLink>
+
+          <div className="mas-navitem mas-has-menu">
+            <NavLink to="/guides" className={`${''} mas-menu-top`}>Guides</NavLink>
+            <div className="mas-submenu mas-submenu-wide">
+              <NavLink to="/guides" className="mas-submenu-head">All guides</NavLink>
+              <NavLink to="/guides/how-it-works">How MAS BADGES works</NavLink>
+              <NavLink to="/guides/enrol">Getting into the Badges</NavLink>
+              <NavLink to="/guides/claim">Claiming your child</NavLink>
+              <NavLink to="/guides/certificates">Viewing certificates &amp; levels</NavLink>
+              <NavLink to="/guides/verify">Authenticating a certificate</NavLink>
+              <NavLink to="/guides/assessment">The assessment guide</NavLink>
+              <NavLink to="/guides/instructor-pathway">Instructor pathway</NavLink>
+              <NavLink to="/guides/examiner-pathway">Examiner pathway</NavLink>
+            </div>
+          </div>
+
           <NavLink to="/courses" className={navClass}>Courses</NavLink>
-          <NavLink to="/for-centres" className={navClass}>For centres</NavLink>
           <NavLink to="/about" className={navClass}>About</NavLink>
           <NavLink to="/faq" className={navClass}>FAQ</NavLink>
         </nav>
@@ -355,6 +379,7 @@ export default function App() {
               <Route path="/faq" element={<FAQ />} />
               <Route path="/guides" element={<Guides />} />
               <Route path="/guides/:slug" element={<GuideDetail />} />
+              <Route path="/instructors" element={<Instructors />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/safeguarding" element={<Safeguarding />} />
