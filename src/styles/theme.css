@@ -1520,18 +1520,25 @@
    in the header bar; on mobile (≤860px) it is hidden and a full-width input
    appears inside the menu panel instead (see the media block below).
    ===================================================================== */
-.mas-app .mas-topnav .mas-search { display: inline-flex; align-items: center; flex: 0 0 auto; margin-left: auto; }
+/* The form is the positioning context for the overlay input; only the toggle
+   button occupies layout space, so the header row never changes width. */
+.mas-app .mas-topnav .mas-search { display: inline-flex; align-items: center; flex: 0 0 auto; margin-left: auto; position: relative; }
 .mas-app .mas-topnav .mas-search ~ .mas-login-btn { margin-left: 0.6rem; }
+/* The expanded input floats OVER the header bar (absolutely positioned), anchored
+   just left of the toggle and growing leftward. It is out of flow, so the nav items
+   stay put and never wrap to a second line. */
 .mas-app .mas-search-input {
+  position: absolute; top: 50%; right: calc(40px + 0.45rem); transform: translateY(-50%);
   width: 0; height: 40px; padding: 0; box-sizing: border-box;
   border: 1px solid transparent; border-radius: 999px;
-  background: var(--mas-paper); color: var(--mas-navy);
+  background: #fff; color: var(--mas-navy);
   font-family: inherit; font-size: 0.95rem;
-  opacity: 0; pointer-events: none;
+  opacity: 0; pointer-events: none; z-index: 30;
+  box-shadow: 0 8px 24px rgba(10, 31, 68, .14);
   transition: width .25s ease, padding .25s ease, opacity .2s ease, border-color .15s ease;
 }
 .mas-app .mas-search.is-open .mas-search-input {
-  width: 220px; padding: 0 0.95rem; margin-right: 0.45rem;
+  width: 260px; padding: 0 0.95rem;
   opacity: 1; pointer-events: auto; border-color: var(--mas-line);
 }
 .mas-app .mas-search-input::placeholder { color: var(--mas-muted); }
@@ -1587,6 +1594,7 @@
     border-bottom: 1px solid var(--mas-line);
   }
   .mas-app .mas-search-mobile .mas-search-input {
+    position: static; transform: none; box-shadow: none; z-index: auto;
     flex: 1 1 auto; width: auto; height: 42px; padding: 0 0.9rem; margin: 0;
     opacity: 1; pointer-events: auto;
     border: 1px solid var(--mas-line); border-radius: 10px; background: #fff;
