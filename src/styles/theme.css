@@ -984,6 +984,35 @@
   .mas-app .mas-levelcard-badge { width: 76px; height: 76px; }
 }
 
+/* ---- Home teaser sections ---- */
+.mas-app .mas-home-teasers {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 1.1rem; margin-top: 2.75rem;
+}
+.mas-app .mas-teaser {
+  background: #fff; border: 1px solid var(--mas-line); border-radius: var(--r);
+  box-shadow: var(--sh-sm); padding: 1.9rem;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem;
+}
+.mas-app .mas-teaser h2 { color: var(--mas-navy); font-size: 1.4rem; margin: 0; }
+.mas-app .mas-teaser p {
+  color: var(--mas-muted); text-transform: none; margin: 0;
+  line-height: 1.6; max-width: 48ch;
+}
+.mas-app .mas-teaser .mas-btn-solid-navy { margin-top: 0.5rem; }
+
+.mas-app .mas-home-verify-note {
+  text-align: center; margin: 1.6rem 0 0.5rem;
+  font-size: 0.86rem; color: var(--mas-muted); text-transform: none;
+}
+.mas-app .mas-home-verify-note a {
+  color: var(--mas-teal-deep); text-decoration: underline; font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .mas-app .mas-home-teasers { grid-template-columns: 1fr; }
+}
+
 /* =====================================================================
    HERO TEXTURE  (subtle waves + halftone) and FAQ accordion
    ===================================================================== */
