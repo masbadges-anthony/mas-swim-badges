@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import EditableText from '../components/EditableText';
 import '../styles/admin.css';
 
 type Category = 'centre_partnership' | 'instructor_registration' | 'parent_swimmer' | 'general';
@@ -88,11 +89,13 @@ export default function Contact() {
   return (
     <section className="mas-page">
       <header className="mas-page-head">
-        <p className="mas-eyebrow">Get in touch</p>
-        <h1>Contact &amp; enquiries</h1>
+        <p className="mas-eyebrow"><EditableText keyName="contact.header.eyebrow">Get in touch</EditableText></p>
+        <h1><EditableText keyName="contact.header.title">Contact & enquiries</EditableText></h1>
         <p className="mas-lede">
-          Choose the option that fits, and your enquiry goes straight to the right
-          person at Malaysia Aquatics. We reply by email.
+          <EditableText keyName="contact.header.lede">
+            Choose the option that fits, and your enquiry goes straight to the right
+            person at Malaysia Aquatics. We reply by email.
+          </EditableText>
         </p>
       </header>
 
@@ -115,8 +118,8 @@ export default function Contact() {
       {done ? (
         <div className="mas-alert is-success" style={{ maxWidth: '640px', marginTop: '1rem' }}>
           <div className="mas-alert-body">
-            <p className="mas-alert-title">Thank you — your enquiry is in.</p>
-            <p className="mas-alert-text">We’ll be in touch by email. You can send another enquiry any time.</p>
+            <p className="mas-alert-title"><EditableText keyName="contact.success.title">Thank you — your enquiry is in.</EditableText></p>
+            <p className="mas-alert-text"><EditableText keyName="contact.success.body">We’ll be in touch by email. You can send another enquiry any time.</EditableText></p>
           </div>
         </div>
       ) : (

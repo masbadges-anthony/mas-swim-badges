@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import EditableText from '../components/EditableText';
 
 interface Course {
   id: string;
@@ -73,11 +74,13 @@ export default function Courses() {
   return (
     <section className="mas-page mas-courses">
       <header className="mas-page-head">
-        <p className="mas-eyebrow">Training</p>
-        <h1>Courses &amp; certification</h1>
+        <p className="mas-eyebrow"><EditableText keyName="courses.header.eyebrow">Training</EditableText></p>
+        <h1><EditableText keyName="courses.header.title">Courses & certification</EditableText></h1>
         <p className="mas-lede">
-          Upcoming instructor and examiner certification courses and clinics under
-          the MAS Swim Badges programme.
+          <EditableText keyName="courses.header.lede">
+            Upcoming instructor and examiner certification courses and clinics under
+            the MAS Swim Badges programme.
+          </EditableText>
         </p>
       </header>
 

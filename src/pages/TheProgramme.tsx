@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { LEVELS } from '../data/levels';
+import EditableText from '../components/EditableText';
 
 // "What's assessed" — the headline criteria per level, condensed from the
 // official 7-Level Syllabus assessment criteria.
@@ -17,12 +18,14 @@ export default function TheProgramme() {
   return (
     <section className="mas-page mas-programme">
       <header className="mas-page-head">
-        <p className="mas-eyebrow">The programme</p>
-        <h1>Seven badges, one national pathway</h1>
+        <p className="mas-eyebrow"><EditableText keyName="programme.header.eyebrow">The programme</EditableText></p>
+        <h1><EditableText keyName="programme.header.title">Seven badges, one national pathway</EditableText></h1>
         <p className="mas-lede">
-          The MAS Swim Badges programme takes a child from their very first day in
-          the water through to competitive readiness — a clear, standardised pathway
-          with the same meaning at every recognised centre in the country.
+          <EditableText keyName="programme.header.lede">
+            The MAS Swim Badges programme takes a child from their very first day in
+            the water through to competitive readiness — a clear, standardised pathway
+            with the same meaning at every recognised centre in the country.
+          </EditableText>
         </p>
       </header>
 
@@ -47,24 +50,26 @@ export default function TheProgramme() {
 
       <div className="mas-prog-info">
         <section className="mas-prog-info-card">
-          <h2>How assessment works</h2>
+          <h2><EditableText keyName="programme.assessment.title">How assessment works</EditableText></h2>
           <p>
-            A child is prepared by their instructor, then assessed by an independent
-            examiner with no conflict of interest with the candidate. On a pass, a
-            certificate is issued with a unique serial that anyone can verify online.
-            The badge certifies the swimmer — the same standard wherever it is earned —
-            and progression follows the pathway in order, without skipping levels.
+            <EditableText keyName="programme.assessment.body">
+              A child is prepared by their instructor, then assessed by an independent
+              examiner with no conflict of interest with the candidate. On a pass, a
+              certificate is issued with a unique serial that anyone can verify online.
+              The badge certifies the swimmer — the same standard wherever it is earned —
+              and progression follows the pathway in order, without skipping levels.
+            </EditableText>
           </p>
           <Link to="/guides/assessment" className="mas-link">Read the full assessment guide →</Link>
         </section>
         <section className="mas-prog-info-card">
-          <h2>Fees</h2>
-          <p>Assessment fees are set nationally, per level:</p>
+          <h2><EditableText keyName="programme.fees.title">Fees</EditableText></h2>
+          <p><EditableText keyName="programme.fees.intro">Assessment fees are set nationally, per level:</EditableText></p>
           <ul className="mas-prog-criteria">
             <li><strong>RM 50 per level</strong> — Starfish, Sea Turtle, Guppy</li>
             <li><strong>RM 75 per level</strong> — Octopus, Frog, Swordfish, Dolphin</li>
           </ul>
-          <p>Centres set their own tuition separately.</p>
+          <p><EditableText keyName="programme.fees.note">Centres set their own tuition separately.</EditableText></p>
         </section>
       </div>
 
