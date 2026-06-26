@@ -244,14 +244,16 @@ function PublicLayout() {
             tabIndex={searchOpen ? 0 : -1}
           />
           <button
-            type="submit"
+            type="button"
             className="mas-search-toggle"
             aria-label={searchOpen ? 'Close search' : 'Open search'}
             aria-expanded={searchOpen}
-            onClick={(e) => {
+            onClick={() => {
               // Toggle the reveal. When open the icon dismisses it; submitting is
-              // done with Enter from the input.
-              e.preventDefault();
+              // done with Enter from the input, which fires the form's onSubmit.
+              // (This button must NOT be type="submit": as the form's default
+              // submit control it would otherwise intercept the Enter keypress
+              // and cancel navigation via preventDefault.)
               setSearchOpen((o) => !o);
             }}
           >
