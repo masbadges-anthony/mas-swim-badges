@@ -89,6 +89,11 @@ export default function EditableText({ keyName, text, children }: EditableTextPr
   if (editing) {
     return (
       <span
+        // Distinct key from the display span below so React unmounts this node
+        // instead of reusing it. The contentEditable text is set imperatively
+        // (outside React's vdom); reusing the DOM node on exit would leave that
+        // orphaned text node in place alongside React's own — the duplicate.
+        key="editing"
         ref={fieldRef}
         className="mas-editable mas-editable-field"
         contentEditable
@@ -112,6 +117,7 @@ export default function EditableText({ keyName, text, children }: EditableTextPr
 
   return (
     <span
+      key="display"
       className={`mas-editable mas-editable-trigger${status === 'error' ? ' is-error' : ''}`}
       role="button"
       tabIndex={0}
