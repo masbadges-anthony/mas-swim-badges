@@ -109,6 +109,7 @@ export default function Contact() {
         ))}
       </div>
 
+      <div className="mas-contact-card">
       <p className="mas-lede" style={{ maxWidth: '60ch' }}>{INTRO[category]}</p>
 
       {done ? (
@@ -184,6 +185,7 @@ export default function Contact() {
           </div>
         </form>
       )}
+      </div>
     </section>
   );
 }
