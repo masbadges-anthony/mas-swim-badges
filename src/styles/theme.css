@@ -801,9 +801,11 @@
   background: #fff;
   transition: box-shadow .25s ease;
 }
+/* Reserve a stable bar height so the inner shrink never reflows the page edge. */
+.mas-app .mas-topnav-inner { min-height: 64px; }
 /* Expanded (at top): ~50% thicker, larger logo */
-.mas-app .mas-topnav-inner { padding: 0.9rem 1.75rem; transition: padding .25s ease; }
-.mas-app .mas-topnav .mas-logo { height: 64px; transition: height .25s ease; }
+.mas-app .mas-topnav-inner { padding: 0.9rem 1.75rem; transition: padding .22s ease; will-change: padding; }
+.mas-app .mas-topnav .mas-logo { height: 64px; transition: height .22s ease; will-change: height; }
 
 /* Compact (scrolled): back to the current size */
 .mas-app .mas-topnav.is-scrolled { box-shadow: 0 4px 16px rgba(10, 31, 68, .08); }
@@ -1167,3 +1169,80 @@
   .mas-app .mas-submenu { display: none; }
   .mas-app .mas-menu-top::after { display: none; }
 }
+
+/* =====================================================================
+   THE PROGRAMME — colour-blocked per-level sections
+   ===================================================================== */
+.mas-app .mas-prog-levels { margin-bottom: 0.5rem; }
+.mas-app .mas-prog-level {
+  --lvl: var(--mas-teal);
+  display: grid; grid-template-columns: 200px 1fr;
+  background: #fff; border: 1px solid var(--mas-line); border-radius: 16px; overflow: hidden; margin-bottom: 1.1rem;
+}
+.mas-app .mas-prog-level-side {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--lvl) 16%, #fff), color-mix(in srgb, var(--lvl) 5%, #fff));
+  border-right: 3px solid var(--lvl);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.55rem; padding: 1.5rem;
+}
+.mas-app .mas-prog-level-side img { width: 112px; height: 112px; object-fit: contain; filter: drop-shadow(0 5px 12px rgba(10,31,68,.16)); }
+.mas-app .mas-prog-level-no { font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; color: var(--lvl); }
+.mas-app .mas-prog-level-body { padding: 1.4rem 1.6rem; }
+.mas-app .mas-prog-level-body h2 { color: var(--lvl); font-size: 1.5rem; }
+.mas-app .mas-prog-outcome { color: var(--mas-ink); line-height: 1.55; margin: 0.4rem 0 1.1rem; text-transform: none; }
+.mas-app .mas-prog-assessed-label { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 800; color: var(--mas-muted); margin: 0 0 0.55rem; }
+.mas-app .mas-prog-criteria { columns: 2; column-gap: 1.5rem; list-style: none; padding: 0; margin: 0; }
+.mas-app .mas-prog-criteria li {
+  position: relative; padding: 0 0 0.42rem 1.35rem; break-inside: avoid;
+  font-size: 0.88rem; color: var(--mas-ink); text-transform: none; line-height: 1.4;
+}
+.mas-app .mas-prog-criteria li::before {
+  content: ""; position: absolute; left: 0; top: 0.42rem; width: 8px; height: 8px; background: var(--lvl); transform: rotate(45deg);
+}
+@media (max-width: 720px) {
+  .mas-app .mas-prog-level { grid-template-columns: 1fr; }
+  .mas-app .mas-prog-level-side { flex-direction: row; justify-content: flex-start; gap: 1rem; border-right: 0; border-bottom: 3px solid var(--lvl); padding: 1rem 1.2rem; }
+  .mas-app .mas-prog-level-side img { width: 70px; height: 70px; }
+  .mas-app .mas-prog-criteria { columns: 1; }
+}
+
+.mas-app .mas-prog-info { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; }
+.mas-app .mas-prog-info-card { background: #fff; border: 1px solid var(--mas-line); border-radius: 14px; padding: 1.4rem 1.5rem; }
+.mas-app .mas-prog-info-card h2 { color: var(--mas-navy); font-size: 1.2rem; margin-bottom: 0.5rem; }
+.mas-app .mas-prog-info-card p { color: var(--mas-muted); line-height: 1.6; text-transform: none; margin: 0 0 0.6rem; }
+@media (max-width: 720px) { .mas-app .mas-prog-info { grid-template-columns: 1fr; } }
+
+.mas-app .mas-prog-cta, .mas-app .mas-centre-cta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.75rem; }
+
+/* shared navy buttons (programme + directory) */
+.mas-app .mas-btn-solid-navy {
+  background: var(--mas-navy); color: #fff; font-weight: 800; padding: 0.7rem 1.3rem; border-radius: 10px;
+  text-decoration: none; transition: transform .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-btn-solid-navy:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(10,31,68,.2); }
+.mas-app .mas-btn-ghost-navy {
+  border: 2px solid var(--mas-navy); color: var(--mas-navy); font-weight: 800; padding: 0.62rem 1.3rem; border-radius: 10px;
+  text-decoration: none; transition: background .15s ease;
+}
+.mas-app .mas-btn-ghost-navy:hover { background: color-mix(in srgb, var(--mas-navy) 8%, #fff); }
+
+/* =====================================================================
+   FIND A CENTRE — partner-centre context (folded in from For Centres)
+   ===================================================================== */
+.mas-app .mas-centre-join { margin-top: 2.75rem; padding-top: 2rem; border-top: 1px solid var(--mas-line); }
+.mas-app .mas-centre-join-head { margin-bottom: 1.25rem; }
+.mas-app .mas-centre-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.mas-app .mas-centre-block {
+  --lvl: var(--mas-teal); background: #fff; border: 1px solid var(--mas-line);
+  border-top: 3px solid var(--lvl); border-radius: 14px; padding: 1.2rem 1.3rem;
+}
+.mas-app .mas-centre-block h3 { color: var(--mas-navy); font-size: 1.05rem; margin-bottom: 0.6rem; }
+.mas-app .mas-centre-block ul, .mas-app .mas-centre-block ol { margin: 0; padding-left: 0; list-style: none; }
+.mas-app .mas-centre-block li { position: relative; padding: 0 0 0.5rem 1.4rem; font-size: 0.9rem; color: var(--mas-ink); text-transform: none; line-height: 1.45; }
+.mas-app .mas-centre-block ul li::before { content: ""; position: absolute; left: 0; top: 0.5rem; width: 7px; height: 7px; border-radius: 50%; background: var(--lvl); }
+.mas-app .mas-centre-block ol { counter-reset: cstep; }
+.mas-app .mas-centre-block ol li { counter-increment: cstep; }
+.mas-app .mas-centre-block ol li::before {
+  content: counter(cstep); position: absolute; left: 0; top: 0; width: 1.25rem; height: 1.25rem;
+  display: grid; place-items: center; background: var(--lvl); color: #fff; border-radius: 50%; font-size: 0.7rem; font-weight: 800;
+}
+.mas-app .mas-centre-note { margin-top: 1.25rem; }
