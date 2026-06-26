@@ -103,7 +103,7 @@ function PublicLayout() {
           <NavLink to="/courses" className={navClass}>Courses</NavLink>
           <NavLink to="/for-centres" className={navClass}>For centres</NavLink>
           <NavLink to="/about" className={navClass}>About</NavLink>
-          <NavLink to="/verify" className={navClass}>Verify</NavLink>
+          <NavLink to="/faq" className={navClass}>FAQ</NavLink>
         </nav>
         {loginIsExternal ? (
           <a href={PORTAL_LOGIN} className="mas-login-btn">Portal login</a>
