@@ -879,3 +879,89 @@
 .mas-app .mas-tile-ic { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: 0 0 auto; }
 .mas-app .mas-tile-ic svg { width: 16px; height: 16px; }
 .mas-app .mas-tile-t { font-size: 0.88rem; font-weight: 600; line-height: 1.2; }
+
+/* =====================================================================
+   PUBLIC SITE — BADGE VISUAL IDENTITY
+   Per-level palette (sampled from the syllabus), teal brand hero, and the
+   Starfish -> Dolphin badge pathway. Public only (.mas-site / .mas-home).
+   ===================================================================== */
+.mas-app {
+  --mas-teal: #09B3CA;
+  --mas-teal-deep: #0894b0;
+  --lvl-1: #FF7042;  --lvl-2: #26A59A;  --lvl-3: #00ACC1;  --lvl-4: #E43834;
+  --lvl-5: #66BA69;  --lvl-6: #1D87E4;  --lvl-7: #5D34B1;
+}
+
+/* ---- Hero (teal block, bold heading; echoes the syllabus cover) ---- */
+.mas-app .mas-home .mas-home-hero {
+  background:
+    radial-gradient(120% 140% at 85% 10%, rgba(255,255,255,.18), transparent 55%),
+    linear-gradient(135deg, var(--mas-teal) 0%, var(--mas-teal-deep) 100%);
+  border-radius: 20px;
+  padding: clamp(2.25rem, 5vw, 3.5rem);
+  margin-bottom: 2.75rem;
+  color: #fff;
+  overflow: hidden;
+}
+.mas-app .mas-home-hero-inner { max-width: 640px; }
+.mas-app .mas-eyebrow-pill {
+  display: inline-block; text-transform: uppercase; letter-spacing: 0.14em;
+  font-size: 0.7rem; font-weight: 800; color: #fff;
+  background: rgba(255,255,255,.18); padding: 0.4rem 0.85rem; border-radius: 999px; margin: 0 0 1.1rem;
+}
+.mas-app .mas-home-title {
+  color: #fff; font-size: clamp(2.4rem, 5.5vw, 3.8rem); line-height: 0.98; margin: 0;
+}
+.mas-app .mas-home-sub {
+  color: rgba(255,255,255,.92); font-size: 1.05rem; line-height: 1.5;
+  max-width: 46ch; margin: 1rem 0 0; text-transform: none;
+}
+.mas-app .mas-home-cta { display: flex; gap: 0.75rem; margin-top: 1.6rem; flex-wrap: wrap; }
+.mas-app .mas-btn-solid {
+  background: #fff; color: var(--mas-teal-deep); font-weight: 800;
+  padding: 0.7rem 1.3rem; border-radius: 10px; text-decoration: none;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-btn-solid:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0,0,0,.18); }
+.mas-app .mas-btn-outline-light {
+  border: 2px solid rgba(255,255,255,.65); color: #fff; font-weight: 800;
+  padding: 0.62rem 1.3rem; border-radius: 10px; text-decoration: none; transition: background .15s ease;
+}
+.mas-app .mas-btn-outline-light:hover { background: rgba(255,255,255,.14); }
+
+/* ---- Level pathway ---- */
+.mas-app .mas-levels { margin-bottom: 2.75rem; }
+.mas-app .mas-levels-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem;
+}
+.mas-app .mas-levels-head h2 { color: var(--mas-navy); font-size: 1.5rem; }
+.mas-app .mas-levels-arrow {
+  color: var(--mas-teal); font-weight: 800; font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.mas-app .mas-levelstrip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.75rem; }
+.mas-app .mas-levelcard {
+  background: #fff; border: 1px solid var(--mas-line); border-top: 3px solid var(--lvl);
+  border-radius: 14px; padding: 1.1rem 0.8rem 1rem; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-levelcard:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(10,31,68,.10); }
+.mas-app .mas-levelcard-badge {
+  width: 92px; height: 92px; display: grid; place-items: center; margin-bottom: 0.2rem;
+  filter: drop-shadow(0 4px 8px rgba(10,31,68,.12));
+}
+.mas-app .mas-levelcard-badge img { width: 100%; height: 100%; object-fit: contain; }
+.mas-app .mas-levelcard-no {
+  font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 800; color: var(--lvl);
+}
+.mas-app .mas-levelcard-name { color: var(--mas-navy); font-size: 1.05rem; }
+.mas-app .mas-levelcard-blurb { font-size: 0.74rem; line-height: 1.4; color: var(--mas-muted); text-transform: none; }
+
+@media (max-width: 1024px) {
+  .mas-app .mas-levelstrip { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
+@media (max-width: 480px) {
+  .mas-app .mas-levelstrip { grid-template-columns: repeat(2, 1fr); }
+  .mas-app .mas-levelcard-badge { width: 76px; height: 76px; }
+}
