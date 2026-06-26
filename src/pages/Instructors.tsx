@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import EditableText from '../components/EditableText';
 
 interface Row { id: string; full_name: string; state: string | null; centre_name: string | null; independent: boolean; }
 
@@ -30,12 +31,14 @@ export default function Instructors() {
   return (
     <section className="mas-page mas-instructors">
       <header className="mas-page-head">
-        <p className="mas-eyebrow">Instructors</p>
-        <h1>Certified BADGES instructors</h1>
+        <p className="mas-eyebrow"><EditableText keyName="instructors.header.eyebrow">Instructors</EditableText></p>
+        <h1><EditableText keyName="instructors.header.title">Certified BADGES instructors</EditableText></h1>
         <p className="mas-lede">
-          Instructors are the core of the programme — the people who teach to the
-          syllabus, prepare swimmers, and book assessments. Find a listed instructor
-          below, learn the pathway to becoming one, or partner with a recognised centre.
+          <EditableText keyName="instructors.header.lede">
+            Instructors are the core of the programme — the people who teach to the
+            syllabus, prepare swimmers, and book assessments. Find a listed instructor
+            below, learn the pathway to becoming one, or partner with a recognised centre.
+          </EditableText>
         </p>
       </header>
 
@@ -60,14 +63,20 @@ export default function Instructors() {
         </select>
       </div>
 
-      {loading && <p className="mas-status">Loading…</p>}
+      {loading && (
+        <p className="mas-status">
+          <EditableText keyName="instructors.status.loading">Loading…</EditableText>
+        </p>
+      )}
       {!loading && rows.length === 0 && (
         <div className="mas-alert is-info">
           <div className="mas-alert-body">
-            <p className="mas-alert-title">No instructors are publicly listed yet.</p>
+            <p className="mas-alert-title"><EditableText keyName="instructors.empty.title">No instructors are publicly listed yet.</EditableText></p>
             <p className="mas-alert-text">
-              Listing is opt-in — certified instructors can choose to appear here from
-              their portal account. In the meantime, find a recognised centre in the directory.
+              <EditableText keyName="instructors.empty.body">
+                Listing is opt-in — certified instructors can choose to appear here from
+                their portal account. In the meantime, find a recognised centre in the directory.
+              </EditableText>
             </p>
           </div>
         </div>
@@ -91,8 +100,10 @@ export default function Instructors() {
       )}
 
       <p className="mas-inst-note">
-        Are you a certified BADGES instructor? You can choose to be listed here from your
-        portal account — listing is always opt-in.
+        <EditableText keyName="instructors.note">
+          Are you a certified BADGES instructor? You can choose to be listed here from your
+          portal account — listing is always opt-in.
+        </EditableText>
       </p>
     </section>
   );
