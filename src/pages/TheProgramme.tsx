@@ -28,7 +28,7 @@ export default function TheProgramme() {
 
       <div className="mas-prog-levels">
         {LEVELS.map((l) => (
-          <article key={l.key} className="mas-prog-level" style={{ ['--lvl' as string]: l.color }}>
+          <article key={l.key} id={`level-${l.level}`} className="mas-prog-level" style={{ ['--lvl' as string]: l.color }}>
             <div className="mas-prog-level-side">
               <img src={l.badge} alt={`${l.name} badge`} loading="lazy" />
               <span className="mas-prog-level-no">Level {l.level}</span>
