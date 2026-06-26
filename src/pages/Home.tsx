@@ -35,14 +35,20 @@ export default function Home() {
         </div>
         <div className="mas-levelstrip">
           {LEVELS.map((l) => (
-            <article key={l.key} className="mas-levelcard" style={{ ['--lvl' as string]: l.color }}>
+            <Link
+              key={l.key}
+              className="mas-levelcard"
+              to={`/the-programme#level-${l.level}`}
+              style={{ ['--lvl' as string]: l.color }}
+              aria-label={`Level ${l.level}: ${l.name} — see details on The Programme page`}
+            >
               <div className="mas-levelcard-badge">
                 <img src={l.badge} alt={`${l.name} badge`} loading="lazy" />
               </div>
               <span className="mas-levelcard-no">Level {l.level}</span>
               <span className="mas-levelcard-name">{l.name}</span>
               <p className="mas-levelcard-blurb">{l.blurb}</p>
-            </article>
+            </Link>
           ))}
         </div>
       </section>

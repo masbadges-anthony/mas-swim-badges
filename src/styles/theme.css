@@ -961,8 +961,10 @@
   border-radius: 14px; padding: 1.1rem 0.8rem 1rem; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
   transition: transform .15s ease, box-shadow .15s ease;
+  text-decoration: none; color: inherit; cursor: pointer;
 }
 .mas-app .mas-levelcard:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(10,31,68,.10); }
+.mas-app .mas-levelcard:focus-visible { outline: 3px solid var(--lvl); outline-offset: 2px; }
 .mas-app .mas-levelcard-badge {
   width: 92px; height: 92px; display: grid; place-items: center; margin-bottom: 0.2rem;
   filter: drop-shadow(0 4px 8px rgba(10,31,68,.12));
@@ -1188,6 +1190,8 @@
    THE PROGRAMME — colour-blocked per-level sections
    ===================================================================== */
 .mas-app .mas-prog-levels { margin-bottom: 0.5rem; }
+/* Keep anchored sections clear of the fixed header when scrolled into view. */
+.mas-app .mas-prog-level { scroll-margin-top: 80px; }
 .mas-app .mas-prog-level {
   --lvl: var(--mas-teal);
   display: grid; grid-template-columns: 200px 1fr;
