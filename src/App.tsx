@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth, ROLE_LABELS } from './lib/auth';
 import Protected from './components/Protected';
@@ -21,6 +21,7 @@ import Safeguarding from './pages/Safeguarding';
 import Directory from './pages/Directory';
 import Courses from './pages/Courses';
 import Verify from './pages/Verify';
+import SearchResults from './pages/SearchResults';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import NotFound from './pages/NotFound';
@@ -88,9 +89,13 @@ function Brand() {
 function PublicLayout() {
   const loginIsExternal = /^https?:\/\//i.test(PORTAL_LOGIN);
   const location = useLocation();
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -99,11 +104,28 @@ function PublicLayout() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Collapse the mobile menu whenever the route changes (e.g. a link is followed).
+  // Collapse the mobile menu (and the desktop search reveal) whenever the route
+  // changes (e.g. a link is followed).
   useEffect(() => {
     setMenuOpen(false);
     setOpenSection(null);
+    setSearchOpen(false);
   }, [location.pathname]);
+
+  // Focus the desktop search input as soon as it is revealed.
+  useEffect(() => {
+    if (searchOpen) searchInputRef.current?.focus();
+  }, [searchOpen]);
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+    navigate(`/search?q=${encodeURIComponent(q)}`);
+    setSearchOpen(false);
+    setMenuOpen(false);
+    setQuery('');
+  };
 
   // Allow closing the open mobile menu with the Escape key.
   useEffect(() => {
@@ -128,6 +150,22 @@ function PublicLayout() {
           className={`mas-topnav-links${menuOpen ? ' is-open' : ''}`}
           onClick={(e) => { if ((e.target as HTMLElement).closest('a')) setMenuOpen(false); }}
         >
+          {/* Search lives inside the mobile menu; the desktop reveal sits in the
+              header bar (below). Both share the same query + submit handler. */}
+          <form className="mas-search-mobile" role="search" onSubmit={submitSearch}>
+            <input
+              className="mas-search-input"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search the site…"
+              aria-label="Search the site"
+            />
+            <button type="submit" className="mas-search-mobile-btn" aria-label="Search">
+              <Icon name="search" />
+            </button>
+          </form>
+
           <NavLink to="/the-programme" className={navClass}>The programme</NavLink>
 
           <div className={`mas-navitem mas-has-menu${openSection === 'centre' ? ' is-open' : ''}`}>
@@ -181,6 +219,31 @@ function PublicLayout() {
           <NavLink to="/about" className={navClass}>About</NavLink>
           <NavLink to="/faq" className={navClass}>FAQ</NavLink>
         </nav>
+        {/* Desktop search: an icon button that reveals an inline input. Hidden on
+            mobile, where the search box lives inside the menu panel instead. */}
+        <form className={`mas-search${searchOpen ? ' is-open' : ''}`} role="search" onSubmit={submitSearch}>
+          <input
+            ref={searchInputRef}
+            className="mas-search-input"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setSearchOpen(false); }}
+            placeholder="Search the site…"
+            aria-label="Search the site"
+            aria-hidden={!searchOpen}
+            tabIndex={searchOpen ? 0 : -1}
+          />
+          <button
+            type="submit"
+            className="mas-search-toggle"
+            aria-label={searchOpen ? 'Search' : 'Open search'}
+            aria-expanded={searchOpen}
+            onClick={(e) => { if (!searchOpen) { e.preventDefault(); setSearchOpen(true); } }}
+          >
+            <Icon name="search" />
+          </button>
+        </form>
         {loginIsExternal ? (
           <a href={PORTAL_LOGIN} className="mas-login-btn">Portal login</a>
         ) : (
@@ -449,6 +512,7 @@ export default function App() {
               <Route path="/courses" element={<Courses />} />
               <Route path="/verify" element={<Verify />} />
               <Route path="/verify/:serial" element={<Verify />} />
+              <Route path="/search" element={<SearchResults />} />
             </Route>
 
             <Route element={<AppLayout />}>

@@ -25,6 +25,7 @@ const P: Record<string, JSX.Element> = {
   arrowLeft: <><path d="M19 12H5M11 18l-6-6 6-6" /></>,
   home: <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M9 22V12h6v10" /></>,
   refresh: <><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></>,
+  search: <><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></>,
 };
 
 export default function Icon({ name, className }: IconProps) {

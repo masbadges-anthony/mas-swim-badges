@@ -1513,3 +1513,91 @@
 
 /* fallback for pages that no longer import admin.css */
 .mas-app .mas-site .mas-field-note { color: var(--mas-muted); font-size: 0.85rem; text-transform: none; }
+
+/* =====================================================================
+   SITE SEARCH — header entry point + /search results page
+   Navy/teal to match the rest of the public site. The desktop reveal sits
+   in the header bar; on mobile (≤860px) it is hidden and a full-width input
+   appears inside the menu panel instead (see the media block below).
+   ===================================================================== */
+.mas-app .mas-topnav .mas-search { display: inline-flex; align-items: center; flex: 0 0 auto; margin-left: auto; }
+.mas-app .mas-topnav .mas-search ~ .mas-login-btn { margin-left: 0.6rem; }
+.mas-app .mas-search-input {
+  width: 0; height: 40px; padding: 0; box-sizing: border-box;
+  border: 1px solid transparent; border-radius: 999px;
+  background: var(--mas-paper); color: var(--mas-navy);
+  font-family: inherit; font-size: 0.95rem;
+  opacity: 0; pointer-events: none;
+  transition: width .25s ease, padding .25s ease, opacity .2s ease, border-color .15s ease;
+}
+.mas-app .mas-search.is-open .mas-search-input {
+  width: 220px; padding: 0 0.95rem; margin-right: 0.45rem;
+  opacity: 1; pointer-events: auto; border-color: var(--mas-line);
+}
+.mas-app .mas-search-input::placeholder { color: var(--mas-muted); }
+.mas-app .mas-search-input:focus { outline: none; border-color: var(--mas-teal); }
+.mas-app .mas-search-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; padding: 0; flex: 0 0 auto;
+  background: transparent; border: 1px solid var(--mas-line); border-radius: 10px;
+  color: var(--mas-navy); cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.mas-app .mas-search-toggle:hover { background: var(--mas-paper); color: var(--brand); }
+.mas-app .mas-search-toggle:focus-visible { outline: 2px solid var(--mas-teal); outline-offset: 2px; }
+
+/* Mobile-only search box (lives in the menu panel). Hidden on desktop. */
+.mas-app .mas-search-mobile { display: none; }
+
+/* ---- Results page ---- */
+.mas-app .mas-search-results { list-style: none; margin: 1.75rem 0 0; padding: 0; display: grid; gap: 0.9rem; max-width: 760px; }
+.mas-app .mas-search-result { margin: 0; }
+.mas-app .mas-search-result-link {
+  display: block; padding: 1rem 1.2rem;
+  background: var(--mas-card); border: 1px solid var(--mas-line); border-left: 4px solid var(--mas-teal);
+  border-radius: 12px; text-decoration: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-search-result-link:hover {
+  border-left-color: var(--mas-teal-deep);
+  box-shadow: 0 6px 18px rgba(10, 31, 68, .08);
+}
+.mas-app .mas-search-result-source {
+  display: block; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--mas-teal-deep); font-weight: 700; margin-bottom: 0.2rem;
+}
+.mas-app .mas-search-result-title {
+  display: block; font-size: 1.15rem; color: var(--mas-navy); font-weight: 700; margin-bottom: 0.3rem;
+}
+.mas-app .mas-search-result-snippet { display: block; color: var(--mas-muted); font-size: 0.95rem; line-height: 1.5; }
+.mas-app .mas-search-empty {
+  margin-top: 1.5rem; padding: 1.4rem 1.5rem; max-width: 600px;
+  background: var(--mas-paper); border: 1px solid var(--mas-line); border-radius: 12px;
+}
+.mas-app .mas-search-empty p { margin: 0 0 0.5rem; }
+.mas-app .mas-search-empty p:last-child { margin-bottom: 0; }
+.mas-app .mas-search-empty a { color: var(--brand); }
+
+@media (max-width: 860px) {
+  /* Hide the desktop reveal; show the full-width search box in the menu panel. */
+  .mas-app .mas-topnav .mas-search { display: none; }
+  .mas-app .mas-search-mobile {
+    display: flex; align-items: center; gap: 0.5rem;
+    width: 100%; padding: 0.75rem 0.4rem; margin: 0;
+    border-bottom: 1px solid var(--mas-line);
+  }
+  .mas-app .mas-search-mobile .mas-search-input {
+    flex: 1 1 auto; width: auto; height: 42px; padding: 0 0.9rem; margin: 0;
+    opacity: 1; pointer-events: auto;
+    border: 1px solid var(--mas-line); border-radius: 10px; background: #fff;
+  }
+  .mas-app .mas-search-mobile-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; flex: 0 0 auto;
+    background: var(--mas-navy); color: #fff; border: 0; border-radius: 10px; cursor: pointer;
+  }
+  .mas-app .mas-search-mobile-btn:focus-visible { outline: 2px solid var(--mas-teal); outline-offset: 2px; }
+}
+
+/* Keep the /search target clear of the fixed header on hash-anchored results. */
+.mas-app .mas-search-results [id] { scroll-margin-top: 80px; }
