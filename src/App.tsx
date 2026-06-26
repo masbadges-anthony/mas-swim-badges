@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, NavLink, Outlet, useNavigate, useLo
 import { AuthProvider, useAuth, ROLE_LABELS } from './lib/auth';
 import Protected from './components/Protected';
 import RequireRole from './components/RequireRole';
+import ScrollToTop from './components/ScrollToTop';
 import Icon from './components/Icon';
 import Home from './pages/Home';
 import TheProgramme from './pages/TheProgramme';
@@ -365,6 +366,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <div className="mas-app">
           <ErrorBoundary>
           <Routes>
