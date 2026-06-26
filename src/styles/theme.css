@@ -1609,3 +1609,51 @@
 
 /* Keep the /search target clear of the fixed header on hash-anchored results. */
 .mas-app .mas-search-results [id] { scroll-margin-top: 80px; }
+
+/* ---------- Admin inline editing (EditableText) ---------- *
+ * Only system admins ever see these affordances; normal visitors get the value
+ * rendered as plain inline text (the component returns a bare string for them).
+ * The wrapper is display:inline so the surrounding element's styles still own
+ * the type — we only add an edit cue, never change the font/size/colour. */
+.mas-app .mas-editable {
+  display: inline;
+  font: inherit; color: inherit; letter-spacing: inherit; line-height: inherit;
+}
+.mas-app .mas-editable-trigger {
+  cursor: text;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 rgba(9, 179, 202, 0.4);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.mas-app .mas-editable-trigger:hover {
+  background: rgba(9, 179, 202, 0.1);
+  box-shadow: inset 0 -2px 0 var(--mas-teal);
+}
+.mas-app .mas-editable-trigger:focus-visible {
+  outline: 2px solid var(--mas-teal); outline-offset: 2px;
+}
+.mas-app .mas-editable-trigger.is-error {
+  box-shadow: inset 0 -2px 0 var(--mas-bad, #C62026);
+}
+.mas-app .mas-editable-field {
+  outline: 2px solid var(--mas-teal); outline-offset: 2px;
+  border-radius: 3px;
+  background: rgba(9, 179, 202, 0.08);
+  cursor: text;
+  white-space: pre-wrap;
+}
+/* Small floating status pill; absolutely positioned so it never disturbs layout. */
+.mas-app .mas-editable-status {
+  position: absolute;
+  margin-left: 0.4rem;
+  transform: translateY(-0.3em);
+  display: inline-block;
+  font-family: 'Nunito Sans', system-ui, sans-serif;
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  line-height: 1; white-space: nowrap;
+  padding: 0.28em 0.5em; border-radius: 999px;
+  background: var(--mas-navy, #1E2752); color: #fff;
+  box-shadow: 0 2px 6px rgba(10, 31, 68, 0.25);
+}
+.mas-app .mas-editable-status.is-saved { background: var(--mas-good, #2e9e5b); }
+.mas-app .mas-editable-status.is-bad { background: var(--mas-bad, #C62026); }

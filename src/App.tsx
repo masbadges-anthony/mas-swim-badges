@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth, ROLE_LABELS } from './lib/auth';
+import { ContentOverridesProvider } from './lib/contentOverrides';
 import Protected from './components/Protected';
 import RequireRole from './components/RequireRole';
 import ScrollToTop from './components/ScrollToTop';
@@ -505,6 +506,7 @@ function AppLayout() {
 export default function App() {
   return (
     <AuthProvider>
+      <ContentOverridesProvider>
       <BrowserRouter>
         <ScrollToTop />
         <div className="mas-app">
@@ -568,6 +570,7 @@ export default function App() {
           </ErrorBoundary>
         </div>
       </BrowserRouter>
+      </ContentOverridesProvider>
     </AuthProvider>
   );
 }
