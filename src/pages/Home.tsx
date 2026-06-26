@@ -53,18 +53,55 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="mas-entry-grid">
-        <Link to="/the-programme" className="mas-entry">
-          <h2>About the programme</h2>
-          <p>How the seven levels work, what each badge means, and how children progress.</p>
-          <span className="mas-entry-go">Explore the levels →</span>
-        </Link>
-        <Link to="/for-centres" className="mas-entry">
-          <h2>Run the programme</h2>
-          <p>For swim schools: become a recognised Malaysia Aquatics partner centre.</p>
-          <span className="mas-entry-go">For centres →</span>
-        </Link>
-      </div>
+      <section className="mas-home-teasers" aria-label="Explore the programme">
+        <article className="mas-teaser">
+          <span className="mas-eyebrow">How it works</span>
+          <h2>From first splash to finish line</h2>
+          <p>
+            Seven levels take a child from water familiarisation to competitive
+            readiness — each one a clear, assessed step with a badge to show for
+            it. No guesswork, just steady progress.
+          </p>
+          <Link to="/the-programme" className="mas-btn-solid-navy">See the programme</Link>
+        </article>
+
+        <article className="mas-teaser">
+          <span className="mas-eyebrow">Find a centre near you</span>
+          <h2>Learn at a centre you can trust</h2>
+          <p>
+            BADGES is taught at partner centres across Malaysia, each one
+            accredited to the national standard. Find one near you and enrol your
+            child.
+          </p>
+          <Link to="/directory" className="mas-btn-solid-navy">Find a swim centre</Link>
+        </article>
+
+        <article className="mas-teaser">
+          <span className="mas-eyebrow">Teach with BADGES</span>
+          <h2>Bring BADGES to your centre</h2>
+          <p>
+            Become an accredited instructor or partner centre and deliver a
+            structured national curriculum, backed by a full teaching and
+            assessment system.
+          </p>
+          <Link to="/courses" className="mas-btn-solid-navy">Explore courses</Link>
+        </article>
+
+        <article className="mas-teaser">
+          <span className="mas-eyebrow">Keep levelling up</span>
+          <h2>Every level is a reason to keep going</h2>
+          <p>
+            Each badge marks real, assessed progress — a milestone a child can
+            see and be proud of, and a clear next step to aim for. Good teaching
+            and honest assessment keep swimmers moving from one level to the next.
+          </p>
+          <Link to="/guides/enrol" className="mas-btn-solid-navy">What to expect</Link>
+        </article>
+      </section>
+
+      <p className="mas-home-verify-note">
+        Earned a badge? <Link to="/verify">You can verify any certificate online.</Link>
+      </p>
     </section>
   );
 }
