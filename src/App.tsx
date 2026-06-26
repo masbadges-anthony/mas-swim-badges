@@ -87,7 +87,11 @@ function Brand() {
 /* ---------- Public marketing layout (www) ---------- */
 function PublicLayout() {
   const loginIsExternal = /^https?:\/\//i.test(PORTAL_LOGIN);
+  const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<string | null>(null);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
@@ -95,16 +99,50 @@ function PublicLayout() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Collapse the mobile menu whenever the route changes (e.g. a link is followed).
+  useEffect(() => {
+    setMenuOpen(false);
+    setOpenSection(null);
+  }, [location.pathname]);
+
+  // Allow closing the open mobile menu with the Escape key.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
+  const toggleSection = (key: string) =>
+    setOpenSection((cur) => (cur === key ? null : key));
+
   return (
     <div className="mas-site">
       <header className={`mas-topnav${scrolled ? ' is-scrolled' : ''}`}>
         <div className="mas-topnav-inner">
         <Brand />
-        <nav className="mas-topnav-links">
+        {/* Closes the mobile menu when any link inside is selected (the submenu
+            toggle is a <button>, so tapping it leaves the menu open). */}
+        <nav
+          id="mas-mobile-nav"
+          className={`mas-topnav-links${menuOpen ? ' is-open' : ''}`}
+          onClick={(e) => { if ((e.target as HTMLElement).closest('a')) setMenuOpen(false); }}
+        >
           <NavLink to="/the-programme" className={navClass}>The programme</NavLink>
 
-          <div className="mas-navitem mas-has-menu">
-            <NavLink to="/directory" className={({ isActive }) => `mas-menu-top${isActive ? ' is-active' : ''}`}>Find a centre</NavLink>
+          <div className={`mas-navitem mas-has-menu${openSection === 'centre' ? ' is-open' : ''}`}>
+            <div className="mas-navitem-top">
+              <NavLink to="/directory" className={({ isActive }) => `mas-menu-top${isActive ? ' is-active' : ''}`}>Find a centre</NavLink>
+              <button
+                type="button"
+                className="mas-submenu-toggle"
+                aria-expanded={openSection === 'centre'}
+                aria-label="Toggle Find a centre links"
+                onClick={() => toggleSection('centre')}
+              >
+                <span className="mas-submenu-caret" aria-hidden="true" />
+              </button>
+            </div>
             <div className="mas-submenu">
               <NavLink to="/directory">Browse the directory</NavLink>
               <NavLink to="/for-centres">Become a partner centre</NavLink>
@@ -113,8 +151,19 @@ function PublicLayout() {
 
           <NavLink to="/instructors" className={navClass}>Instructors</NavLink>
 
-          <div className="mas-navitem mas-has-menu">
-            <NavLink to="/guides" className={({ isActive }) => `mas-menu-top${isActive ? ' is-active' : ''}`}>Guides</NavLink>
+          <div className={`mas-navitem mas-has-menu${openSection === 'guides' ? ' is-open' : ''}`}>
+            <div className="mas-navitem-top">
+              <NavLink to="/guides" className={({ isActive }) => `mas-menu-top${isActive ? ' is-active' : ''}`}>Guides</NavLink>
+              <button
+                type="button"
+                className="mas-submenu-toggle"
+                aria-expanded={openSection === 'guides'}
+                aria-label="Toggle Guides links"
+                onClick={() => toggleSection('guides')}
+              >
+                <span className="mas-submenu-caret" aria-hidden="true" />
+              </button>
+            </div>
             <div className="mas-submenu mas-submenu-wide">
               <NavLink to="/guides" className="mas-submenu-head">All guides</NavLink>
               <NavLink to="/guides/how-it-works">How MAS BADGES works</NavLink>
@@ -137,6 +186,18 @@ function PublicLayout() {
         ) : (
           <Link to={PORTAL_LOGIN} className="mas-login-btn">Portal login</Link>
         )}
+        <button
+          type="button"
+          className="mas-nav-toggle"
+          aria-expanded={menuOpen}
+          aria-controls="mas-mobile-nav"
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          onClick={() => setMenuOpen((o) => !o)}
+        >
+          <span className={`mas-burger${menuOpen ? ' is-open' : ''}`} aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+        </button>
         </div>
       </header>
 
