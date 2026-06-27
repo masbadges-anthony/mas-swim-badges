@@ -384,6 +384,16 @@ function Sidebar() {
     return () => { active = false; };
   }, [canEnquiries, location.pathname]);
 
+  const [unhandledPartnerApps, setUnhandledPartnerApps] = useState(0);
+  useEffect(() => {
+    if (!canPartnerApps) { setUnhandledPartnerApps(0); return; }
+    let active = true;
+    supabase.rpc('count_unhandled_partner_applications').then(({ data }) => {
+      if (active) setUnhandledPartnerApps(typeof data === 'number' ? data : 0);
+    });
+    return () => { active = false; };
+  }, [canPartnerApps, location.pathname]);
+
   return (
     <aside className="mas-sidebar">
       <Brand />
@@ -427,7 +437,7 @@ function Sidebar() {
             <summary>Administration</summary>
             <div className="mas-navgroup-items">
               {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span><AttentionDot count={unhandledEnquiries} label="unhandled enquiries" /></NavLink>}
-              {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span></NavLink>}
+              {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span><AttentionDot count={unhandledPartnerApps} label="new applications" /></NavLink>}
               {canRoleRegistry && <NavLink to="/admin/role-registry" className={navClass}><Icon name="settings" /><span>Roles &amp; policies</span></NavLink>}
               {canManageCentres && <NavLink to="/admin/centres" className={navClass}><Icon name="building" /><span>Manage centres</span></NavLink>}
               {canManageMembers && <NavLink to="/admin/memberships" className={navClass}><Icon name="users" /><span>Memberships</span></NavLink>}
