@@ -57,6 +57,9 @@ export default function InstructorOnboarding() {
     return () => { cancelled = true; };
   }, [fetchInvitations]);
 
+  // Viewing the list clears its sidebar attention dot.
+  useEffect(() => { void supabase.rpc('mark_attention_seen', { _topic: 'instructor_onboarding' }); }, []);
+
   const canInvite = !!email.trim() && !busy;
 
   async function invite() {

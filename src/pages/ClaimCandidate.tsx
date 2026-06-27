@@ -71,6 +71,9 @@ export default function ClaimCandidate() {
     fetchChildren();
   }, [fetchChildren]);
 
+  // Viewing the page clears the "new badges" sidebar attention dot.
+  useEffect(() => { void supabase.rpc('mark_attention_seen', { _topic: 'child_badges' }); }, []);
+
   async function claim() {
     if (!code.trim()) return;
     setClaiming(true);

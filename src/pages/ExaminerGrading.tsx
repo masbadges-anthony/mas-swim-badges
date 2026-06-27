@@ -85,6 +85,9 @@ export default function ExaminerGrading() {
     fetchRoster();
   }, [fetchRoster]);
 
+  // Viewing the grading queue clears its sidebar attention dot.
+  useEffect(() => { void supabase.rpc('mark_attention_seen', { _topic: 'grading' }); }, []);
+
   // Group roster rows by their session for context.
   const groups = useMemo(() => {
     const map = new Map<string, { session: SessionLite | null; results: ResultRow[] }>();

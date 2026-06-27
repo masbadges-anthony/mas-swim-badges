@@ -50,6 +50,9 @@ export default function Invitations() {
     fetchInvites();
   }, [fetchInvites]);
 
+  // Viewing the list clears its sidebar attention dot.
+  useEffect(() => { void supabase.rpc('mark_attention_seen', { _topic: 'invitations' }); }, []);
+
   async function respond(r: Invitation, accept: boolean) {
     setBusyId(r.invitation_id);
     setNotice(null);

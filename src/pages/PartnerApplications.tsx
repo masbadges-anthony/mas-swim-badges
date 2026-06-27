@@ -53,6 +53,9 @@ export default function PartnerApplications() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Viewing the list clears its sidebar attention dot (same mechanism as Enquiries).
+  useEffect(() => { void supabase.rpc('mark_attention_seen', { _topic: 'centre_applications' }); }, []);
+
   async function acknowledge(id: string) {
     setBusyId(id);
     await supabase.rpc('acknowledge_partner_application', { _app_id: id });

@@ -371,10 +371,17 @@ function Sidebar() {
   const primaryRole = memberships[0]?.role;
   const roleLabel = primaryRole ? (ROLE_LABELS[primaryRole] ?? primaryRole) : 'Member';
 
-  // Attention counts for sidebar dots. Re-fetched on every navigation so the
-  // dot clears once an admin acknowledges the new enquiries on the queue page.
+  // Attention counts for sidebar dots. Re-fetched on every navigation so each
+  // dot clears once its page is viewed (the page stamps mark_attention_seen) or
+  // the underlying item is handled. Same mechanism as Enquiries, extended.
   const location = useLocation();
   const [unhandledEnquiries, setUnhandledEnquiries] = useState(0);
+  const [pendingCentreApps, setPendingCentreApps] = useState(0);
+  const [pendingOnboarding, setPendingOnboarding] = useState(0);
+  const [openInvitations, setOpenInvitations] = useState(0);
+  const [gradingQueue, setGradingQueue] = useState(0);
+  const [unclaimedSlips, setUnclaimedSlips] = useState(0);
+  const [newChildBadges, setNewChildBadges] = useState(0);
   useEffect(() => {
     if (!canEnquiries) { setUnhandledEnquiries(0); return; }
     let active = true;
@@ -383,6 +390,27 @@ function Sidebar() {
     });
     return () => { active = false; };
   }, [canEnquiries, location.pathname]);
+
+  useEffect(() => {
+    let active = true;
+    const apply = (set: (n: number) => void) => ({ data }: { data: unknown }) => {
+      if (active) set(typeof data === 'number' ? data : 0);
+    };
+    if (canPartnerApps) supabase.rpc('count_pending_centre_applications').then(apply(setPendingCentreApps));
+    else setPendingCentreApps(0);
+    if (canOnboard) supabase.rpc('count_pending_instructor_onboarding').then(apply(setPendingOnboarding));
+    else setPendingOnboarding(0);
+    if (canInvitations) supabase.rpc('count_my_open_invitations').then(apply(setOpenInvitations));
+    else setOpenInvitations(0);
+    if (canGrade) supabase.rpc('count_my_grading_queue').then(apply(setGradingQueue));
+    else setGradingQueue(0);
+    if (canClaimSlips) supabase.rpc('count_my_unclaimed_slips').then(apply(setUnclaimedSlips));
+    else setUnclaimedSlips(0);
+    // "My child's badges" has no role gate (always shown); the RPC is scoped to
+    // the caller's claimed candidates and returns 0 when there are none.
+    supabase.rpc('count_my_new_child_badges').then(apply(setNewChildBadges));
+    return () => { active = false; };
+  }, [canPartnerApps, canOnboard, canInvitations, canGrade, canClaimSlips, location.pathname]);
 
   return (
     <aside className="mas-sidebar">
@@ -400,12 +428,12 @@ function Sidebar() {
               {canRegisterCentre && <NavLink to="/centres/register" className={navClass}><Icon name="building" /><span>Register a centre</span></NavLink>}
               {canSchedule && <NavLink to="/assessments/schedule" className={navClass}><Icon name="calendar" /><span>Schedule assessment</span></NavLink>}
               {canInvite && <NavLink to="/assessments/invite" className={navClass}><Icon name="mail" /><span>Invite examiner</span></NavLink>}
-              {canGrade && <NavLink to="/assessments/grade" className={navClass}><Icon name="check" /><span>Grading</span></NavLink>}
-              {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Invitations</span></NavLink>}
+              {canGrade && <NavLink to="/assessments/grade" className={navClass}><Icon name="check" /><span>Grading</span><AttentionDot count={gradingQueue} label="candidates to grade" /></NavLink>}
+              {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Invitations</span><AttentionDot count={openInvitations} label="open invitations" /></NavLink>}
               {canViewCerts && <NavLink to="/certificates" className={navClass}><Icon name="award" /><span>Certificates</span></NavLink>}
               {isGovernance && <NavLink to="/assessments/oversight" className={navClass}><Icon name="eye" /><span>Oversight</span></NavLink>}
               {canExaminerRegistry && <NavLink to="/assessments/examiners" className={navClass}><Icon name="users" /><span>Examiner registry</span></NavLink>}
-              {canClaimSlips && <NavLink to="/candidates/claim-slips" className={navClass}><Icon name="printer" /><span>Claim slips</span></NavLink>}
+              {canClaimSlips && <NavLink to="/candidates/claim-slips" className={navClass}><Icon name="printer" /><span>Claim slips</span><AttentionDot count={unclaimedSlips} label="slips to hand out" /></NavLink>}
             </div>
           </details>
         )}
@@ -427,11 +455,11 @@ function Sidebar() {
             <summary>Administration</summary>
             <div className="mas-navgroup-items">
               {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span><AttentionDot count={unhandledEnquiries} label="unhandled enquiries" /></NavLink>}
-              {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span></NavLink>}
+              {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span><AttentionDot count={pendingCentreApps} label="applications to review" /></NavLink>}
               {canRoleRegistry && <NavLink to="/admin/role-registry" className={navClass}><Icon name="settings" /><span>Roles &amp; policies</span></NavLink>}
               {canManageCentres && <NavLink to="/admin/centres" className={navClass}><Icon name="building" /><span>Manage centres</span></NavLink>}
               {canManageMembers && <NavLink to="/admin/memberships" className={navClass}><Icon name="users" /><span>Memberships</span></NavLink>}
-              {canOnboard && <NavLink to="/admin/instructors" className={navClass}><Icon name="userPlus" /><span>Instructor onboarding</span></NavLink>}
+              {canOnboard && <NavLink to="/admin/instructors" className={navClass}><Icon name="userPlus" /><span>Instructor onboarding</span><AttentionDot count={pendingOnboarding} label="onboarding to review" /></NavLink>}
               {canBlacklist && <NavLink to="/admin/instructor-blacklist" className={navClass}><Icon name="userX" /><span>Instructor blacklist</span></NavLink>}
               {canManageCourses && <NavLink to="/admin/courses" className={navClass}><Icon name="book" /><span>Manage courses</span></NavLink>}
               {canCentreAdmin && <NavLink to="/centre" className={navClass}><Icon name="building" /><span>My centre</span></NavLink>}
@@ -442,7 +470,7 @@ function Sidebar() {
         <details className="mas-navgroup" open>
           <summary>Account</summary>
           <div className="mas-navgroup-items">
-            <NavLink to="/claim" className={navClass}><Icon name="star" /><span>My child&rsquo;s badges</span></NavLink>
+            <NavLink to="/claim" className={navClass}><Icon name="star" /><span>My child&rsquo;s badges</span><AttentionDot count={newChildBadges} label="new badges" /></NavLink>
             <NavLink to="/account" className={navClass}><Icon name="settings" /><span>Account</span></NavLink>
           </div>
         </details>

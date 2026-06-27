@@ -44,6 +44,9 @@ export default function ClaimSlips() {
     fetchCandidates();
   }, [fetchCandidates]);
 
+  // Viewing the slips list clears its sidebar attention dot.
+  useEffect(() => { void supabase.rpc('mark_attention_seen', { _topic: 'claim_slips' }); }, []);
+
   const unclaimed = rows.filter((c) => !c.claimed_by_profile_id && c.claim_code);
 
   return (
