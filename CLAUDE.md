@@ -95,7 +95,7 @@ src/
     guides.ts          GUIDES (8 narrative guides)
   pages/   PUBLIC: Home, TheProgramme (/the-programme), Directory (/directory),
            ForCentres (/for-centres), ForParents (/for-parents), Courses (/courses),
-           About (/about), Contact (/contact), FAQ (/faq), Guides (/guides),
+           Contact (/contact), FAQ (/faq), Guides (/guides),
            GuideDetail (/guides/:slug), Instructors (/instructors),
            InstructorDirectory (DUPLICATE /instructors — see Known issues),
            Verify (/verify, /verify/:serial), Privacy, Terms, Safeguarding
@@ -132,7 +132,7 @@ public/badges/level-1..7.png   official badge art (512px, transparent)
   `.mas-trust-card`, `.mas-course-card`), level pathway (`.mas-levelstrip`/`.mas-levelcard`,
   `.mas-prog-level`), FAQ accordion (`.mas-faq-*`), guides (`.mas-guide*`),
   nav dropdowns (`.mas-navitem.mas-has-menu` + `.mas-submenu`).
-- **Pages that no longer import `admin.css`:** About, ForCentres, Courses (they use
+- **Pages that no longer import `admin.css`:** ForCentres, Courses (they use
   public classes + the navy buttons). Contact **keeps** `admin.css` (form styling).
 
 ### Header (do not regress)
@@ -145,7 +145,7 @@ header to `position: sticky`** or make the content offset depend on header heigh
 
 ### Nav (in `App.tsx` PublicLayout)
 The programme · Find a centre ▾ (Browse directory, Become a partner centre) ·
-Instructors · Guides ▾ (All guides + each guide) · Courses · About · FAQ.
+Instructors · Guides ▾ (All guides + each guide) · Courses · FAQ.
 Pure-CSS hover/focus dropdowns; collapse to parent links on mobile (hover-only —
 a known limitation). "Portal login" button → `VITE_PORTAL_LOGIN_URL ?? '/login'`.
 

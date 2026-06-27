@@ -10,7 +10,6 @@ import Home from './pages/Home';
 import TheProgramme from './pages/TheProgramme';
 import ForCentres from './pages/ForCentres';
 import ForParents from './pages/ForParents';
-import About from './pages/About';
 import Contact from './pages/Contact';
 import FAQ from './pages/FAQ';
 import Guides from './pages/Guides';
@@ -217,7 +216,6 @@ function PublicLayout() {
           </div>
 
           <NavLink to="/courses" className={navClass}>Courses</NavLink>
-          <NavLink to="/about" className={navClass}>About</NavLink>
           <NavLink to="/faq" className={navClass}>FAQ</NavLink>
         </nav>
         {/* Desktop search: an icon button that reveals an inline input. Hidden on
@@ -300,7 +298,7 @@ function PublicLayout() {
           </div>
           <div>
             <h4>About</h4>
-            <Link to="/about">About &amp; governance</Link>
+            <Link to="/#about">About &amp; governance</Link>
             <Link to="/contact">Contact</Link>
             <Link to="/faq">FAQ</Link>
           </div>
@@ -517,7 +515,6 @@ export default function App() {
               <Route path="/the-programme" element={<TheProgramme />} />
               <Route path="/for-centres" element={<ForCentres />} />
               <Route path="/for-parents" element={<ForParents />} />
-              <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/guides" element={<Guides />} />

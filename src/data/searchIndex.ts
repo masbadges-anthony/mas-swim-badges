@@ -97,19 +97,19 @@ const PAGE_ENTRIES: SearchEntry[] = [
     snippet: 'Enquire, appoint a certified instructor who registers the centre, gain approval and settle the partnership fee, then appear in the public directory and begin booking assessments.',
     route: '/for-centres', source: 'For centres · How partnership works' },
 
-  // About (/about)
+  // About (Home · /#about)
   { title: 'About the programme',
     snippet: 'MAS Swim Badges is the national Learn-to-Swim certification framework of Malaysia Aquatics — a clear, standardised pathway from a child’s first day in the water through to competitive readiness.',
-    route: '/about', source: 'About' },
+    route: '/#about', source: 'About' },
   { title: 'How the programme is run',
     snippet: 'Governed by Malaysia Aquatics through its Board and Coaching & Technical Board. A Chairperson leads, a Chief Examiner oversees assessment standards, and Master Trainers run the courses.',
-    route: '/about', source: 'About · How it’s run' },
+    route: '/#about', source: 'About · How it’s run' },
   { title: 'Who governs the programme',
     snippet: 'Chairperson, Chief Examiner, Master Trainer, and the Coaching & Technical Board — the roles that govern the syllabus, assessment standard, and certification courses.',
-    route: '/about', source: 'About · Who governs it' },
+    route: '/#about', source: 'About · Who governs it' },
   { title: 'What makes a badge trustworthy',
     snippet: 'Independent assessment, one national standard, and verifiable certificates — serialised, issued only on a genuine pass, and publicly verifiable without exposing a child’s identity.',
-    route: '/about', source: 'About · What makes a badge trustworthy' },
+    route: '/#about', source: 'About · What makes a badge trustworthy' },
 
   // Directory (/directory)
   { title: 'Find a swim centre',
