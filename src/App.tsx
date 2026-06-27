@@ -6,6 +6,8 @@ import Protected from './components/Protected';
 import RequireRole from './components/RequireRole';
 import ScrollToTop from './components/ScrollToTop';
 import Icon from './components/Icon';
+import AttentionDot from './components/AttentionDot';
+import { supabase } from './lib/supabase';
 import Home from './pages/Home';
 import TheProgramme from './pages/TheProgramme';
 import ForCentres from './pages/ForCentres';
@@ -369,6 +371,19 @@ function Sidebar() {
   const primaryRole = memberships[0]?.role;
   const roleLabel = primaryRole ? (ROLE_LABELS[primaryRole] ?? primaryRole) : 'Member';
 
+  // Attention counts for sidebar dots. Re-fetched on every navigation so the
+  // dot clears once an admin acknowledges the new enquiries on the queue page.
+  const location = useLocation();
+  const [unhandledEnquiries, setUnhandledEnquiries] = useState(0);
+  useEffect(() => {
+    if (!canEnquiries) { setUnhandledEnquiries(0); return; }
+    let active = true;
+    supabase.rpc('count_unhandled_enquiries').then(({ data }) => {
+      if (active) setUnhandledEnquiries(typeof data === 'number' ? data : 0);
+    });
+    return () => { active = false; };
+  }, [canEnquiries, location.pathname]);
+
   return (
     <aside className="mas-sidebar">
       <Brand />
@@ -411,7 +426,7 @@ function Sidebar() {
           <details className="mas-navgroup" open>
             <summary>Administration</summary>
             <div className="mas-navgroup-items">
-              {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span></NavLink>}
+              {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span><AttentionDot count={unhandledEnquiries} label="unhandled enquiries" /></NavLink>}
               {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span></NavLink>}
               {canRoleRegistry && <NavLink to="/admin/role-registry" className={navClass}><Icon name="settings" /><span>Roles &amp; policies</span></NavLink>}
               {canManageCentres && <NavLink to="/admin/centres" className={navClass}><Icon name="building" /><span>Manage centres</span></NavLink>}

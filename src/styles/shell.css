@@ -64,6 +64,20 @@
 .mas-app .mas-navgroup[open] > summary::after { transform: rotate(90deg); }
 .mas-app .mas-navgroup-items { display: flex; flex-direction: column; gap: 1px; padding-top: 1px; }
 
+/* ---- Attention dot (reusable sidebar indicator) ---- */
+/* A small "needs attention" marker any nav item can opt into via <AttentionDot>.
+   Brand red on the light sidebar so it actually reads as an alert; tweak the var
+   to re-theme. Sits inline after the item label. */
+.mas-app .mas-nav-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 0.4rem;
+  border-radius: 50%;
+  background: var(--mas-bad, #c62026);
+  vertical-align: middle;
+}
+
 /* ---- Foot ---- */
 .mas-app .mas-sidebar-foot {
   margin-top: 0.75rem;
