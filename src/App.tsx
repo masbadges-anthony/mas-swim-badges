@@ -328,7 +328,15 @@ function PublicLayout() {
 }
 
 /* ---------- Portal sidebar (apps) ---------- */
-function Sidebar() {
+function Sidebar({
+  open,
+  onClose,
+  onAttentionChange,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onAttentionChange?: (total: number) => void;
+}) {
   const { user, memberships, hasRole } = useAuth();
 
   const isGovernance =
@@ -394,8 +402,29 @@ function Sidebar() {
     return () => { active = false; };
   }, [canPartnerApps, location.pathname]);
 
+  // Surface the total attention count to the shell so the mobile hamburger can
+  // show its own little indicator when something inside the (collapsed) sidebar
+  // needs attention.
+  useEffect(() => {
+    onAttentionChange?.(unhandledEnquiries + unhandledPartnerApps);
+  }, [unhandledEnquiries, unhandledPartnerApps, onAttentionChange]);
+
   return (
-    <aside className="mas-sidebar">
+    <>
+      {/* Translucent backdrop: only visible (and tappable) on mobile when the
+          drawer is open. Tapping it dismisses the sidebar. */}
+      <div
+        className={`mas-sidebar-backdrop${open ? ' is-open' : ''}`}
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      {/* Closes the drawer when any nav link inside is tapped (the <summary>
+          group toggles are not anchors, so they keep the drawer open). */}
+      <aside
+        id="mas-portal-sidebar"
+        className={`mas-sidebar${open ? ' is-open' : ''}`}
+        onClick={(e) => { if ((e.target as HTMLElement).closest('a')) onClose(); }}
+      >
       <Brand />
 
       <nav className="mas-sidenav">
@@ -465,7 +494,8 @@ function Sidebar() {
           <span className="mas-profile-role">{roleLabel}</span>
         </span>
       </Link>
-    </aside>
+      </aside>
+    </>
   );
 }
 
@@ -506,6 +536,27 @@ function AppLayout() {
   const location = useLocation();
   const title = PAGE_TITLES[location.pathname] ?? 'Portal';
 
+  // Off-canvas sidebar state (mobile only — on desktop the sidebar is always
+  // visible and `sidebarOpen` is inert because the drawer CSS is breakpointed).
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [attentionTotal, setAttentionTotal] = useState(0);
+
+  // Close the drawer whenever the route changes (e.g. a nav link is followed).
+  useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
+
+  // Escape closes the drawer; lock body scroll while it is open.
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSidebarOpen(false); };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [sidebarOpen]);
+
   async function handleSignOut() {
     await signOut();
     navigate('/');
@@ -513,13 +564,38 @@ function AppLayout() {
 
   return (
     <div className="mas-layout">
-      <Sidebar />
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onAttentionChange={setAttentionTotal}
+      />
       <div className="mas-shell-main">
         <header className="mas-topbar-app">
-          <div className="mas-breadcrumb">
-            <span className="mas-crumb-muted">Portal</span>
-            <span className="mas-crumb-sep">›</span>
-            <span className="mas-crumb-here">{title}</span>
+          <div className="mas-topbar-left">
+            <button
+              type="button"
+              className="mas-sidebar-toggle"
+              aria-expanded={sidebarOpen}
+              aria-controls="mas-portal-sidebar"
+              aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+              onClick={() => setSidebarOpen((o) => !o)}
+            >
+              <span className={`mas-burger${sidebarOpen ? ' is-open' : ''}`} aria-hidden="true">
+                <span></span><span></span><span></span>
+              </span>
+              {attentionTotal > 0 && (
+                <span
+                  className="mas-toggle-dot"
+                  role="status"
+                  aria-label={`${attentionTotal} items need attention`}
+                />
+              )}
+            </button>
+            <div className="mas-breadcrumb">
+              <span className="mas-crumb-muted">Portal</span>
+              <span className="mas-crumb-sep">›</span>
+              <span className="mas-crumb-here">{title}</span>
+            </div>
           </div>
           <div className="mas-topbar-right">
             <Link to="/" className="mas-topbar-link">View site</Link>
