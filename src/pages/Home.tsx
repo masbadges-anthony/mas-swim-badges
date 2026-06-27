@@ -125,10 +125,6 @@ export default function Home() {
         </article>
       </section>
 
-      <p className="mas-home-verify-note">
-        Earned a badge? <Link to="/verify">You can verify any certificate online.</Link>
-      </p>
-
       <section id="about" className="mas-home-about">
         <header className="mas-page-head mas-section-head">
           <p className="mas-eyebrow"><EditableText keyName="home.about.header.eyebrow">About</EditableText></p>
@@ -179,6 +175,10 @@ export default function Home() {
             </article>
           ))}
         </div>
+
+        <p className="mas-home-verify-note">
+          Earned a badge? <Link to="/verify">You can verify any certificate online.</Link>
+        </p>
 
         <div className="mas-cta-band">
           <h2><EditableText keyName="home.about.cta.title">Seven badges, one national pathway</EditableText></h2>
