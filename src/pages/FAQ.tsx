@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { FAQ_CATEGORIES } from '../data/faqs';
+import ContactForm from '../components/ContactForm';
 
 export default function FAQ() {
   const [open, setOpen] = useState<string | null>('general-0');
@@ -108,8 +109,21 @@ export default function FAQ() {
       )}
 
       <div className="mas-faq-foot">
-        <p>Still have a question? <a href="/contact" className="mas-link">Get in touch with the MAS BADGES team.</a></p>
+        <p>Still have a question? Send it straight to the MAS BADGES team using the form below.</p>
       </div>
+
+      {/* The same contact form as the /contact page (one shared component, one
+          `submit_enquiry` path), embedded beneath the FAQ for convenience. */}
+      <section className="mas-faq-contact" aria-labelledby="faq-contact-heading">
+        <div className="mas-faq-contact-head">
+          <h2 id="faq-contact-heading">Get in touch</h2>
+          <p className="mas-lede">
+            Didn’t find your answer above? Choose the option that fits and your
+            enquiry goes straight to the right person at Malaysia Aquatics.
+          </p>
+        </div>
+        <ContactForm />
+      </section>
     </section>
   );
 }
