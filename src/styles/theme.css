@@ -860,21 +860,36 @@
 }
 /* "Contact us" sits on the right; the open space on the left is reserved for
    future social-media links (add them before this link). */
+/* Compact rounded-square button (small radius, not a pill) that sits subtly on
+   the navy strip: a faint translucent fill + hairline border for contrast,
+   filling to brand teal on hover. */
 .mas-app .mas-utilitybar-link {
   margin-left: auto;
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  padding: 0.2rem 0.7rem;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.mas-app .mas-utilitybar-link:hover {
+  color: #fff;
+  background: var(--mas-teal);
+  border-color: var(--mas-teal);
   text-decoration: none;
 }
-.mas-app .mas-utilitybar-link:hover { color: #fff; text-decoration: underline; }
 .mas-app .mas-utilitybar-link:focus-visible { outline: 2px solid var(--mas-teal); outline-offset: 2px; }
 
 @media (max-width: 860px) {
   /* Keep the strip minimal so it doesn't crowd the compact mobile header. */
   .mas-app .mas-utilitybar-inner { padding: 0.25rem 1rem; min-height: 30px; gap: 0.75rem; }
-  .mas-app .mas-utilitybar-link { font-size: 0.78rem; }
+  .mas-app .mas-utilitybar-link { font-size: 0.74rem; padding: 0.18rem 0.6rem; }
 }
 
 /* =====================================================================
