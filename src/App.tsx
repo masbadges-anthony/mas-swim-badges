@@ -141,6 +141,16 @@ function PublicLayout() {
   return (
     <div className="mas-site">
       <header className={`mas-topnav${scrolled ? ' is-scrolled' : ''}`}>
+        {/* Slim utility strip above the main header. Part of the fixed stack, so
+            its (constant) height is added to the `.mas-main` top offset in CSS.
+            The left side is intentionally left open for future social links —
+            add them before the "Contact us" link. */}
+        <div className="mas-utilitybar">
+          <div className="mas-utilitybar-inner">
+            {/* Future: social-media links go here, on the left. */}
+            <Link to="/contact" className="mas-utilitybar-link">Contact us</Link>
+          </div>
+        </div>
         <div className="mas-topnav-inner">
         <Brand />
         {/* Closes the mobile menu when any link inside is selected (the submenu
