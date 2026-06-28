@@ -362,6 +362,31 @@
 .mas-app .mas-crumb-here { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--mas-navy); font-size: 1.05rem; }
 .mas-app .mas-topbar-right .mas-signout { padding: 0.4rem 0.9rem; }
 
+/* Top app-bar on mobile: stop the breadcrumb / "View site" / "Sign out" cluster
+   from colliding in one horizontal strip. Desktop layout is untouched. */
+@media (max-width: 600px) {
+  /* Left cluster (hamburger + breadcrumb) keeps the hamburger far left and lets
+     the breadcrumb shrink. Drop the "Portal ›" prefix — the active page is shown
+     in the sidebar too — and truncate a long page name rather than overflow. */
+  .mas-app .mas-topbar-app { gap: 0.75rem; }
+  .mas-app .mas-breadcrumb { min-width: 0; }
+  .mas-app .mas-crumb-muted,
+  .mas-app .mas-crumb-sep { display: none; }
+  .mas-app .mas-crumb-here {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1rem;
+  }
+
+  /* Right cluster keeps its natural width (never shrinks under the breadcrumb).
+     "View site" is a low-frequency action — hide it on mobile (still reachable by
+     URL); "Sign out" stays as a compact text button; the avatar stays far right. */
+  .mas-app .mas-topbar-right { flex: 0 0 auto; gap: 0.6rem; }
+  .mas-app .mas-topbar-link { display: none; }
+  .mas-app .mas-topbar-right .mas-signout { padding: 0.35rem 0.6rem; }
+}
+
 /* Welcome header + stat cards */
 .mas-app .mas-shell-main .mas-dash-head h1 { font-size: clamp(1.8rem, 3vw, 2.3rem); }
 .mas-app .mas-welcome-name { color: var(--brand); }
