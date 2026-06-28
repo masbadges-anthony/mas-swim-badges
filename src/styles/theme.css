@@ -938,6 +938,29 @@
 .mas-app .mas-statpill-n { font-size: 1.15rem; font-weight: 700; color: var(--mas-navy); }
 .mas-app .mas-statpill-l { font-size: 0.76rem; color: var(--mas-muted); }
 
+/* ---- Attention cards (role-aware; sit above the tile grid) ---- */
+.mas-app .mas-attngrid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.7rem;
+}
+.mas-app .mas-attncard {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.95rem 1.1rem; border-radius: 12px; text-decoration: none;
+  background: linear-gradient(135deg, #1E2752 0%, #0a1f44 100%);
+  color: #fff; border: 1px solid #1E2752;
+  box-shadow: 0 6px 18px rgba(10, 31, 68, .18);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-attncard:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(10, 31, 68, .26); }
+.mas-app .mas-attncard-ic {
+  width: 38px; height: 38px; border-radius: 10px; flex: 0 0 auto;
+  display: grid; place-items: center;
+  background: rgba(249, 198, 16, .18); color: #F9C610;
+}
+.mas-app .mas-attncard-ic svg { width: 20px; height: 20px; }
+.mas-app .mas-attncard-t { flex: 1 1 auto; font-size: 0.98rem; font-weight: 700; line-height: 1.2; }
+.mas-app .mas-attncard-go { flex: 0 0 auto; color: rgba(255, 255, 255, .8); display: grid; place-items: center; }
+.mas-app .mas-attncard-go svg { width: 18px; height: 18px; }
+
 .mas-app .mas-dash-section { margin-bottom: 1.4rem; }
 .mas-app .mas-dash-section-label {
   font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;

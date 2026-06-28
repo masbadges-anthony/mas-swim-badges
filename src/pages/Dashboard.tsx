@@ -7,6 +7,7 @@ import '../styles/admin.css';
 
 interface Tile { to: string; title: string; icon: string; accent: string; group: string; show: boolean; }
 interface Stat { label: string; value: number; icon: string; tint: string; color: string; }
+interface Attention { to: string; label: string; icon: string; }
 
 const GROUPS = ['Assessments', 'Centres & partnerships', 'Billing & store', 'Administration', 'You'];
 
@@ -22,11 +23,23 @@ function todayLabel(): string {
 export default function Dashboard() {
   const { user, hasRole } = useAuth();
   const [stats, setStats] = useState<Stat[]>([]);
+  const [unhandledEnquiries, setUnhandledEnquiries] = useState(0);
+  const [unhandledPartnerApps, setUnhandledPartnerApps] = useState(0);
+
+  // Capabilities used to gate the lightweight attention fetches below. The full
+  // set of tile capabilities is computed further down for the fallback grid.
+  const canSeeEnquiries = hasRole('chairperson') || hasRole('board_member') || hasRole('instructor_trainer') || hasRole('system_admin');
+  const canSeePartnerApps = hasRole('chairperson') || hasRole('board_member');
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const q = (tbl: string) => supabase.from(tbl).select('*', { count: 'exact', head: true });
+      // Fire the stat counts and the role-gated attention counts together. Each
+      // RPC is only requested when the signed-in user is permitted to act on it,
+      // so non-permitted users never query.
+      const enquiriesP = canSeeEnquiries ? supabase.rpc('count_unhandled_enquiries') : null;
+      const partnerAppsP = canSeePartnerApps ? supabase.rpc('count_unhandled_partner_applications') : null;
       const res = await Promise.allSettled([
         q('candidates'), q('certificates'), q('partner_center_directory'), q('public_courses'),
       ]);
@@ -40,9 +53,18 @@ export default function Dashboard() {
       ];
       const out = defs.filter(([c]) => c != null).map(([c, s]) => ({ ...s, value: c as number }));
       if (!cancelled) setStats(out);
+
+      if (enquiriesP) {
+        const { data } = await enquiriesP;
+        if (!cancelled) setUnhandledEnquiries(typeof data === 'number' ? data : 0);
+      }
+      if (partnerAppsP) {
+        const { data } = await partnerAppsP;
+        if (!cancelled) setUnhandledPartnerApps(typeof data === 'number' ? data : 0);
+      }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [canSeeEnquiries, canSeePartnerApps]);
 
   const isGovernance = hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner');
   const canManageCentres = hasRole('chairperson') || hasRole('board_member');
@@ -105,6 +127,15 @@ export default function Dashboard() {
   ];
   const visible = tiles.filter((t) => t.show);
 
+  const attention: Attention[] = [
+    canEnquiries && unhandledEnquiries > 0
+      ? { to: '/admin/enquiries', label: `${unhandledEnquiries} unhandled ${unhandledEnquiries === 1 ? 'enquiry' : 'enquiries'}`, icon: 'inbox' }
+      : null,
+    canPartnerApps && unhandledPartnerApps > 0
+      ? { to: '/admin/partner-applications', label: `${unhandledPartnerApps} new centre ${unhandledPartnerApps === 1 ? 'application' : 'applications'}`, icon: 'building' }
+      : null,
+  ].filter((a): a is Attention => a !== null);
+
   return (
     <section className="mas-page">
       <header className="mas-dash-head">
@@ -123,6 +154,21 @@ export default function Dashboard() {
               </span>
             </div>
           ))}
+        </div>
+      )}
+
+      {attention.length > 0 && (
+        <div className="mas-dash-section">
+          <p className="mas-dash-section-label">What needs your attention</p>
+          <div className="mas-attngrid">
+            {attention.map((a) => (
+              <Link key={a.to} to={a.to} className="mas-attncard">
+                <span className="mas-attncard-ic"><Icon name={a.icon} /></span>
+                <span className="mas-attncard-t">{a.label}</span>
+                <span className="mas-attncard-go"><Icon name="arrowRight" /></span>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
