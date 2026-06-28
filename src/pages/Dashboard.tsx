@@ -67,6 +67,14 @@ export default function Dashboard() {
   const canBuyStore = hasRole('instructor') || hasRole('partner_center_admin');
   const canManageStore = hasRole('system_admin') || hasRole('chairperson') || hasRole('board_member');
 
+  // Staff/operator roles are not parents in the context of the system, so the
+  // "My child's badges" (claim) link is hidden for them. Pure-parent users —
+  // those holding no portal role at all — keep seeing it.
+  const isStaffOperator =
+    hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner') ||
+    hasRole('instructor') || hasRole('examiner') || hasRole('instructor_trainer') ||
+    hasRole('examiner_trainer') || hasRole('partner_center_admin') || hasRole('system_admin');
+
   const tiles: Tile[] = [
     { to: '/candidates/register', title: 'Register candidate', icon: 'userPlus', accent: '#1d6fd6', group: 'Assessments', show: canRegister },
     { to: '/assessments/schedule', title: 'Schedule assessment', icon: 'calendar', accent: '#0ea5a4', group: 'Assessments', show: canSchedule },
@@ -92,7 +100,7 @@ export default function Dashboard() {
     { to: '/admin/instructor-blacklist', title: 'Instructor blacklist', icon: 'userX', accent: '#dc2626', group: 'Administration', show: canManageMembers },
     { to: '/admin/courses', title: 'Manage courses', icon: 'book', accent: '#f4b400', group: 'Administration', show: canManageCourses },
     { to: '/admin/role-registry', title: 'Roles & policies', icon: 'settings', accent: '#64748b', group: 'Administration', show: canRoleRegistry },
-    { to: '/claim', title: "My child's badges", icon: 'star', accent: '#2f9ee0', group: 'You', show: true },
+    { to: '/claim', title: "My child's badges", icon: 'star', accent: '#2f9ee0', group: 'You', show: !isStaffOperator },
     { to: '/account', title: 'Account', icon: 'settings', accent: '#64748b', group: 'You', show: true },
   ];
   const visible = tiles.filter((t) => t.show);
