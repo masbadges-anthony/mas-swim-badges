@@ -370,6 +370,14 @@ function Sidebar({
   const canBuyStore = hasRole('instructor') || hasRole('partner_center_admin');
   const canManageStore = hasRole('system_admin') || hasRole('chairperson') || hasRole('board_member');
 
+  // Staff/operator roles are not parents in the context of the system, so the
+  // "My child's badges" (claim) link is hidden for them. Pure-parent users —
+  // those holding no portal role at all — keep seeing it.
+  const isStaffOperator =
+    hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner') ||
+    hasRole('instructor') || hasRole('examiner') || hasRole('instructor_trainer') ||
+    hasRole('examiner_trainer') || hasRole('partner_center_admin') || hasRole('system_admin');
+
   const assessmentsGroup =
     canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips;
   const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore;
@@ -481,7 +489,7 @@ function Sidebar({
         <details className="mas-navgroup" open>
           <summary>Account</summary>
           <div className="mas-navgroup-items">
-            <NavLink to="/claim" className={navClass}><Icon name="star" /><span>My child&rsquo;s badges</span></NavLink>
+            {!isStaffOperator && <NavLink to="/claim" className={navClass}><Icon name="star" /><span>My child&rsquo;s badges</span></NavLink>}
             <NavLink to="/account" className={navClass}><Icon name="settings" /><span>Account</span></NavLink>
           </div>
         </details>
