@@ -1,3 +1,8 @@
+// Instructor's own invoices. Verified wired against the backend:
+//   list ← list_my_invoices() → invoice_id, session_id, status, total, currency,
+//          receipt_no, paid_at, venue, scheduled_on, created_at
+//   (20260622250000_list_my_invoices.sql). Line items read separately from
+//   invoice_items (exposed by RLS for a visible invoice).
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
