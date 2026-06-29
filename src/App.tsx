@@ -33,6 +33,7 @@ import RegisterCandidate from './pages/RegisterCandidate';
 import RosterBooking from './pages/RosterBooking';
 import ExaminerGrading from './pages/ExaminerGrading';
 import Certificates from './pages/Certificates';
+import CertificateIssuance from './pages/CertificateIssuance';
 import CentreManagement from './pages/CentreManagement';
 import MembershipManagement from './pages/MembershipManagement';
 import AssessmentsOversight from './pages/AssessmentsOversight';
@@ -449,6 +450,7 @@ function Sidebar({
               {canInvite && <NavLink to="/assessments/invite" className={navClass}><Icon name="mail" /><span>Invite examiner</span></NavLink>}
               {canGrade && <NavLink to="/assessments/grade" className={navClass}><Icon name="check" /><span>Grading</span></NavLink>}
               {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Invitations</span></NavLink>}
+              {isGovernance && <NavLink to="/certificates/issue" className={navClass}><Icon name="award" /><span>Issue certificates</span></NavLink>}
               {canViewCerts && <NavLink to="/certificates" className={navClass}><Icon name="award" /><span>Certificates</span></NavLink>}
               {isGovernance && <NavLink to="/assessments/oversight" className={navClass}><Icon name="eye" /><span>Oversight</span></NavLink>}
               {canExaminerRegistry && <NavLink to="/assessments/examiners" className={navClass}><Icon name="users" /><span>Examiner registry</span></NavLink>}
@@ -522,6 +524,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/assessments/invitations': 'Invitations',
   '/assessments/oversight': 'Assessments oversight',
   '/assessments/examiners': 'Examiner registry',
+  '/certificates/issue': 'Issue certificates',
   '/certificates': 'Certificates',
   '/admin/accounts': 'Accounts',
   '/admin/centre-billing': 'Centre billing',
@@ -663,6 +666,7 @@ export default function App() {
               <Route path="/assessments/invitations" element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>} />
               <Route path="/assessments/oversight" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><AssessmentsOversight /></RequireRole>} />
               <Route path="/assessments/examiners" element={<RequireRole roles={['chief_examiner']}><ExaminerRegistry /></RequireRole>} />
+              <Route path="/certificates/issue" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><CertificateIssuance /></RequireRole>} />
               <Route path="/certificates" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>} />
               <Route path="/admin/accounts" element={<RequireRole roles={['system_admin']}><Accounts /></RequireRole>} />
               <Route path="/admin/centre-billing" element={<RequireRole roles={['chairperson', 'board_member', 'system_admin']}><CentreBilling /></RequireRole>} />
