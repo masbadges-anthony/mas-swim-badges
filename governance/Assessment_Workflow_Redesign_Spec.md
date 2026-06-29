@@ -6,7 +6,9 @@
 
 ## 0. What changes, in one breath
 
-The live `assessment_results` is **one row per (session, candidate)** with a single `target_level` and `unique(session_id, candidate_id)`. That grain physically blocks multi-level-on-the-day. We move to **two tiers**: a per-candidate **enrolment** row (carrying the snapshot) and a per-level **result** row beneath it. Swimmer ID, the fee schedule, and 2-stage invoicing are added around that spine. The existing COI trigger, pass-gate, serial generator, and revoke→reissue loop are **preserved**, regrained to the level row.
+> **Correction (post-build):** the original framing here claimed the live `assessment_results` was one-row-per-(session, candidate) and that this *blocked* multi-level assessment. That was wrong — the live unique key was already `(session_id, candidate_id, target_level)`, so the table was **already per-level**. The keystone of this redesign is therefore not "unlock the grain" but **add the enrolment tier** (snapshot archiving) and the **billing columns** (stage + fee snapshot) that the fee model and payment-gated issuance require.
+
+We add **two tiers**: a per-candidate **enrolment** row (`session_enrolments`, carrying the snapshot) and the existing per-level **result** row beneath it (`assessment_results`, gaining `enrolment_id` + `billing_stage` + `fee_rm_snapshot`). Swimmer ID, the fee schedule, and 2-stage invoicing are added around that spine. The existing COI trigger, pass-gate, serial generator, and revoke→reissue loop are **preserved untouched** — they read columns we keep (`candidate_id`, `session_id`, `assessor_profile_id`, `target_level`, `outcome`, `certificate_id`), which is exactly why the regrain needed no trigger rewrites.
 
 ---
 
@@ -152,13 +154,20 @@ Certificates remain append-only; gating is by *when we insert*, never by mutatio
 
 ---
 
-## 8. Session state machine — money-gate reconciliation
+## 8. Session state machine — settlement derived from the ledger
 
-Extend `session_status` to the 9 designed states, with the 2-stage gates placed:
+**Decision (A), confirmed against the build:** `session_status` is **not** extended with settlement states. The live enum already has the 7 operational states it needs, and money-state is **derived from the ledger** (`invoices.status`, `payments`), exactly as `list_sessions_overview()` already does. Adding `invoiced`/`paid`/`examiner_paid` to the status enum was over-modelling — it would duplicate state the ledger already holds and risk the two disagreeing.
 
-`requested` → `examiner_invited` → **`scheduled`** *(precondition: stage-1 invoice `paid`)* → **`completed`** *(examiner submits outcomes; **batch-1 certs issue**; stage-2 auto-generated if any bonus)* → `invoiced` *(stage-2 issued)* → `paid` *(stage-2 settled → **batch-2 certs issue**)* → `examiner_paid` → `closed` → `archived`. `cancelled` out-of-band.
+Real lifecycle (the 7 that exist in `session_status`):
 
-> Reconciliation note vs. the Operations design: that draft put a single "invoiced→paid" after completion. The 2-stage rule splits the money into a **pre-schedule prepay** and a **post-completion bonus reconcile**; the lifecycle above reflects that. Worth a one-line update to `Operations_Billing_Design.md` §2 when we touch the docs.
+`requested` → `examiner_invited` → `scheduled` → `completed` → `closed` → `archived`, with `cancelled` out-of-band.
+
+Money-gates sit *beside* status, read from the ledger:
+- **stage-1 (booked_prepay)** invoice is generated when the examiner accepts and the session becomes `scheduled` (`respond_to_invitation`).
+- **stage-2 (bonus_reconcile)** invoice is generated when the examiner submits and the session becomes `completed` (`submit_session_results`).
+- **issuance** (`issue_session_certificates`) gates each batch on its stage invoice being `status='paid'` — booked certs once stage-1 is paid, bonus certs once stage-2 is paid. Never keyed off `session_status`.
+
+> Note: an earlier draft of this section (and the Operations design's single "invoiced→paid") modelled settlement as session states. Superseded — settlement lives in the ledger; status stays operational.
 
 ---
 
