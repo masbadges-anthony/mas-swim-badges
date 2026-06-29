@@ -1,3 +1,8 @@
+// Examiner invitation inbox. Verified wired against the backend:
+//   list (status 'invited'/'accepted') ← list_my_invitations()
+//   accept/decline ← respond_to_invitation(_invitation_id, _accept boolean)
+// Accepting auto-generates the stage-1 booked-prepay invoice server-side
+// (20260629200000_stage1_invoice_on_accept.sql) — no client billing logic here.
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
