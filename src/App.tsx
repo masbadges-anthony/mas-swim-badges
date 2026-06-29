@@ -30,7 +30,7 @@ import NotFound from './pages/NotFound';
 import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import RegisterCandidate from './pages/RegisterCandidate';
-import CreateSession from './pages/CreateSession';
+import RosterBooking from './pages/RosterBooking';
 import ExaminerGrading from './pages/ExaminerGrading';
 import Certificates from './pages/Certificates';
 import CentreManagement from './pages/CentreManagement';
@@ -657,7 +657,7 @@ export default function App() {
               <Route path="/centre" element={<RequireRole roles={['partner_center_admin']}><CentreAdmin /></RequireRole>} />
               <Route path="/candidates/register" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RegisterCandidate /></RequireRole>} />
               <Route path="/candidates/claim-slips" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><ClaimSlips /></RequireRole>} />
-              <Route path="/assessments/schedule" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><CreateSession /></RequireRole>} />
+              <Route path="/assessments/schedule" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RosterBooking /></RequireRole>} />
               <Route path="/assessments/invite" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><InviteExaminer /></RequireRole>} />
               <Route path="/assessments/grade" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><ExaminerGrading /></RequireRole>} />
               <Route path="/assessments/invitations" element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>} />
