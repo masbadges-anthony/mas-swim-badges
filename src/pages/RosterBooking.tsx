@@ -3,10 +3,12 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import '../styles/admin.css';
 
-// Replaces CreateSession. Creates a 'requested' session, then submits the roster
-// through submit_roster (which writes the enrolment snapshot + booked result row).
-// Existing swimmers are added by pasting Swimmer IDs; new candidates are added as
-// rows that mint a Swimmer ID on submit.
+// Replaces CreateSession. Creates the session, its roster, AND the stage-1 invoice
+// in one atomic server call (create_session_with_roster). The session is created in
+// 'awaiting_payment' — payment-gated; an examiner cannot pick it up until a Finance
+// Officer records payment. Existing swimmers are added by pasting Swimmer IDs; new
+// candidates are added as rows that mint a Swimmer ID on submit. The roster locks at
+// create (no edit after) — by design.
 
 const LEVELS: { value: string; label: string }[] = [
   { value: 'starfish', label: 'Starfish' },
@@ -54,14 +56,22 @@ interface NewEntry {
 }
 
 interface RosterReport {
+  session_id: string;
+  invoice_id: string;
+  invoice_no: string;
+  invoice_total: number;
   accepted_count: number;
   rejected_count: number;
   accepted: { full_name: string; booked_level: string }[];
   rejected: { full_name: string; swimmer_id: string; reason: string }[];
 }
 
-function todayLocal(): string {
+// Assessment dates must be at least 30 days out (the server enforces this too).
+const MIN_LEAD_DAYS = 30;
+
+function minDateLocal(): string {
   const d = new Date();
+  d.setDate(d.getDate() + MIN_LEAD_DAYS);
   const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 10);
 }
@@ -95,7 +105,8 @@ export default function RosterBooking() {
   const [centreId, setCentreId] = useState('');
   const [stateVal, setStateVal] = useState('');
   const [venue, setVenue] = useState('');
-  const [scheduledOn, setScheduledOn] = useState(todayLocal());
+  const minDate = useMemo(() => minDateLocal(), []);
+  const [scheduledOn, setScheduledOn] = useState(minDate);
 
   // Roster working set
   const [rawIds, setRawIds] = useState('');
@@ -105,6 +116,7 @@ export default function RosterBooking() {
 
   const [looking, setLooking] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<RosterReport | null>(null);
 
@@ -204,35 +216,30 @@ export default function RosterBooking() {
     return t;
   }, [existing, validNew, feeMap]);
 
-  const canSubmit = !!scheduledOn && !!bookerId && rosterCount > 0 && !busy;
+  const dateTooSoon = !!scheduledOn && scheduledOn < minDate;
+  const canSubmit = !!scheduledOn && !dateTooSoon && !!bookerId && rosterCount > 0 && !busy;
 
-  async function submit() {
-    if (!canSubmit || !bookerId) return;
+  // Clicking "Create session" opens the confirm dialog; the RPC only fires on Proceed.
+  function requestSubmit() {
+    if (!canSubmit) return;
+    if (dateTooSoon) {
+      setError(`The assessment date must be at least ${MIN_LEAD_DAYS} days from today.`);
+      return;
+    }
+    setError(null);
+    setReport(null);
+    setConfirming(true);
+  }
+
+  async function confirmSubmit() {
+    setConfirming(false);
+    if (!canSubmit) return;
     setBusy(true);
     setError(null);
     setReport(null);
 
-    // 1. Create the session ('requested'; examiner invited/assigned separately).
-    const { data: sess, error: sErr } = await supabase
-      .from('assessment_sessions')
-      .insert({
-        requested_by_profile_id: bookerId,
-        partner_center_id: centreId || null,
-        state: stateVal || null,
-        venue: venue.trim() || null,
-        scheduled_on: scheduledOn,
-        status: 'requested',
-      })
-      .select('id')
-      .single();
-
-    if (sErr || !sess) {
-      setBusy(false);
-      setError(sErr?.message ?? 'Could not create the session.');
-      return;
-    }
-
-    // 2. Build the candidate payload and submit the roster in one call.
+    // Build the candidate payload (shape unchanged) and create the session, roster,
+    // and stage-1 invoice in a single atomic call.
     const candidates = [
       ...existing.map((e) => ({
         swimmer_id: e.input_id,
@@ -250,9 +257,13 @@ export default function RosterBooking() {
       })),
     ];
 
-    const { data, error: rErr } = await supabase.rpc('submit_roster', {
-      _session_id: sess.id,
+    const { data, error: rErr } = await supabase.rpc('create_session_with_roster', {
       _candidates: candidates,
+      _scheduled_on: scheduledOn,
+      _state: stateVal || null,
+      _venue: venue.trim() || null,
+      _partner_center_id: centreId || null,
+      _requested_by: isGovernance ? (onBehalfId || null) : null,
     });
 
     setBusy(false);
@@ -328,7 +339,16 @@ export default function RosterBooking() {
         <div className="mas-field">
           <label htmlFor="date" className="mas-field-label">Date</label>
           <input id="date" className="mas-input" type="date" value={scheduledOn}
+            min={minDate}
             onChange={(e) => setScheduledOn(e.target.value)} />
+          <p className="mas-field-note">
+            Bookings must be made at least {MIN_LEAD_DAYS} days ahead.
+          </p>
+          {dateTooSoon && (
+            <p className="mas-status mas-status-bad">
+              The assessment date must be at least {MIN_LEAD_DAYS} days from today.
+            </p>
+          )}
         </div>
 
         {/* ---- Paste Swimmer IDs ---- */}
@@ -448,8 +468,9 @@ export default function RosterBooking() {
         {report && (
           <div className="mas-issued">
             <p className="mas-status mas-status-good">
-              {report.accepted_count} candidate{report.accepted_count === 1 ? '' : 's'} rostered.
-              An examiner will be invited to schedule the session.
+              Session created. Invoice <strong className="mas-serial">{report.invoice_no}</strong> for{' '}
+              <strong>RM {Number(report.invoice_total).toFixed(2)}</strong> raised — awaiting payment.
+              An examiner can pick it up once payment clears.
             </p>
             {report.rejected.map((r, i) => (
               <p key={i} className="mas-status mas-status-bad">
@@ -460,11 +481,34 @@ export default function RosterBooking() {
         )}
 
         <div className="mas-form-actions">
-          <button className="mas-btn-primary" onClick={submit} disabled={!canSubmit}>
-            {busy ? 'Submitting…' : 'Create session & submit roster'}
+          <button className="mas-btn-primary" onClick={requestSubmit} disabled={!canSubmit}>
+            {busy ? 'Creating…' : 'Create session'}
           </button>
         </div>
       </div>
+
+      {confirming && (
+        <div
+          className="mas-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-session-title"
+          onClick={() => setConfirming(false)}
+        >
+          <div className="mas-modal" onClick={(e) => e.stopPropagation()}>
+            <h2 id="confirm-session-title" className="mas-modal-title">Confirm assessment session</h2>
+            <p className="mas-modal-body">
+              By creating this session, an invoice for <strong>RM {prepayTotal.toFixed(2)}</strong> will
+              be generated. Your session can only be picked up by an examiner{' '}
+              <strong>after payment is cleared</strong>.
+            </p>
+            <div className="mas-modal-actions">
+              <button className="mas-btn-ghost" onClick={() => setConfirming(false)}>Cancel</button>
+              <button className="mas-btn-primary" onClick={confirmSubmit}>Proceed</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
