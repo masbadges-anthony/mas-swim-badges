@@ -232,6 +232,45 @@
   color: var(--warn, #b4690e);
 }
 
+/* Function-based grading: candidate stacks its controls full-width. */
+.mas-app .mas-grade-candidate {
+  align-items: stretch;
+}
+.mas-app .mas-grade-candidate .mas-admin-main {
+  width: 100%;
+}
+.mas-app .mas-grade-field {
+  margin-top: 0.75rem;
+  max-width: 18rem;
+}
+
+.mas-app .mas-grade-levels {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.mas-app .mas-grade-level {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border, #e3e7ee);
+  border-radius: 8px;
+  background: var(--surface, #ffffff);
+}
+.mas-app .mas-grade-level-name {
+  font-weight: 600;
+  color: var(--navy, #1e2752);
+}
+.mas-app .mas-grade-level .mas-grade-actions {
+  margin-left: auto;
+}
+
+.mas-app .mas-grade-submit {
+  margin-top: 0.5rem;
+}
+
 @media (max-width: 560px) {
   .mas-app .mas-grade-actions {
     align-self: stretch;
@@ -239,6 +278,13 @@
   .mas-app .mas-grade-actions .mas-btn-primary,
   .mas-app .mas-grade-actions .mas-btn-ghost {
     flex: 1 1 0;
+  }
+  .mas-app .mas-grade-field {
+    max-width: none;
+  }
+  .mas-app .mas-grade-level .mas-grade-actions {
+    margin-left: 0;
+    width: 100%;
   }
 }
 
