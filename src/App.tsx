@@ -47,6 +47,7 @@ import InstructorBlacklist from './pages/InstructorBlacklist';
 import CourseManagement from './pages/CourseManagement';
 import Accounts from './pages/Accounts';
 import MyInvoices from './pages/MyInvoices';
+import MySessions from './pages/MySessions';
 import BillingPayments from './pages/BillingPayments';
 import Enquiries from './pages/Enquiries';
 import RegisterCentre from './pages/RegisterCentre';
@@ -358,6 +359,10 @@ function Sidebar({
   const canInvitations = hasRole('examiner');
   const canAccounts = hasRole('system_admin');
   const canMyInvoices = hasRole('instructor') || hasRole('partner_center_admin');
+  // Booking-eligible roles see "My sessions": instructors, master trainers, and
+  // the governance roles that can book on a centre's behalf.
+  const canMySessions =
+    hasRole('instructor') || hasRole('master_trainer') || isGovernance;
   const canBilling = hasRole('finance_officer') || hasRole('system_admin') || hasRole('chairperson');
   const canClaimSlips = canRegister;
   const canOnboard =
@@ -386,7 +391,7 @@ function Sidebar({
     hasRole('examiner_trainer') || hasRole('partner_center_admin') || hasRole('system_admin');
 
   const assessmentsGroup =
-    canRegister || canSchedule || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canOversight;
+    canRegister || canSchedule || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canOversight || canMySessions;
   const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore || canBilling;
   const adminGroup =
     canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries;
@@ -463,6 +468,7 @@ function Sidebar({
               {canRegister && <NavLink to="/candidates/register" className={navClass}><Icon name="userPlus" /><span>Register candidate</span></NavLink>}
               {canRegisterCentre && <NavLink to="/centres/register" className={navClass}><Icon name="building" /><span>Register a centre</span></NavLink>}
               {canSchedule && <NavLink to="/assessments/schedule" className={navClass}><Icon name="calendar" /><span>Schedule assessment</span></NavLink>}
+              {canMySessions && <NavLink to="/my-sessions" className={navClass}><Icon name="calendar" /><span>My sessions</span></NavLink>}
               {canGrade && <NavLink to="/assessments/grade" className={navClass}><Icon name="check" /><span>Grading</span></NavLink>}
               {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Available sessions</span></NavLink>}
               {isGovernance && <NavLink to="/certificates/issue" className={navClass}><Icon name="award" /><span>Issue certificates</span></NavLink>}
@@ -677,6 +683,7 @@ export default function App() {
               <Route path="/candidates/register" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RegisterCandidate /></RequireRole>} />
               <Route path="/candidates/claim-slips" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><ClaimSlips /></RequireRole>} />
               <Route path="/assessments/schedule" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RosterBooking /></RequireRole>} />
+              <Route path="/my-sessions" element={<RequireRole roles={['instructor', 'master_trainer', 'chairperson', 'board_member', 'chief_examiner']}><MySessions /></RequireRole>} />
               <Route path="/assessments/grade" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><ExaminerGrading /></RequireRole>} />
               <Route path="/assessments/invitations" element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>} />
               <Route path="/assessments/oversight" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner', 'finance_officer', 'system_admin']}><AssessmentsOversight /></RequireRole>} />
