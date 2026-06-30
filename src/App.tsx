@@ -47,6 +47,7 @@ import InstructorBlacklist from './pages/InstructorBlacklist';
 import CourseManagement from './pages/CourseManagement';
 import Accounts from './pages/Accounts';
 import MyInvoices from './pages/MyInvoices';
+import PrintableDocument from './pages/PrintableDocument';
 import MySessions from './pages/MySessions';
 import BillingPayments from './pages/BillingPayments';
 import Enquiries from './pages/Enquiries';
@@ -679,6 +680,8 @@ export default function App() {
               <Route path="/account" element={<Protected><AccountSettings /></Protected>} />
               <Route path="/claim" element={<Protected><ClaimCandidate /></Protected>} />
               <Route path="/invoices" element={<RequireRole roles={['instructor', 'partner_center_admin']}><MyInvoices /></RequireRole>} />
+              <Route path="/billing/invoice/:id" element={<RequireRole roles={['instructor', 'partner_center_admin', 'master_trainer', 'finance_officer', 'system_admin', 'chairperson', 'chief_examiner']}><PrintableDocument mode="invoice" /></RequireRole>} />
+              <Route path="/billing/receipt/:id" element={<RequireRole roles={['instructor', 'partner_center_admin', 'master_trainer', 'finance_officer', 'system_admin', 'chairperson', 'chief_examiner']}><PrintableDocument mode="receipt" /></RequireRole>} />
               <Route path="/centre" element={<RequireRole roles={['partner_center_admin']}><CentreAdmin /></RequireRole>} />
               <Route path="/candidates/register" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RegisterCandidate /></RequireRole>} />
               <Route path="/candidates/claim-slips" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><ClaimSlips /></RequireRole>} />
