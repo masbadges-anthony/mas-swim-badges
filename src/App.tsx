@@ -54,6 +54,7 @@ import Enquiries from './pages/Enquiries';
 import RegisterCentre from './pages/RegisterCentre';
 import PartnerApplications from './pages/PartnerApplications';
 import RoleRegistry from './pages/RoleRegistry';
+import AuditLog from './pages/AuditLog';
 import ExaminerRegistry from './pages/ExaminerRegistry';
 import CentreBilling from './pages/CentreBilling';
 import Store from './pages/Store';
@@ -378,6 +379,7 @@ function Sidebar({
   const canRegisterCentre = hasRole('instructor');
   const canPartnerApps = hasRole('chairperson') || hasRole('board_member');
   const canRoleRegistry = hasRole('system_admin');
+  const canAuditLog = hasRole('system_admin') || hasRole('chairperson');
   const canExaminerRegistry = hasRole('chief_examiner');
   const canCentreBilling = hasRole('chairperson') || hasRole('board_member') || hasRole('system_admin');
   const canBuyStore = hasRole('instructor') || hasRole('partner_center_admin');
@@ -501,6 +503,7 @@ function Sidebar({
               {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span><AttentionDot count={unhandledEnquiries} label="unhandled enquiries" /></NavLink>}
               {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span><AttentionDot count={unhandledPartnerApps} label="new applications" /></NavLink>}
               {canRoleRegistry && <NavLink to="/admin/role-registry" className={navClass}><Icon name="settings" /><span>Roles &amp; policies</span></NavLink>}
+              {canAuditLog && <NavLink to="/admin/audit-log" className={navClass}><Icon name="file" /><span>Audit log</span></NavLink>}
               {canManageCentres && <NavLink to="/admin/centres" className={navClass}><Icon name="building" /><span>Manage centres</span></NavLink>}
               {canManageMembers && <NavLink to="/admin/memberships" className={navClass}><Icon name="users" /><span>Memberships</span></NavLink>}
               {canOnboard && <NavLink to="/admin/instructors" className={navClass}><Icon name="userPlus" /><span>Instructor onboarding</span></NavLink>}
@@ -562,6 +565,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/centres/register': 'Register a centre',
   '/admin/partner-applications': 'Centre applications',
   '/admin/role-registry': 'Roles & policies',
+  '/admin/audit-log': 'Audit log',
 };
 
 function AppLayout() {
@@ -706,6 +710,7 @@ export default function App() {
               <Route path="/centres/register" element={<RequireRole roles={['instructor']}><RegisterCentre /></RequireRole>} />
               <Route path="/admin/partner-applications" element={<RequireRole roles={['chairperson', 'board_member']}><PartnerApplications /></RequireRole>} />
               <Route path="/admin/role-registry" element={<RequireRole roles={['system_admin']}><RoleRegistry /></RequireRole>} />
+              <Route path="/admin/audit-log" element={<RequireRole roles={['system_admin', 'chairperson']}><AuditLog /></RequireRole>} />
               <Route path="/admin/memberships" element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>} />
             </Route>
 
