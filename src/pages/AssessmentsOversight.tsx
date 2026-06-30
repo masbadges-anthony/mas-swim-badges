@@ -87,7 +87,8 @@ export default function AssessmentsOversight() {
       supabase.rpc('list_examiners'),
       supabase.from('partner_centers').select('id, name'),
       // Assessment invoices for the payment surface. RLS scopes reads to the
-      // billing role (system_admin); other governance roles see an empty list.
+      // billing roles (finance_officer, system_admin, chairperson); other
+      // governance roles see an empty list.
       supabase.from('invoices').select('id, session_id, stage, status, total').order('created_at'),
     ]);
 

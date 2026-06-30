@@ -345,8 +345,11 @@ function Sidebar({
   const canManageMembers = hasRole('chairperson') || hasRole('board_member');
   const canCentreAdmin = hasRole('partner_center_admin');
   // Assessments oversight doubles as the payment-recording surface, so the
-  // billing-only finance_officer can reach it alongside governance.
-  const canOversight = isGovernance || hasRole('finance_officer');
+  // billing roles (finance_officer, system_admin) can reach it alongside
+  // governance. (system_admin already passes via the has_role wildcard, but it
+  // is listed explicitly to mirror the route guard.)
+  const canOversight =
+    isGovernance || hasRole('finance_officer') || hasRole('system_admin');
   const canRegister = hasRole('instructor') || isGovernance;
   const canSchedule = hasRole('instructor') || isGovernance;
   const canGrade = hasRole('examiner') || isGovernance;
@@ -662,7 +665,7 @@ export default function App() {
               <Route path="/assessments/schedule" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RosterBooking /></RequireRole>} />
               <Route path="/assessments/grade" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><ExaminerGrading /></RequireRole>} />
               <Route path="/assessments/invitations" element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>} />
-              <Route path="/assessments/oversight" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner', 'finance_officer']}><AssessmentsOversight /></RequireRole>} />
+              <Route path="/assessments/oversight" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner', 'finance_officer', 'system_admin']}><AssessmentsOversight /></RequireRole>} />
               <Route path="/assessments/examiners" element={<RequireRole roles={['chief_examiner']}><ExaminerRegistry /></RequireRole>} />
               <Route path="/certificates/issue" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><CertificateIssuance /></RequireRole>} />
               <Route path="/certificates" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>} />
