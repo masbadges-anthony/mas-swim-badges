@@ -47,6 +47,7 @@ import InstructorBlacklist from './pages/InstructorBlacklist';
 import CourseManagement from './pages/CourseManagement';
 import Accounts from './pages/Accounts';
 import MyInvoices from './pages/MyInvoices';
+import BillingPayments from './pages/BillingPayments';
 import Enquiries from './pages/Enquiries';
 import RegisterCentre from './pages/RegisterCentre';
 import PartnerApplications from './pages/PartnerApplications';
@@ -357,6 +358,7 @@ function Sidebar({
   const canInvitations = hasRole('examiner');
   const canAccounts = hasRole('system_admin');
   const canMyInvoices = hasRole('instructor') || hasRole('partner_center_admin');
+  const canBilling = hasRole('finance_officer') || hasRole('system_admin') || hasRole('chairperson');
   const canClaimSlips = canRegister;
   const canOnboard =
     hasRole('instructor_trainer') || hasRole('chairperson') || hasRole('board_member');
@@ -385,7 +387,7 @@ function Sidebar({
 
   const assessmentsGroup =
     canRegister || canSchedule || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canOversight;
-  const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore;
+  const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore || canBilling;
   const adminGroup =
     canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries;
 
@@ -414,6 +416,16 @@ function Sidebar({
     });
     return () => { active = false; };
   }, [canPartnerApps, location.pathname]);
+
+  const [outstandingInvoices, setOutstandingInvoices] = useState(0);
+  useEffect(() => {
+    if (!canBilling) { setOutstandingInvoices(0); return; }
+    let active = true;
+    supabase.rpc('count_outstanding_invoices').then(({ data }) => {
+      if (active) setOutstandingInvoices(typeof data === 'number' ? data : 0);
+    });
+    return () => { active = false; };
+  }, [canBilling, location.pathname]);
 
   // Surface the total attention count to the shell so the mobile hamburger can
   // show its own little indicator when something inside the (collapsed) sidebar
@@ -469,6 +481,7 @@ function Sidebar({
               {canAccounts && <NavLink to="/admin/accounts" className={navClass}><Icon name="card" /><span>Accounts</span></NavLink>}
               {canCentreBilling && <NavLink to="/admin/centre-billing" className={navClass}><Icon name="building" /><span>Centre billing</span></NavLink>}
               {canManageStore && <NavLink to="/admin/store" className={navClass}><Icon name="inbox" /><span>Store orders</span></NavLink>}
+              {canBilling && <NavLink to="/billing/payments" className={navClass}><Icon name="card" /><span>Invoices &amp; Payments</span><AttentionDot count={outstandingInvoices} variant="count" label="outstanding invoices" /></NavLink>}
               {canMyInvoices && <NavLink to="/invoices" className={navClass}><Icon name="file" /><span>My invoices</span></NavLink>}
             </div>
           </details>
@@ -530,6 +543,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/certificates': 'Certificates',
   '/admin/accounts': 'Accounts',
   '/admin/centre-billing': 'Centre billing',
+  '/billing/payments': 'Invoices & Payments',
   '/store': 'Store',
   '/admin/store': 'Store orders',
   '/admin/instructors': 'Instructor onboarding',
@@ -671,6 +685,7 @@ export default function App() {
               <Route path="/certificates" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>} />
               <Route path="/admin/accounts" element={<RequireRole roles={['system_admin']}><Accounts /></RequireRole>} />
               <Route path="/admin/centre-billing" element={<RequireRole roles={['chairperson', 'board_member', 'system_admin']}><CentreBilling /></RequireRole>} />
+              <Route path="/billing/payments" element={<RequireRole roles={['finance_officer', 'system_admin', 'chairperson']}><BillingPayments /></RequireRole>} />
               <Route path="/store" element={<RequireRole roles={['instructor', 'partner_center_admin']}><Store /></RequireRole>} />
               <Route path="/admin/store" element={<RequireRole roles={['system_admin', 'chairperson', 'board_member']}><StoreAdmin /></RequireRole>} />
               <Route path="/admin/instructors" element={<RequireRole roles={['instructor_trainer', 'chairperson', 'board_member']}><InstructorOnboarding /></RequireRole>} />

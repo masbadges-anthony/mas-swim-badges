@@ -78,6 +78,25 @@
   vertical-align: middle;
 }
 
+/* ---- Attention count badge (numeric pill) ---- */
+/* A small superscript-style count for nav items that track a backlog (e.g. the
+   number of outstanding invoices). Navy on the light sidebar so it reads as a
+   count, not an alert. Pairs with <AttentionDot variant="count">. */
+.mas-app .mas-nav-badge {
+  display: inline-block;
+  min-width: 1.1rem;
+  margin-left: 0.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--mas-navy, #1e2752);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1.1rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
 /* ---- Foot ---- */
 .mas-app .mas-sidebar-foot {
   margin-top: 0.75rem;
