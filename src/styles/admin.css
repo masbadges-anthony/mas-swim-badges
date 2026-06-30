@@ -319,6 +319,94 @@
   padding-top: 0;
 }
 
+/* ---- Checkpoint bar (reusable session-progress strip) ---------------------- */
+/* A compact horizontal run of milestones. Each step is filled green when done
+   and muted grey when pending; a connector line joins adjacent steps. */
+.mas-app .mas-checkpoints {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+.mas-app .mas-checkpoint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 3.2rem;
+  position: relative;
+  text-align: center;
+}
+/* Connector between dots — drawn behind, from each step back to the previous. */
+.mas-app .mas-checkpoint::before {
+  content: '';
+  position: absolute;
+  top: 0.6rem;
+  right: 50%;
+  left: -50%;
+  height: 2px;
+  background: var(--border, #e3e7ee);
+}
+.mas-app .mas-checkpoint:first-child::before {
+  display: none;
+}
+.mas-app .mas-checkpoint.is-done::before {
+  background: var(--ok, #1a7f4b);
+}
+.mas-app .mas-checkpoint-dot {
+  position: relative;
+  z-index: 1;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--paper, #f5f8fc);
+  border: 2px solid var(--border, #d4dae6);
+  color: var(--muted, #5b6472);
+}
+.mas-app .mas-checkpoint.is-done .mas-checkpoint-dot {
+  background: var(--ok, #1a7f4b);
+  border-color: var(--ok, #1a7f4b);
+  color: #ffffff;
+}
+.mas-app .mas-checkpoint-label {
+  margin-top: 0.3rem;
+  font-size: 0.68rem;
+  line-height: 1.15;
+  color: var(--muted, #5b6472);
+}
+.mas-app .mas-checkpoint.is-done .mas-checkpoint-label {
+  color: var(--navy, #1e2752);
+}
+
+/* Session detail row: examiner contact + cancel action side by side. */
+.mas-app .mas-session-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+.mas-app .mas-detail-heading {
+  margin: 0 0 0.4rem;
+  font-family: 'Barlow Condensed', system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.85rem;
+  color: var(--navy, #1e2752);
+}
+.mas-app .mas-detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
+}
+
 /* ---- Grading (examiner) ---------------------------------------------------- */
 
 .mas-app .mas-grade-session {
