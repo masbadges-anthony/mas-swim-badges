@@ -345,6 +345,9 @@ function Sidebar({
   const canManageCentres = hasRole('chairperson') || hasRole('board_member');
   const canManageMembers = hasRole('chairperson') || hasRole('board_member');
   const canCentreAdmin = hasRole('partner_center_admin');
+  // Assessments oversight doubles as the payment-recording surface, so the
+  // billing-only finance_officer can reach it alongside governance.
+  const canOversight = isGovernance || hasRole('finance_officer');
   const canRegister = hasRole('instructor') || isGovernance;
   const canSchedule = hasRole('instructor') || isGovernance;
   const canGrade = hasRole('examiner') || isGovernance;
@@ -380,7 +383,7 @@ function Sidebar({
     hasRole('examiner_trainer') || hasRole('partner_center_admin') || hasRole('system_admin');
 
   const assessmentsGroup =
-    canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips;
+    canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canOversight;
   const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore;
   const adminGroup =
     canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries;
@@ -452,7 +455,7 @@ function Sidebar({
               {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Invitations</span></NavLink>}
               {isGovernance && <NavLink to="/certificates/issue" className={navClass}><Icon name="award" /><span>Issue certificates</span></NavLink>}
               {canViewCerts && <NavLink to="/certificates" className={navClass}><Icon name="award" /><span>Certificates</span></NavLink>}
-              {isGovernance && <NavLink to="/assessments/oversight" className={navClass}><Icon name="eye" /><span>Oversight</span></NavLink>}
+              {canOversight && <NavLink to="/assessments/oversight" className={navClass}><Icon name="eye" /><span>Oversight</span></NavLink>}
               {canExaminerRegistry && <NavLink to="/assessments/examiners" className={navClass}><Icon name="users" /><span>Examiner registry</span></NavLink>}
               {canClaimSlips && <NavLink to="/candidates/claim-slips" className={navClass}><Icon name="printer" /><span>Claim slips</span></NavLink>}
             </div>
@@ -664,7 +667,7 @@ export default function App() {
               <Route path="/assessments/invite" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><InviteExaminer /></RequireRole>} />
               <Route path="/assessments/grade" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><ExaminerGrading /></RequireRole>} />
               <Route path="/assessments/invitations" element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>} />
-              <Route path="/assessments/oversight" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><AssessmentsOversight /></RequireRole>} />
+              <Route path="/assessments/oversight" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner', 'finance_officer']}><AssessmentsOversight /></RequireRole>} />
               <Route path="/assessments/examiners" element={<RequireRole roles={['chief_examiner']}><ExaminerRegistry /></RequireRole>} />
               <Route path="/certificates/issue" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><CertificateIssuance /></RequireRole>} />
               <Route path="/certificates" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>} />
