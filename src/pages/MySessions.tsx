@@ -1,21 +1,18 @@
-// Instructor's view of the assessment sessions they booked. Where "My invoices"
-// shows the money, this shows each session's lifecycle — a six-step checkpoint
-// bar, the assigned examiner's contact once a session is claimed, and a cancel
-// action. Verified wired against the backend:
-//   list   ← list_my_sessions() → session_id, venue, state, scheduled_on, status,
-//            receipt_no, invoice_status, cp_created, cp_roster, cp_paid,
-//            cp_examiner, cp_completed, cp_certs, examiner_name, examiner_phone,
-//            examiner_email. The six cp_* booleans are the checkpoint signals;
-//            examiner contact is null until the session is claimed.
-//   cancel ← cancel_session(_session_id) → { session_id, status, within_72h,
-//            refund_due }. The backend is the gate — invalid cancellations
-//            surface as an inline error.
-import { Fragment, useCallback, useEffect, useState } from 'react';
+// Universal session tracker (#15). Role-scoped via list_session_tracker():
+// governance (chair/sysadmin/finance_officer/chief_examiner/board_member) see ALL
+// sessions; everyone else sees sessions they booked OR are assigned to assess.
+// Each row: six-step checkpoint bar; expand for both-way contacts (booker + examiner)
+// and the cancel action (where the row is yours and cancellable).
+//   list   ← list_session_tracker() → session_id, venue, state, scheduled_on, status,
+//            receipt_no, invoice_status, cp_* (6), candidate_count, booker_* (3),
+//            examiner_* (3), is_mine_booked, is_mine_assigned
+//   cancel ← cancel_session(_session_id) → { session_id, status, within_72h, refund_due }
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import CheckpointBar from '../components/CheckpointBar';
 import '../styles/admin.css';
 
-interface MySession {
+interface TrackerRow {
   session_id: string;
   venue: string | null;
   state: string | null;
@@ -29,9 +26,15 @@ interface MySession {
   cp_examiner: boolean;
   cp_completed: boolean;
   cp_certs: boolean;
+  candidate_count: number;
+  booker_name: string | null;
+  booker_phone: string | null;
+  booker_email: string | null;
   examiner_name: string | null;
   examiner_phone: string | null;
   examiner_email: string | null;
+  is_mine_booked: boolean;
+  is_mine_assigned: boolean;
 }
 interface CancelResult {
   session_id: string;
@@ -39,11 +42,31 @@ interface CancelResult {
   within_72h: boolean;
   refund_due: boolean;
 }
-
 type Load = 'loading' | 'ready' | 'error';
+type Tab = 'active' | 'awaiting_pickup' | 'completed' | 'closed' | 'cancelled' | 'archived' | 'all';
 
-// Sessions in these terminal states can no longer be cancelled.
-const TERMINAL = new Set(['completed', 'closed', 'cancelled']);
+const TERMINAL = new Set(['completed', 'closed', 'cancelled', 'archived']);
+
+// Which statuses fall under each tab.
+const TAB_MATCH: Record<Tab, (s: string) => boolean> = {
+  active: (s) => ['awaiting_payment', 'open_for_pickup', 'claimed', 'scheduled', 'requested', 'examiner_invited'].includes(s),
+  awaiting_pickup: (s) => s === 'open_for_pickup',
+  completed: (s) => s === 'completed',
+  closed: (s) => s === 'closed',
+  cancelled: (s) => s === 'cancelled',
+  archived: (s) => s === 'archived',
+  all: () => true,
+};
+const TAB_LABEL: Record<Tab, string> = {
+  active: 'Active',
+  awaiting_pickup: 'Awaiting pickup',
+  completed: 'Completed',
+  closed: 'Closed',
+  cancelled: 'Cancelled',
+  archived: 'Archived',
+  all: 'All',
+};
+const TAB_ORDER: Tab[] = ['active', 'awaiting_pickup', 'completed', 'closed', 'cancelled', 'archived', 'all'];
 
 function prettyDate(s: string | null): string {
   if (!s) return '—';
@@ -63,24 +86,24 @@ function statusLabel(s: string): string {
 }
 
 export default function MySessions() {
-  const [rows, setRows] = useState<MySession[]>([]);
+  const [rows, setRows] = useState<TrackerRow[]>([]);
   const [load, setLoad] = useState<Load>('loading');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('active');
 
-  // Cancellation state, keyed by session_id.
-  const [confirmRow, setConfirmRow] = useState<MySession | null>(null);
+  const [confirmRow, setConfirmRow] = useState<TrackerRow | null>(null);
   const [cancelBusy, setCancelBusy] = useState<string | null>(null);
   const [cancelResult, setCancelResult] = useState<Record<string, CancelResult>>({});
   const [cancelError, setCancelError] = useState<Record<string, string>>({});
 
   const fetchSessions = useCallback(async () => {
     setLoad('loading');
-    const { data, error } = await supabase.rpc('list_my_sessions');
+    const { data, error } = await supabase.rpc('list_session_tracker');
     if (error) {
       setLoad('error');
       return;
     }
-    setRows((data ?? []) as MySession[]);
+    setRows((data ?? []) as TrackerRow[]);
     setLoad('ready');
   }, []);
 
@@ -88,7 +111,21 @@ export default function MySessions() {
     fetchSessions();
   }, [fetchSessions]);
 
-  async function cancelSession(row: MySession) {
+  // Governance sees rows that are neither booked-by-me nor assigned-to-me → "all sessions".
+  const isGovernanceView = useMemo(
+    () => rows.some((r) => !r.is_mine_booked && !r.is_mine_assigned),
+    [rows],
+  );
+
+  const counts = useMemo(() => {
+    const c = {} as Record<Tab, number>;
+    for (const t of TAB_ORDER) c[t] = rows.filter((r) => TAB_MATCH[t](r.status)).length;
+    return c;
+  }, [rows]);
+
+  const filtered = useMemo(() => rows.filter((r) => TAB_MATCH[tab](r.status)), [rows, tab]);
+
+  async function cancelSession(row: TrackerRow) {
     setConfirmRow(null);
     setCancelError((m) => {
       const n = { ...m };
@@ -111,30 +148,42 @@ export default function MySessions() {
     <section className="mas-page">
       <header className="mas-page-head">
         <p className="mas-eyebrow">Assessments</p>
-        <h1>My sessions</h1>
+        <h1>{isGovernanceView ? 'All sessions' : 'My sessions'}</h1>
         <p className="mas-lede">
-          The assessment sessions you booked, with each one’s progress from
-          creation through to certificates issued. Expand a row to see the
-          assigned examiner’s contact and to cancel a session.
+          {isGovernanceView
+            ? 'Every assessment session, with each one’s progress from creation through to certificates issued. Expand a row for the booker and examiner contacts.'
+            : 'The assessment sessions you’re involved in, with each one’s progress from creation through to certificates issued. Expand a row for contacts and to cancel a session you booked.'}
         </p>
       </header>
 
-      <div className="mas-admin-toolbar">
+      <div className="mas-admin-toolbar" style={{ gap: '0.6rem', flexWrap: 'wrap' }}>
         <button className="mas-btn-ghost" onClick={fetchSessions} disabled={load === 'loading'}>
           Refresh
         </button>
-        {load === 'ready' && <span className="mas-admin-count">{rows.length} total</span>}
+        <div className="mas-tabs" role="tablist" style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+          {TAB_ORDER.map((t) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              className={tab === t ? 'mas-btn-primary mas-btn-compact' : 'mas-btn-ghost mas-btn-compact'}
+              onClick={() => setTab(t)}
+            >
+              {TAB_LABEL[t]} ({counts[t]})
+            </button>
+          ))}
+        </div>
       </div>
 
       {load === 'loading' && <p className="mas-status">Loading sessions…</p>}
       {load === 'error' && (
         <p className="mas-status mas-status-bad">Couldn’t load sessions. Refresh to try again.</p>
       )}
-      {load === 'ready' && rows.length === 0 && (
-        <p className="mas-status">You haven’t booked any sessions yet.</p>
+      {load === 'ready' && filtered.length === 0 && (
+        <p className="mas-status">No sessions in this view.</p>
       )}
 
-      {load === 'ready' && rows.length > 0 && (
+      {load === 'ready' && filtered.length > 0 && (
         <div className="mas-table-wrap">
           <table className="mas-table">
             <thead>
@@ -143,17 +192,18 @@ export default function MySessions() {
                 <th>Venue</th>
                 <th>Scheduled</th>
                 <th>Status</th>
+                <th className="mas-num">Cand.</th>
                 <th>Receipt</th>
-                <th>Invoice</th>
                 <th>Progress</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => {
+              {filtered.map((row) => {
                 const isOpen = expanded === row.session_id;
                 const result = cancelResult[row.session_id];
                 const effectiveStatus = result?.status ?? row.status;
-                const cancellable = !TERMINAL.has(effectiveStatus) && !result;
+                const canCancel =
+                  row.is_mine_booked && !TERMINAL.has(effectiveStatus) && !result;
                 const steps = [
                   { key: 'created', label: 'Created', done: row.cp_created },
                   { key: 'roster', label: 'Roster confirmed', done: row.cp_roster },
@@ -181,16 +231,17 @@ export default function MySessions() {
                       <td>
                         <span className="mas-cell-stack">
                           <span className="mas-cell-strong">{row.venue || 'Assessment session'}</span>
-                          {row.state && <span className="mas-cell-sub">{row.state}</span>}
+                          <span className="mas-cell-sub">
+                            {row.state || ''}
+                            {row.is_mine_booked ? ' · you booked' : row.is_mine_assigned ? ' · you assess' : ''}
+                          </span>
                         </span>
                       </td>
                       <td>{prettyDate(row.scheduled_on)}</td>
                       <td><span className="mas-pill">{statusLabel(effectiveStatus)}</span></td>
+                      <td className="mas-num">{row.candidate_count}</td>
                       <td className="mas-cell-strong">{row.receipt_no ?? '—'}</td>
-                      <td>{row.invoice_status ? statusLabel(row.invoice_status) : '—'}</td>
-                      <td>
-                        <CheckpointBar steps={steps} />
-                      </td>
+                      <td><CheckpointBar steps={steps} /></td>
                     </tr>
 
                     {isOpen && (
@@ -198,60 +249,64 @@ export default function MySessions() {
                         <td colSpan={7}>
                           <div className="mas-table-detail mas-session-detail">
                             <div>
+                              <h3 className="mas-detail-heading">Booked by</h3>
+                              {row.booker_name ? (
+                                <ul className="mas-detail-list">
+                                  <li><strong>{row.booker_name}</strong></li>
+                                  {row.booker_phone && <li><a href={`tel:${row.booker_phone}`}>{row.booker_phone}</a></li>}
+                                  {row.booker_email && <li><a href={`mailto:${row.booker_email}`}>{row.booker_email}</a></li>}
+                                </ul>
+                              ) : (
+                                <p className="mas-status">—</p>
+                              )}
+                            </div>
+
+                            <div>
                               <h3 className="mas-detail-heading">Examiner</h3>
                               {row.cp_examiner ? (
                                 <ul className="mas-detail-list">
                                   <li><strong>{row.examiner_name || 'Assigned examiner'}</strong></li>
-                                  {row.examiner_phone && (
-                                    <li>
-                                      <a href={`tel:${row.examiner_phone}`}>{row.examiner_phone}</a>
-                                    </li>
-                                  )}
-                                  {row.examiner_email && (
-                                    <li>
-                                      <a href={`mailto:${row.examiner_email}`}>{row.examiner_email}</a>
-                                    </li>
-                                  )}
+                                  {row.examiner_phone && <li><a href={`tel:${row.examiner_phone}`}>{row.examiner_phone}</a></li>}
+                                  {row.examiner_email && <li><a href={`mailto:${row.examiner_email}`}>{row.examiner_email}</a></li>}
                                 </ul>
                               ) : (
                                 <p className="mas-status">Awaiting examiner pickup.</p>
                               )}
                             </div>
 
-                            <div>
-                              <h3 className="mas-detail-heading">Cancel session</h3>
-                              {cancellable ? (
-                                <button
-                                  className="mas-btn-ghost"
-                                  onClick={() => setConfirmRow(row)}
-                                  disabled={cancelBusy === row.session_id}
-                                >
-                                  {cancelBusy === row.session_id ? 'Cancelling…' : 'Cancel session'}
-                                </button>
-                              ) : (
-                                <p className="mas-status">
-                                  {result
-                                    ? 'This session has been cancelled.'
-                                    : 'This session can no longer be cancelled.'}
-                                </p>
-                              )}
-
-                              {result && (
-                                <p className="mas-status mas-status-good mas-admin-rowerror">
-                                  Session cancelled.{' '}
-                                  {result.refund_due
-                                    ? 'A refund will be arranged by the MAS office.'
-                                    : result.within_72h
-                                      ? 'Within 72 hours of the session — the fee is non-refundable.'
-                                      : 'No payment had been made, so the invoice has been voided.'}
-                                </p>
-                              )}
-                              {cancelError[row.session_id] && (
-                                <p className="mas-status mas-status-bad mas-admin-rowerror">
-                                  Couldn’t cancel this session: {cancelError[row.session_id]}
-                                </p>
-                              )}
-                            </div>
+                            {row.is_mine_booked && (
+                              <div>
+                                <h3 className="mas-detail-heading">Cancel session</h3>
+                                {canCancel ? (
+                                  <button
+                                    className="mas-btn-ghost"
+                                    onClick={() => setConfirmRow(row)}
+                                    disabled={cancelBusy === row.session_id}
+                                  >
+                                    {cancelBusy === row.session_id ? 'Cancelling…' : 'Cancel session'}
+                                  </button>
+                                ) : (
+                                  <p className="mas-status">
+                                    {result ? 'This session has been cancelled.' : 'This session can no longer be cancelled.'}
+                                  </p>
+                                )}
+                                {result && (
+                                  <p className="mas-status mas-status-good mas-admin-rowerror">
+                                    Session cancelled.{' '}
+                                    {result.refund_due
+                                      ? 'A refund will be arranged by the MAS office.'
+                                      : result.within_72h
+                                        ? 'Within 72 hours of the session — the fee is non-refundable.'
+                                        : 'No payment had been made, so the invoice has been voided.'}
+                                  </p>
+                                )}
+                                {cancelError[row.session_id] && (
+                                  <p className="mas-status mas-status-bad mas-admin-rowerror">
+                                    Couldn’t cancel this session: {cancelError[row.session_id]}
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -278,10 +333,9 @@ export default function MySessions() {
               {confirmRow.venue || 'Assessment session'} · {prettyDate(confirmRow.scheduled_on)}
             </p>
             <p className="mas-modal-body">
-              If the assessment is more than 72 hours away and payment was made, a
-              refund will be arranged by the MAS office. Within 72 hours the fee is
-              non-refundable. If an examiner has picked up the session, please
-              contact them.
+              If the assessment is more than 72 hours away and payment was made, a refund
+              will be arranged by the MAS office. Within 72 hours the fee is non-refundable.
+              If an examiner has picked up the session, please contact them.
             </p>
             <div className="mas-modal-actions">
               <button className="mas-btn-ghost" onClick={() => setConfirmRow(null)}>Keep session</button>
