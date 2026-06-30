@@ -42,6 +42,13 @@ interface CancelResult {
   within_72h: boolean;
   refund_due: boolean;
 }
+interface SessionCert {
+  serial: string;
+  candidate_name: string;
+  level: string;
+  billing_stage: string;
+  issued_on: string | null;
+}
 type Load = 'loading' | 'ready' | 'error';
 type Tab = 'active' | 'awaiting_pickup' | 'completed' | 'closed' | 'cancelled' | 'archived' | 'all';
 
@@ -95,6 +102,29 @@ export default function MySessions() {
   const [cancelBusy, setCancelBusy] = useState<string | null>(null);
   const [cancelResult, setCancelResult] = useState<Record<string, CancelResult>>({});
   const [cancelError, setCancelError] = useState<Record<string, string>>({});
+
+  // Per-session certificates, fetched lazily on expand.
+  const [certs, setCerts] = useState<Record<string, SessionCert[]>>({});
+  const [certLoad, setCertLoad] = useState<Record<string, 'loading' | 'ready' | 'error'>>({});
+
+  const fetchCerts = useCallback(async (sessionId: string) => {
+    setCertLoad((m) => ({ ...m, [sessionId]: 'loading' }));
+    const { data, error } = await supabase.rpc('list_session_certificates', { _session_id: sessionId });
+    if (error) {
+      setCertLoad((m) => ({ ...m, [sessionId]: 'error' }));
+      return;
+    }
+    setCerts((m) => ({ ...m, [sessionId]: (data ?? []) as SessionCert[] }));
+    setCertLoad((m) => ({ ...m, [sessionId]: 'ready' }));
+  }, []);
+
+  function toggleExpand(sessionId: string) {
+    setExpanded((cur) => {
+      const next = cur === sessionId ? null : sessionId;
+      if (next && certs[sessionId] === undefined) fetchCerts(sessionId);
+      return next;
+    });
+  }
 
   const fetchSessions = useCallback(async () => {
     setLoad('loading');
@@ -219,9 +249,7 @@ export default function MySessions() {
                         <button
                           type="button"
                           className="mas-table-expandbtn"
-                          onClick={() =>
-                            setExpanded((cur) => (cur === row.session_id ? null : row.session_id))
-                          }
+                          onClick={() => toggleExpand(row.session_id)}
                           aria-expanded={isOpen}
                           aria-label={isOpen ? 'Collapse details' : 'Expand details'}
                         >
@@ -272,6 +300,39 @@ export default function MySessions() {
                               ) : (
                                 <p className="mas-status">Awaiting examiner pickup.</p>
                               )}
+                            </div>
+
+                            <div>
+                              <h3 className="mas-detail-heading">Certificates</h3>
+                              {certLoad[row.session_id] === 'loading' && (
+                                <p className="mas-status">Loading…</p>
+                              )}
+                              {certLoad[row.session_id] === 'error' && (
+                                <p className="mas-status mas-status-bad">Couldn’t load certificates.</p>
+                              )}
+                              {certLoad[row.session_id] === 'ready' &&
+                                (certs[row.session_id]?.length ?? 0) === 0 && (
+                                  <p className="mas-status">
+                                    Certificates release once grading is complete and payment is cleared.
+                                  </p>
+                                )}
+                              {certLoad[row.session_id] === 'ready' &&
+                                (certs[row.session_id]?.length ?? 0) > 0 && (
+                                  <ul className="mas-detail-list">
+                                    {certs[row.session_id].map((ct) => (
+                                      <li key={ct.serial}>
+                                        <strong>{ct.candidate_name}</strong> · {pretty(ct.level)}{' '}
+                                        <a
+                                          href={`/verify/${ct.serial}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          {ct.serial}
+                                        </a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
                             </div>
 
                             {row.is_mine_booked && (
