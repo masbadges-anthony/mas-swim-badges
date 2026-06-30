@@ -209,3 +209,34 @@ candidates/year; a centre may host non-partner swimmers for a venue fee.
 Examiner pathway: instructor cert + 2yr teaching + lifesaving + good standing →
 apply → 2–3 day course → 80% theory + portal + practical + pilot (10 candidates / 3
 levels in 6 months) → Coaching Panel ratifies → role + UID (2-year term).
+
+## House UI law — dense tables (NON-NEGOTIABLE)
+
+Every list of records in the portal is a **dense data table**. Card-stacks for
+data are prohibited. This applies to ALL modules, existing and new.
+
+**Rules:**
+1. **Dense table, not cards.** One row per record, tight vertical padding, a
+   sticky-header navy `#1E2752` table (reuse the `mas-table` family in `admin.css`).
+   Expandable detail rows for per-record actions/detail. Never a stack of tall cards.
+2. **Inline add, not a form card.** "Create / New" is an inline **+ add row** at the
+   top of the table — fill the fields in a row and save — not a separate tall form
+   card above the list. (Long multi-field creates may use a single expanding add-row.)
+3. **Active / inactive tabs + per-row archive control.** Every table has two tabs:
+   the active set and the "inactive" set, plus a per-row control to move a record
+   between them. The *meaning* of "inactive" is per data type (see mapping) — do not
+   bolt a generic `archived` flag onto a table that already expresses inactivity.
+
+**Archive/inactive mapping (use the existing status; invent `archived_at` only where none exists):**
+- Candidates → Active / **Archived** (NEW `archived_at`)
+- Courses → Active / **Archived** (NEW `archived_at`)
+- Certificates → Valid / **Revoked** (existing revoke)
+- Examiner registry → Active / **Revoked** (existing)
+- Memberships → Active / **Expired** (existing `expires_at`)
+- Products / Store → Active / **Hidden** (existing hide)
+- Invoices → Outstanding / Paid / **Void** (existing status)
+- Instructor blacklist → Active / **Lifted**
+- Sessions → Active / Completed / Cancelled / **Archived** (existing `session_status`)
+
+New screens MUST be built to this law from the start. Do not ship a card-stack list
+and defer conversion.
