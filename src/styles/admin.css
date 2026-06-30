@@ -277,6 +277,48 @@
   font-size: 0.85rem;
 }
 
+/* Cell helpers shared across the dense list screens (billing, oversight,
+   available sessions). Keep cells terse — stack secondary lines beneath. */
+.mas-app .mas-table .mas-cell-strong {
+  font-weight: 600;
+  color: var(--navy, #1e2752);
+}
+.mas-app .mas-table .mas-cell-stack {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.mas-app .mas-table .mas-cell-sub {
+  color: var(--muted, #5b6472);
+  font-size: 0.82rem;
+}
+
+/* Right-align numeric money/count columns (mirrors theme.css .mas-num, kept
+   here so the dense admin tables align even where theme.css isn't the winner). */
+.mas-app .mas-table .mas-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Expandable detail row — re-houses each row's form/controls beneath it. */
+.mas-app .mas-table tbody tr.is-open > td {
+  border-bottom-color: transparent;
+}
+.mas-app .mas-table-detailrow > td {
+  padding: 0;
+  background: var(--paper, #f5f8fc);
+}
+.mas-app .mas-table-detail {
+  padding: 0.85rem 1rem 1rem;
+}
+.mas-app .mas-table-detail .mas-admin-list {
+  margin-top: 0;
+}
+.mas-app .mas-table-errorrow > td {
+  padding-top: 0;
+}
+
 /* ---- Grading (examiner) ---------------------------------------------------- */
 
 .mas-app .mas-grade-session {
