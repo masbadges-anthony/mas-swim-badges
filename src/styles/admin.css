@@ -206,6 +206,77 @@
   }
 }
 
+/* ---- Dense data table ------------------------------------------------------ */
+/* Spreadsheet-style table for high-row-count screens (e.g. examiner grading at
+   50+ candidates). Scoped under .mas-app like the rest of the admin module. */
+
+.mas-app .mas-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border, #e3e7ee);
+  border-radius: 12px;
+  background: var(--surface, #ffffff);
+}
+
+.mas-app .mas-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.mas-app .mas-table th,
+.mas-app .mas-table td {
+  padding: 0.4rem 0.7rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border, #e3e7ee);
+}
+
+.mas-app .mas-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--navy, #1e2752);
+  color: #ffffff;
+  font-family: 'Barlow Condensed', system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mas-app .mas-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.mas-app .mas-table-expandcol {
+  width: 2.2rem;
+  text-align: center;
+}
+.mas-app .mas-table-actioncol {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mas-app .mas-table-expandbtn {
+  font: inherit;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: var(--navy, #1e2752);
+  padding: 0.1rem 0.3rem;
+  line-height: 1;
+}
+
+.mas-app .mas-select-compact {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+}
+.mas-app .mas-btn-compact {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+}
+
 /* ---- Grading (examiner) ---------------------------------------------------- */
 
 .mas-app .mas-grade-session {
@@ -269,6 +340,54 @@
 
 .mas-app .mas-grade-submit {
   margin-top: 0.5rem;
+}
+
+/* Dense candidate rows + their expandable detail panel. */
+.mas-app .mas-grade-namecell {
+  font-weight: 600;
+  color: var(--navy, #1e2752);
+  white-space: nowrap;
+}
+.mas-app .mas-grade-row.is-open > td {
+  border-bottom-color: transparent;
+}
+
+/* Collapsed-row outcome summary: tight pills, one per graded level. */
+.mas-app .mas-grade-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.mas-app .mas-grade-summary-empty {
+  color: var(--muted, #5b6472);
+}
+.mas-app .mas-summary-pill {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mas-app .mas-summary-pill.is-pass {
+  background: rgba(26, 127, 75, 0.12);
+  color: var(--ok, #1a7f4b);
+}
+.mas-app .mas-summary-pill.is-refer {
+  background: rgba(180, 105, 14, 0.12);
+  color: var(--warn, #b4690e);
+}
+
+/* The slide-down grading panel reuses the chain-reveal level controls. */
+.mas-app .mas-grade-detail-row > td {
+  padding: 0;
+  background: var(--paper, #f5f8fc);
+}
+.mas-app .mas-grade-detail {
+  padding: 0.75rem 1rem 1rem 2.9rem;
+}
+.mas-app .mas-grade-detail .mas-grade-levels {
+  margin-top: 0;
 }
 
 @media (max-width: 560px) {
