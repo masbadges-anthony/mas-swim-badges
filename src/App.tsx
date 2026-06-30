@@ -361,10 +361,11 @@ function Sidebar({
   const canInvitations = hasRole('examiner');
   const canAccounts = hasRole('system_admin');
   const canMyInvoices = hasRole('instructor') || hasRole('partner_center_admin');
-  // Booking-eligible roles see "My sessions": instructors, master trainers, and
-  // the governance roles that can book on a centre's behalf.
+  // The universal session tracker (#15): instructors and master trainers (booked),
+  // examiners (assigned), and governance + billing roles (all sessions).
   const canMySessions =
-    hasRole('instructor') || hasRole('master_trainer') || isGovernance;
+    hasRole('instructor') || hasRole('master_trainer') || hasRole('examiner') ||
+    hasRole('finance_officer') || isGovernance;
   const canBilling = hasRole('finance_officer') || hasRole('system_admin') || hasRole('chairperson');
   const canClaimSlips = canRegister;
   const canOnboard =
@@ -690,7 +691,7 @@ export default function App() {
               <Route path="/candidates/register" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RegisterCandidate /></RequireRole>} />
               <Route path="/candidates/claim-slips" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><ClaimSlips /></RequireRole>} />
               <Route path="/assessments/schedule" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RosterBooking /></RequireRole>} />
-              <Route path="/my-sessions" element={<RequireRole roles={['instructor', 'master_trainer', 'chairperson', 'board_member', 'chief_examiner']}><MySessions /></RequireRole>} />
+              <Route path="/my-sessions" element={<RequireRole roles={['instructor', 'master_trainer', 'examiner', 'finance_officer', 'chairperson', 'board_member', 'chief_examiner', 'system_admin']}><MySessions /></RequireRole>} />
               <Route path="/assessments/grade" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><ExaminerGrading /></RequireRole>} />
               <Route path="/assessments/invitations" element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>} />
               <Route path="/assessments/oversight" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner', 'finance_officer', 'system_admin']}><AssessmentsOversight /></RequireRole>} />
