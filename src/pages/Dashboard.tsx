@@ -75,7 +75,6 @@ export default function Dashboard() {
   const canGrade = hasRole('examiner') || isGovernance;
   const canViewCerts = hasRole('examiner') || isGovernance;
   const canInvitations = hasRole('examiner');
-  const canInvite = isGovernance;
   const canAccounts = hasRole('system_admin');
   const canMyInvoices = hasRole('instructor') || hasRole('partner_center_admin');
   const canOnboard = hasRole('instructor_trainer') || hasRole('chairperson') || hasRole('board_member');
@@ -100,9 +99,8 @@ export default function Dashboard() {
   const tiles: Tile[] = [
     { to: '/candidates/register', title: 'Register candidate', icon: 'userPlus', accent: '#1d6fd6', group: 'Assessments', show: canRegister },
     { to: '/assessments/schedule', title: 'Schedule assessment', icon: 'calendar', accent: '#0ea5a4', group: 'Assessments', show: canSchedule },
-    { to: '/assessments/invite', title: 'Invite examiner', icon: 'mail', accent: '#8e44ad', group: 'Assessments', show: canInvite },
     { to: '/assessments/grade', title: 'Grading', icon: 'check', accent: '#16a34a', group: 'Assessments', show: canGrade },
-    { to: '/assessments/invitations', title: 'Invitations', icon: 'inbox', accent: '#f4b400', group: 'Assessments', show: canInvitations },
+    { to: '/assessments/invitations', title: 'Available sessions', icon: 'inbox', accent: '#f4b400', group: 'Assessments', show: canInvitations },
     { to: '/certificates', title: 'Certificates', icon: 'award', accent: '#0a1f44', group: 'Assessments', show: canViewCerts },
     { to: '/assessments/oversight', title: 'Oversight', icon: 'eye', accent: '#3b5bdb', group: 'Assessments', show: isGovernance },
     { to: '/assessments/examiners', title: 'Examiner registry', icon: 'users', accent: '#8e44ad', group: 'Assessments', show: canExaminerRegistry },
