@@ -1,8 +1,15 @@
-// Instructor's own invoices. Verified wired against the backend:
-//   list ← list_my_invoices() → invoice_id, session_id, status, total, currency,
-//          receipt_no, paid_at, venue, scheduled_on, created_at
-//   (20260622250000_list_my_invoices.sql). Line items read separately from
-//   invoice_items (exposed by RLS for a visible invoice).
+// Instructor's own invoices. This doubles as the instructor's view of the
+// sessions they booked (one invoice per session), so the "Cancel session"
+// action lives here. Verified wired against the backend:
+//   list   ← list_my_invoices() → invoice_id, session_id, status, total, currency,
+//            receipt_no, paid_at, venue, scheduled_on, created_at
+//            (20260622250000_list_my_invoices.sql). Line items read separately
+//            from invoice_items (exposed by RLS for a visible invoice).
+//   cancel ← cancel_session(_session_id) → { session_id, status, within_72h,
+//            refund_due }. Caller must be the booking instructor or governance;
+//            >72h before a paid session creates a refund obligation, ≤72h
+//            forfeits, an unpaid session voids its invoice. The backend is the
+//            gate — invalid cancellations surface as an inline error.
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
@@ -24,6 +31,12 @@ interface InvoiceItem {
   item_type: string;
   description: string | null;
   amount: number;
+}
+interface CancelResult {
+  session_id: string;
+  status: string;
+  within_72h: boolean;
+  refund_due: boolean;
 }
 
 type Load = 'loading' | 'ready' | 'error';
@@ -55,6 +68,12 @@ export default function MyInvoices() {
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [itemsLoad, setItemsLoad] = useState<Load>('ready');
 
+  // Session cancellation state, keyed by session_id.
+  const [confirmInv, setConfirmInv] = useState<MyInvoice | null>(null);
+  const [cancelBusy, setCancelBusy] = useState<string | null>(null);
+  const [cancelResult, setCancelResult] = useState<Record<string, CancelResult>>({});
+  const [cancelError, setCancelError] = useState<Record<string, string>>({});
+
   const fetchInvoices = useCallback(async () => {
     setLoad('loading');
     const { data, error } = await supabase.rpc('list_my_invoices');
@@ -69,6 +88,25 @@ export default function MyInvoices() {
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
+
+  async function cancelSession(inv: MyInvoice) {
+    setConfirmInv(null);
+    setCancelError((m) => {
+      const n = { ...m };
+      delete n[inv.session_id];
+      return n;
+    });
+    setCancelBusy(inv.session_id);
+    const { data, error } = await supabase.rpc('cancel_session', { _session_id: inv.session_id });
+    setCancelBusy(null);
+    if (error) {
+      setCancelError((m) => ({ ...m, [inv.session_id]: error.message }));
+      return;
+    }
+    const result = (Array.isArray(data) ? data[0] : data) as CancelResult | null;
+    if (result) setCancelResult((m) => ({ ...m, [inv.session_id]: result }));
+    await fetchInvoices();
+  }
 
   async function toggle(inv: MyInvoice) {
     if (openId === inv.invoice_id) {
@@ -89,6 +127,15 @@ export default function MyInvoices() {
     }
     setItems((data ?? []) as InvoiceItem[]);
     setItemsLoad('ready');
+  }
+
+  // A session can carry more than one invoice (e.g. a bonus reconcile). Show the
+  // Cancel-session control once per session — on its first invoice row.
+  const primaryInvoiceBySession = new Map<string, string>();
+  for (const r of rows) {
+    if (!primaryInvoiceBySession.has(r.session_id)) {
+      primaryInvoiceBySession.set(r.session_id, r.invoice_id);
+    }
   }
 
   return (
@@ -121,6 +168,11 @@ export default function MyInvoices() {
           {rows.map((inv) => {
             const open = openId === inv.invoice_id;
             const paid = inv.status === 'paid';
+            const result = cancelResult[inv.session_id];
+            const showCancel =
+              primaryInvoiceBySession.get(inv.session_id) === inv.invoice_id &&
+              inv.status !== 'void' &&
+              !result;
             return (
               <li key={inv.invoice_id} className="mas-admin-row" style={{ flexWrap: 'wrap' }}>
                 <div className="mas-admin-main">
@@ -138,11 +190,42 @@ export default function MyInvoices() {
                     </span>
                   </p>
                 </div>
-                <div className="mas-admin-action">
+                <div className="mas-admin-action" style={{ display: 'flex', gap: '0.5rem' }}>
                   <button className="mas-btn-ghost" onClick={() => toggle(inv)}>
                     {open ? 'Hide' : 'View'}
                   </button>
+                  {showCancel && (
+                    <button
+                      className="mas-btn-ghost"
+                      onClick={() => setConfirmInv(inv)}
+                      disabled={cancelBusy === inv.session_id}
+                    >
+                      {cancelBusy === inv.session_id ? 'Cancelling…' : 'Cancel session'}
+                    </button>
+                  )}
                 </div>
+
+                {result && (
+                  <p
+                    className="mas-status mas-status-good"
+                    style={{ flexBasis: '100%', marginTop: '0.5rem' }}
+                  >
+                    Session cancelled.{' '}
+                    {result.refund_due
+                      ? 'A refund will be arranged by the MAS office.'
+                      : result.within_72h
+                        ? 'Within 72 hours of the session — the fee is non-refundable.'
+                        : 'No payment had been made, so the invoice has been voided.'}
+                  </p>
+                )}
+                {cancelError[inv.session_id] && (
+                  <p
+                    className="mas-status mas-status-bad"
+                    style={{ flexBasis: '100%', marginTop: '0.5rem' }}
+                  >
+                    Couldn’t cancel this session: {cancelError[inv.session_id]}
+                  </p>
+                )}
 
                 {open && (
                   <div style={{ flexBasis: '100%', marginTop: '0.75rem' }}>
@@ -173,6 +256,35 @@ export default function MyInvoices() {
             );
           })}
         </ul>
+      )}
+
+      {confirmInv && (
+        <div
+          className="mas-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-cancel-title"
+          onClick={() => setConfirmInv(null)}
+        >
+          <div className="mas-modal" onClick={(e) => e.stopPropagation()}>
+            <h2 id="confirm-cancel-title" className="mas-modal-title">Cancel this session?</h2>
+            <p className="mas-modal-body">
+              {confirmInv.venue || 'Assessment session'} · {prettyDate(confirmInv.scheduled_on)}
+            </p>
+            <p className="mas-modal-body">
+              If the assessment date is more than 72 hours away and payment was
+              made, a refund will be arranged by the MAS office. Within 72 hours,
+              the fee is non-refundable. If an examiner has already picked up the
+              session, please contact them.
+            </p>
+            <div className="mas-modal-actions">
+              <button className="mas-btn-ghost" onClick={() => setConfirmInv(null)}>Keep session</button>
+              <button className="mas-btn-primary" onClick={() => cancelSession(confirmInv)}>
+                Cancel session
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );

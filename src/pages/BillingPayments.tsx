@@ -2,11 +2,16 @@
 // chairperson). Unlike MyInvoices — the instructor's read-only view — this
 // surface records payments against every assessment invoice. Verified wired
 // against the backend:
-//   list   ← list_billing_invoices() → invoice_id, receipt_no, stage, status,
-//            total, paid_to_date, outstanding, session_id, venue, scheduled_on,
-//            session_status, bill_to_name, created_at (unpaid first)
-//   record ← record_payment(_invoice_id, _amount, _method, _reference)
-//            → { paid_to_date, invoice_total, status, fully_paid }
+//   list    ← list_billing_invoices() → invoice_id, receipt_no, stage, status,
+//             total, paid_to_date, outstanding, session_id, venue, scheduled_on,
+//             session_status, bill_to_name, created_at (unpaid first)
+//   record  ← record_payment(_invoice_id, _amount, _method, _reference)
+//             → { paid_to_date, invoice_total, status, fully_paid }
+//   refunds ← list_refunds_due() → invoice_id, receipt_no, session_id, venue,
+//             scheduled_on, bill_to_id, bill_to_name, paid_amount, refunded,
+//             refund_due (cancelled sessions with an outstanding refund)
+//   payout  ← mark_refund_paid(_invoice_id, _amount, _method, _reference)
+//             → { invoice_id, paid_amount, refunded, fully_refunded }
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
@@ -32,6 +37,26 @@ interface Settlement {
   invoice_total: number;
   status: string;
   fully_paid: boolean;
+}
+
+interface RefundDue {
+  invoice_id: string;
+  receipt_no: string | null;
+  session_id: string;
+  venue: string | null;
+  scheduled_on: string | null;
+  bill_to_id: string | null;
+  bill_to_name: string | null;
+  paid_amount: number;
+  refunded: number;
+  refund_due: number;
+}
+
+interface RefundResult {
+  invoice_id: string;
+  paid_amount: number;
+  refunded: number;
+  fully_refunded: boolean;
 }
 
 type Load = 'loading' | 'ready' | 'error';
@@ -72,6 +97,14 @@ export default function BillingPayments() {
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [settled, setSettled] = useState<Record<string, Settlement>>({});
 
+  // Refunds due — cancelled sessions (>72h, paid) awaiting a payout.
+  const [refunds, setRefunds] = useState<RefundDue[]>([]);
+  const [refundLoad, setRefundLoad] = useState<Load>('loading');
+  const [refundBusy, setRefundBusy] = useState<string | null>(null);
+  const [refundForms, setRefundForms] = useState<Record<string, { amount: string; method: string; reference: string }>>({});
+  const [refundError, setRefundError] = useState<Record<string, string>>({});
+  const [refundOk, setRefundOk] = useState<Record<string, RefundResult>>({});
+
   const fetchInvoices = useCallback(async () => {
     setLoad('loading');
     const { data, error } = await supabase.rpc('list_billing_invoices');
@@ -83,9 +116,25 @@ export default function BillingPayments() {
     setLoad('ready');
   }, []);
 
-  useEffect(() => {
+  const fetchRefunds = useCallback(async () => {
+    setRefundLoad('loading');
+    const { data, error } = await supabase.rpc('list_refunds_due');
+    if (error) {
+      setRefundLoad('error');
+      return;
+    }
+    setRefunds((data ?? []) as RefundDue[]);
+    setRefundLoad('ready');
+  }, []);
+
+  const refreshAll = useCallback(() => {
     fetchInvoices();
-  }, [fetchInvoices]);
+    fetchRefunds();
+  }, [fetchInvoices, fetchRefunds]);
+
+  useEffect(() => {
+    refreshAll();
+  }, [refreshAll]);
 
   function form(id: string) {
     return forms[id] ?? { amount: '', method: 'transfer', reference: '' };
@@ -128,6 +177,49 @@ export default function BillingPayments() {
     await fetchInvoices();
   }
 
+  // The refund form defaults its amount to the full outstanding refund_due.
+  function refundForm(r: RefundDue) {
+    return (
+      refundForms[r.invoice_id] ?? {
+        amount: Number(r.refund_due).toFixed(2),
+        method: 'transfer',
+        reference: '',
+      }
+    );
+  }
+  function setRefundField(id: string, fallback: RefundDue, patch: Partial<{ amount: string; method: string; reference: string }>) {
+    setRefundForms((m) => ({ ...m, [id]: { ...refundForm(fallback), ...patch } }));
+  }
+
+  async function markRefund(r: RefundDue) {
+    const f = refundForm(r);
+    const amount = Number(f.amount);
+    setRefundError((m) => {
+      const n = { ...m };
+      delete n[r.invoice_id];
+      return n;
+    });
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setRefundError((m) => ({ ...m, [r.invoice_id]: 'Enter a refund amount greater than zero.' }));
+      return;
+    }
+    setRefundBusy(r.invoice_id);
+    const { data, error } = await supabase.rpc('mark_refund_paid', {
+      _invoice_id: r.invoice_id,
+      _amount: amount,
+      _method: f.method,
+      _reference: f.reference.trim() || null,
+    });
+    setRefundBusy(null);
+    if (error) {
+      setRefundError((m) => ({ ...m, [r.invoice_id]: error.message }));
+      return;
+    }
+    const result = (Array.isArray(data) ? data[0] : data) as RefundResult | null;
+    if (result) setRefundOk((m) => ({ ...m, [r.invoice_id]: result }));
+    await fetchRefunds();
+  }
+
   return (
     <section className="mas-page">
       <header className="mas-page-head">
@@ -141,7 +233,11 @@ export default function BillingPayments() {
       </header>
 
       <div className="mas-admin-toolbar">
-        <button className="mas-btn-ghost" onClick={fetchInvoices} disabled={load === 'loading'}>
+        <button
+          className="mas-btn-ghost"
+          onClick={refreshAll}
+          disabled={load === 'loading' || refundLoad === 'loading'}
+        >
           Refresh
         </button>
         {load === 'ready' && <span className="mas-admin-count">{rows.length} total</span>}
@@ -260,6 +356,124 @@ export default function BillingPayments() {
           })}
         </ul>
       )}
+
+      {/* ---- Refunds due ---- */}
+      <div style={{ marginTop: '2.5rem', borderTop: '1px solid var(--mas-line)', paddingTop: '1.5rem' }}>
+        <header className="mas-page-head">
+          <p className="mas-eyebrow">Refunds</p>
+          <h2>Refunds due</h2>
+          <p className="mas-lede">
+            Sessions cancelled more than 72 hours ahead with a payment already
+            made. Record each refund payout once the office has arranged it.
+          </p>
+        </header>
+
+        {refundLoad === 'loading' && <p className="mas-status">Loading refunds…</p>}
+        {refundLoad === 'error' && (
+          <p className="mas-status mas-status-bad">Couldn’t load refunds. Refresh to try again.</p>
+        )}
+        {refundLoad === 'ready' && refunds.length === 0 && (
+          <p className="mas-status">No refunds are due.</p>
+        )}
+
+        {refundLoad === 'ready' && refunds.length > 0 && (
+          <ul className="mas-admin-list">
+            {refunds.map((r) => {
+              const f = refundForm(r);
+              const ok = refundOk[r.invoice_id];
+              return (
+                <li key={r.invoice_id} className="mas-admin-row" style={{ flexWrap: 'wrap' }}>
+                  <div className="mas-admin-main">
+                    <h3 className="mas-admin-name">
+                      {r.receipt_no ?? '— (no receipt)'}
+                      <span className="mas-pill" style={{ marginLeft: '0.5rem' }}>Cancelled</span>
+                    </h3>
+                    <p className="mas-admin-meta">
+                      <span className="mas-admin-sub">
+                        {r.venue || 'Assessment session'} · {prettyDate(r.scheduled_on)}
+                        {r.bill_to_name ? ` · ${r.bill_to_name}` : ''}
+                      </span>
+                    </p>
+                    <p className="mas-admin-meta">
+                      <span className="mas-admin-sub">
+                        Paid <strong>{money(r.paid_amount)}</strong>
+                        {' · '}Refunded <strong>{money(r.refunded)}</strong>
+                        {' · '}Refund due <strong>{money(r.refund_due)}</strong>
+                      </span>
+                    </p>
+
+                    <div className="mas-grade-actions" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                      <div className="mas-field mas-grade-field">
+                        <label className="mas-field-label" htmlFor={`refund-amount-${r.invoice_id}`}>
+                          Amount (RM)
+                        </label>
+                        <input
+                          id={`refund-amount-${r.invoice_id}`}
+                          className="mas-input"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={f.amount}
+                          onChange={(e) => setRefundField(r.invoice_id, r, { amount: e.target.value })}
+                          placeholder={Number(r.refund_due).toFixed(2)}
+                        />
+                      </div>
+                      <div className="mas-field mas-grade-field">
+                        <label className="mas-field-label" htmlFor={`refund-method-${r.invoice_id}`}>
+                          Method
+                        </label>
+                        <select
+                          id={`refund-method-${r.invoice_id}`}
+                          className="mas-select"
+                          value={f.method}
+                          onChange={(e) => setRefundField(r.invoice_id, r, { method: e.target.value })}
+                        >
+                          {METHODS.map((m) => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="mas-field mas-grade-field">
+                        <label className="mas-field-label" htmlFor={`refund-ref-${r.invoice_id}`}>
+                          Reference (optional)
+                        </label>
+                        <input
+                          id={`refund-ref-${r.invoice_id}`}
+                          className="mas-input"
+                          type="text"
+                          value={f.reference}
+                          onChange={(e) => setRefundField(r.invoice_id, r, { reference: e.target.value })}
+                          placeholder="Transaction / payout ref"
+                        />
+                      </div>
+                      <button
+                        className="mas-btn-primary"
+                        onClick={() => markRefund(r)}
+                        disabled={refundBusy === r.invoice_id}
+                      >
+                        {refundBusy === r.invoice_id ? 'Recording…' : 'Mark refunded'}
+                      </button>
+                    </div>
+
+                    {ok && (
+                      <p className="mas-status mas-status-good mas-admin-rowerror">
+                        Refund recorded — refunded {money(ok.refunded)} of {money(ok.paid_amount)}
+                        {ok.fully_refunded ? ' · fully refunded.' : '.'}
+                      </p>
+                    )}
+                    {refundError[r.invoice_id] && (
+                      <p className="mas-status mas-status-bad mas-admin-rowerror">
+                        Couldn’t record refund: {refundError[r.invoice_id]}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </section>
   );
 }
