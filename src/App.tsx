@@ -436,6 +436,16 @@ function Sidebar({
     return () => { active = false; };
   }, [canBilling, location.pathname]);
 
+  const [openSessions, setOpenSessions] = useState(0);
+  useEffect(() => {
+    if (!canInvitations) { setOpenSessions(0); return; }
+    let active = true;
+    supabase.rpc('count_open_sessions').then(({ data }) => {
+      if (active) setOpenSessions(typeof data === 'number' ? data : 0);
+    });
+    return () => { active = false; };
+  }, [canInvitations, location.pathname]);
+
   // Surface the total attention count to the shell so the mobile hamburger can
   // show its own little indicator when something inside the (collapsed) sidebar
   // needs attention.
@@ -474,7 +484,7 @@ function Sidebar({
               {canSchedule && <NavLink to="/assessments/schedule" className={navClass}><Icon name="calendar" /><span>Schedule assessment</span></NavLink>}
               {canMySessions && <NavLink to="/my-sessions" className={navClass}><Icon name="calendar" /><span>My sessions</span></NavLink>}
               {canGrade && <NavLink to="/assessments/grade" className={navClass}><Icon name="check" /><span>Grading</span></NavLink>}
-              {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Available sessions</span></NavLink>}
+              {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Available sessions</span><AttentionDot count={openSessions} variant="count" label="available sessions" /></NavLink>}
               {isGovernance && <NavLink to="/certificates/issue" className={navClass}><Icon name="award" /><span>Issue certificates</span></NavLink>}
               {canViewCerts && <NavLink to="/certificates" className={navClass}><Icon name="award" /><span>Certificates</span></NavLink>}
               {canOversight && <NavLink to="/assessments/oversight" className={navClass}><Icon name="eye" /><span>Oversight</span></NavLink>}
