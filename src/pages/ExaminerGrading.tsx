@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
 
@@ -8,13 +8,9 @@ import '../styles/admin.css';
 // mark_attendance / record_assessment_outcome / submit_session_results.
 //
 // FIREWALL: no fee, invoice, or payment value appears anywhere on this screen.
-//
-// LAYOUT: candidates render as a dense, spreadsheet-style table — one row each — so a
-// 50-candidate session stays scannable. The chain-reveal grading controls live in an
-// expandable detail row that opens beneath the candidate; the grading logic, RPC calls,
-// and no-skip rule are unchanged from the card version.
+// LOCK: once a session is submitted (status completed/closed/archived/cancelled), that
+// session renders view-only — the server refuses writes, and the UI hides the controls.
 
-// Enum order = the no-skip pathway. Values match public.badge_level.
 const LEVELS: { value: string; label: string }[] = [
   { value: 'starfish', label: 'Starfish' },
   { value: 'sea_turtle', label: 'Sea Turtle' },
@@ -32,6 +28,9 @@ const ATTENDANCE: { value: Attendance; label: string }[] = [
   { value: 'no_show', label: 'No show' },
   { value: 'withdrawn', label: 'Withdrawn' },
 ];
+
+// A session at or past this status is locked for grading.
+const LOCKED_STATUSES = ['completed', 'closed', 'archived', 'cancelled'];
 
 type Attendance = 'registered' | 'present' | 'absent' | 'no_show' | 'withdrawn';
 type Outcome = 'pass' | 'refer';
@@ -89,14 +88,6 @@ function gradeableChain(row: RosterRow): string[] {
   return chain;
 }
 
-// Levels that already carry an outcome, in pathway order — the compact summary a
-// collapsed row shows so an examiner can see progress without expanding.
-function gradedSoFar(row: RosterRow): LevelResult[] {
-  return row.levels
-    .filter((l) => l.outcome === 'pass' || l.outcome === 'refer')
-    .sort((a, b) => levelIndex(a.level) - levelIndex(b.level));
-}
-
 export default function ExaminerGrading() {
   const [rows, setRows] = useState<RosterRow[]>([]);
   const [load, setLoad] = useState<Load>('loading');
@@ -105,7 +96,6 @@ export default function ExaminerGrading() {
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [sessionError, setSessionError] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
-  const [expanded, setExpanded] = useState<string | null>(null); // one open detail row at a time
 
   const fetchRoster = useCallback(async () => {
     setLoad('loading');
@@ -153,7 +143,6 @@ export default function ExaminerGrading() {
       setRowError((m) => ({ ...m, [row.enrolment_id]: error.message }));
       return;
     }
-    // Optimistic local update — attendance doesn't change the levels chain.
     setRows((list) =>
       list.map((x) => (x.enrolment_id === row.enrolment_id ? { ...x, attendance } : x)),
     );
@@ -172,15 +161,14 @@ export default function ExaminerGrading() {
     });
     setBusyKey(null);
     if (error) {
-      // No-skip / COI / authority rejections surface here, in the screen's voice.
       setRowError((m) => ({ ...m, [row.enrolment_id]: error.message }));
       return;
     }
-    await fetchRoster(); // re-read so the revealed-next-level chain reflects the server
+    await fetchRoster();
   }
 
   async function submitSession(sessionId: string) {
-    if (!window.confirm('Submit results for this session? This marks it completed.')) return;
+    if (!window.confirm('Submit results for this session? This marks it completed and locks grading.')) return;
     const key = `submit:${sessionId}`;
     setBusyKey(key);
     setSessionError((m) => {
@@ -198,11 +186,6 @@ export default function ExaminerGrading() {
     await fetchRoster();
   }
 
-  function toggleExpanded(enrolmentId: string) {
-    clearRowError(enrolmentId);
-    setExpanded((cur) => (cur === enrolmentId ? null : enrolmentId));
-  }
-
   return (
     <section className="mas-page">
       <header className="mas-page-head">
@@ -211,7 +194,7 @@ export default function ExaminerGrading() {
         <p className="mas-lede">
           Mark attendance and record outcomes for the candidates assigned to you. Grade the
           booked level first; a pass reveals the next level on the pathway. Submit each
-          session’s results when you’re done.
+          session’s results when you’re done — once submitted, the session is locked.
         </p>
       </header>
 
@@ -232,60 +215,55 @@ export default function ExaminerGrading() {
       )}
 
       {load === 'ready' &&
-        groups.map(({ row: head, enrolments }) => (
-          <div key={head.session_id} className="mas-grade-session">
-            <div className="mas-grade-session-head">
-              <h2 className="mas-admin-name">{head.venue || 'Assessment session'}</h2>
-              <p className="mas-admin-sub">
-                {formatDate(head.scheduled_on) || 'Date TBC'}
-                {head.session_status ? ` · ${head.session_status.replace(/_/g, ' ')}` : ''}
-                {` · ${enrolments.length} candidate${enrolments.length === 1 ? '' : 's'}`}
-              </p>
-            </div>
+        groups.map(({ row: head, enrolments }) => {
+          const locked = LOCKED_STATUSES.includes(head.session_status);
+          return (
+            <div key={head.session_id} className="mas-grade-session">
+              <div className="mas-grade-session-head">
+                <h2 className="mas-admin-name">{head.venue || 'Assessment session'}</h2>
+                <p className="mas-admin-sub">
+                  {formatDate(head.scheduled_on) || 'Date TBC'}
+                  {head.session_status ? ` · ${head.session_status.replace(/_/g, ' ')}` : ''}
+                  {` · ${enrolments.length} candidate${enrolments.length === 1 ? '' : 's'}`}
+                </p>
+              </div>
 
-            <div className="mas-table-wrap">
-              <table className="mas-table mas-grade-table">
-                <thead>
-                  <tr>
-                    <th className="mas-table-expandcol" aria-label="Expand" />
-                    <th>Candidate</th>
-                    <th>Booked</th>
-                    <th>Attendance</th>
-                    <th>Outcomes</th>
-                    <th className="mas-table-actioncol">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {enrolments.map((r) => {
-                    const chain = gradeableChain(r);
-                    const recorded = new Map(r.levels.map((l) => [l.level, l.outcome]));
-                    const graded = gradedSoFar(r);
-                    const isOpen = expanded === r.enrolment_id;
-                    return (
-                      <Fragment key={r.enrolment_id}>
-                        <tr className={`mas-grade-row${isOpen ? ' is-open' : ''}`}>
-                          <td className="mas-table-expandcol">
-                            <button
-                              type="button"
-                              className="mas-table-expandbtn"
-                              onClick={() => toggleExpanded(r.enrolment_id)}
-                              aria-expanded={isOpen}
-                              aria-label={isOpen ? 'Collapse grading' : 'Expand grading'}
-                            >
-                              {isOpen ? '▾' : '▸'}
-                            </button>
-                          </td>
-                          <td className="mas-grade-namecell">{r.candidate_name}</td>
-                          <td>
-                            <span className="mas-pill">{levelLabel(r.booked_level)}</span>
-                          </td>
-                          <td>
+              {locked && (
+                <p className="mas-status mas-status-good">
+                  Results submitted — this session is view-only. Track payment and
+                  certificate release from your dashboard.
+                </p>
+              )}
+
+              <ul className="mas-admin-list">
+                {enrolments.map((r) => {
+                  const chain = gradeableChain(r);
+                  const recorded = new Map(r.levels.map((l) => [l.level, l.outcome]));
+                  return (
+                    <li key={r.enrolment_id} className="mas-admin-row mas-grade-candidate">
+                      <div className="mas-admin-main">
+                        <h3 className="mas-admin-name">{r.candidate_name}</h3>
+                        <p className="mas-admin-meta">
+                          <span className="mas-pill">Booked: {levelLabel(r.booked_level)}</span>
+                        </p>
+
+                        <div className="mas-field mas-grade-field">
+                          <label
+                            className="mas-field-label"
+                            htmlFor={`att-${r.enrolment_id}`}
+                          >
+                            Attendance
+                          </label>
+                          {locked ? (
+                            <p className="mas-admin-sub">
+                              {ATTENDANCE.find((a) => a.value === r.attendance)?.label ?? r.attendance}
+                            </p>
+                          ) : (
                             <select
                               id={`att-${r.enrolment_id}`}
-                              className="mas-select mas-select-compact"
+                              className="mas-select"
                               value={r.attendance}
                               disabled={busyKey === `att:${r.enrolment_id}`}
-                              aria-label={`Attendance for ${r.candidate_name}`}
                               onChange={(e) => setAttendance(r, e.target.value as Attendance)}
                             >
                               {ATTENDANCE.map((a) => (
@@ -294,137 +272,112 @@ export default function ExaminerGrading() {
                                 </option>
                               ))}
                             </select>
-                          </td>
-                          <td>
-                            {graded.length === 0 ? (
-                              <span className="mas-grade-summary-empty">—</span>
-                            ) : (
-                              <span className="mas-grade-summary">
-                                {graded.map((l) => (
+                          )}
+                        </div>
+
+                        <div className="mas-grade-levels">
+                          {/* When locked, show every graded level as a static outcome.
+                              When open, show the gradeable chain with controls. */}
+                          {(locked ? r.levels.map((l) => l.level) : chain).map((level) => {
+                            const outcome = recorded.get(level) ?? null;
+                            const gradeKey = `grade:${r.enrolment_id}:${level}`;
+                            return (
+                              <div key={level} className="mas-grade-level">
+                                <span className="mas-grade-level-name">
+                                  {levelLabel(level)}
+                                  {level === r.booked_level ? ' · booked' : ' · bonus'}
+                                </span>
+                                {outcome && (
                                   <span
-                                    key={l.level}
-                                    className={`mas-summary-pill ${
-                                      l.outcome === 'pass' ? 'is-pass' : 'is-refer'
+                                    className={`mas-outcome ${
+                                      outcome === 'pass' ? 'is-pass' : 'is-refer'
                                     }`}
                                   >
-                                    {levelLabel(l.level)} {l.outcome === 'pass' ? '✓' : '— refer'}
+                                    {outcome === 'pass' ? 'Passed' : 'Referred'}
                                   </span>
-                                ))}
-                              </span>
-                            )}
-                          </td>
-                          <td className="mas-table-actioncol">
-                            <button
-                              type="button"
-                              className="mas-btn-ghost mas-btn-compact"
-                              onClick={() => toggleExpanded(r.enrolment_id)}
-                              aria-expanded={isOpen}
-                            >
-                              {isOpen ? 'Close' : 'Grade'}
-                            </button>
-                          </td>
-                        </tr>
-
-                        {isOpen && (
-                          <tr className="mas-grade-detail-row">
-                            <td colSpan={6}>
-                              <div className="mas-grade-detail">
-                                <div className="mas-grade-levels">
-                                  {chain.map((level) => {
-                                    const outcome = recorded.get(level) ?? null;
-                                    const gradeKey = `grade:${r.enrolment_id}:${level}`;
-                                    return (
-                                      <div key={level} className="mas-grade-level">
-                                        <span className="mas-grade-level-name">
-                                          {levelLabel(level)}
-                                          {level === r.booked_level ? ' · booked' : ' · next'}
-                                        </span>
-                                        {outcome && (
-                                          <span
-                                            className={`mas-outcome ${
-                                              outcome === 'pass' ? 'is-pass' : 'is-refer'
-                                            }`}
-                                          >
-                                            {outcome === 'pass' ? 'Passed' : 'Referred'}
-                                          </span>
-                                        )}
-                                        <div className="mas-grade-actions">
-                                          <button
-                                            className="mas-btn-primary"
-                                            onClick={() => grade(r, level, 'pass')}
-                                            disabled={busyKey === gradeKey}
-                                            aria-pressed={outcome === 'pass'}
-                                          >
-                                            {busyKey === gradeKey ? '…' : 'Pass'}
-                                          </button>
-                                          <button
-                                            className="mas-btn-ghost"
-                                            onClick={() => grade(r, level, 'refer')}
-                                            disabled={busyKey === gradeKey}
-                                            aria-pressed={outcome === 'refer'}
-                                          >
-                                            Refer
-                                          </button>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-
-                                <div className="mas-field mas-grade-field">
-                                  <label
-                                    className="mas-field-label"
-                                    htmlFor={`notes-${r.enrolment_id}`}
-                                  >
-                                    Notes (optional)
-                                  </label>
-                                  <input
-                                    id={`notes-${r.enrolment_id}`}
-                                    className="mas-input"
-                                    type="text"
-                                    value={notes[r.enrolment_id] ?? ''}
-                                    onChange={(e) =>
-                                      setNotes((m) => ({ ...m, [r.enrolment_id]: e.target.value }))
-                                    }
-                                    placeholder="Recorded with the next outcome you save"
-                                  />
-                                </div>
-
-                                {rowError[r.enrolment_id] && (
-                                  <p className="mas-status mas-status-bad mas-admin-rowerror">
-                                    Couldn’t save: {rowError[r.enrolment_id]}
-                                  </p>
+                                )}
+                                {!locked && (
+                                  <div className="mas-grade-actions">
+                                    <button
+                                      className="mas-btn-primary"
+                                      onClick={() => grade(r, level, 'pass')}
+                                      disabled={busyKey === gradeKey}
+                                      aria-pressed={outcome === 'pass'}
+                                    >
+                                      {busyKey === gradeKey ? '…' : 'Pass'}
+                                    </button>
+                                    <button
+                                      className="mas-btn-ghost"
+                                      onClick={() => grade(r, level, 'refer')}
+                                      disabled={busyKey === gradeKey}
+                                      aria-pressed={outcome === 'refer'}
+                                    >
+                                      Refer
+                                    </button>
+                                  </div>
                                 )}
                               </div>
-                            </td>
-                          </tr>
-                        )}
-                      </Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            );
+                          })}
+                          {locked && r.levels.length === 0 && (
+                            <p className="mas-admin-sub">No outcomes recorded.</p>
+                          )}
+                        </div>
 
-            <div className="mas-form-actions mas-grade-submit">
-              <button
-                className="mas-btn-primary"
-                onClick={() => submitSession(head.session_id)}
-                disabled={busyKey === `submit:${head.session_id}`}
-              >
-                {busyKey === `submit:${head.session_id}` ? 'Submitting…' : 'Submit results'}
-              </button>
+                        {!locked && (
+                          <div className="mas-field mas-grade-field">
+                            <label
+                              className="mas-field-label"
+                              htmlFor={`notes-${r.enrolment_id}`}
+                            >
+                              Notes (optional)
+                            </label>
+                            <input
+                              id={`notes-${r.enrolment_id}`}
+                              className="mas-input"
+                              type="text"
+                              value={notes[r.enrolment_id] ?? ''}
+                              onChange={(e) =>
+                                setNotes((m) => ({ ...m, [r.enrolment_id]: e.target.value }))
+                              }
+                              placeholder="Recorded with the next outcome you save"
+                            />
+                          </div>
+                        )}
+
+                        {rowError[r.enrolment_id] && (
+                          <p className="mas-status mas-status-bad mas-admin-rowerror">
+                            Couldn’t save: {rowError[r.enrolment_id]}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {!locked && (
+                <div className="mas-form-actions mas-grade-submit">
+                  <button
+                    className="mas-btn-primary"
+                    onClick={() => submitSession(head.session_id)}
+                    disabled={busyKey === `submit:${head.session_id}`}
+                  >
+                    {busyKey === `submit:${head.session_id}` ? 'Submitting…' : 'Submit results'}
+                  </button>
+                </div>
+              )}
+              {submitted[head.session_id] && (
+                <p className="mas-status mas-status-good">Results submitted — session completed.</p>
+              )}
+              {sessionError[head.session_id] && (
+                <p className="mas-status mas-status-bad">
+                  Couldn’t submit: {sessionError[head.session_id]}
+                </p>
+              )}
             </div>
-            {submitted[head.session_id] && (
-              <p className="mas-status mas-status-good">Results submitted — session completed.</p>
-            )}
-            {sessionError[head.session_id] && (
-              <p className="mas-status mas-status-bad">
-                Couldn’t submit: {sessionError[head.session_id]}
-              </p>
-            )}
-          </div>
-        ))}
+          );
+        })}
     </section>
   );
 }
