@@ -49,6 +49,13 @@ interface SessionCert {
   billing_stage: string;
   issued_on: string | null;
 }
+interface AuditEvent {
+  id: string;
+  actor_name: string | null;
+  action: string;
+  detail: Record<string, unknown> | null;
+  created_at: string;
+}
 type Load = 'loading' | 'ready' | 'error';
 type Tab = 'active' | 'awaiting_pickup' | 'completed' | 'closed' | 'cancelled' | 'archived' | 'all';
 
@@ -92,6 +99,28 @@ function statusLabel(s: string): string {
   return pretty(s);
 }
 
+const AUDIT_LABEL: Record<string, string> = {
+  payment_recorded: 'Payment recorded',
+  refund_recorded: 'Refund recorded',
+  payout_recorded: 'Payout recorded',
+  session_reopened: 'Session reopened',
+};
+function auditSummary(e: AuditEvent): string {
+  const d = e.detail ?? {};
+  if (e.action === 'session_reopened') return `Reason: ${String(d.reason ?? '—')}`;
+  const parts: string[] = [];
+  if (d.amount != null) parts.push(`RM ${Number(d.amount).toFixed(2)}`);
+  if (d.method) parts.push(String(d.method));
+  if (d.reference) parts.push(`ref ${String(d.reference)}`);
+  if (d.note) parts.push(String(d.note));
+  return parts.join(' · ');
+}
+function auditWhen(s: string): string {
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return s;
+  return d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
 export default function MySessions() {
   const [rows, setRows] = useState<TrackerRow[]>([]);
   const [load, setLoad] = useState<Load>('loading');
@@ -107,6 +136,9 @@ export default function MySessions() {
   const [certs, setCerts] = useState<Record<string, SessionCert[]>>({});
   const [certLoad, setCertLoad] = useState<Record<string, 'loading' | 'ready' | 'error'>>({});
 
+  // Per-session audit trail (governance only — returns empty for others).
+  const [audit, setAudit] = useState<Record<string, AuditEvent[]>>({});
+
   const fetchCerts = useCallback(async (sessionId: string) => {
     setCertLoad((m) => ({ ...m, [sessionId]: 'loading' }));
     const { data, error } = await supabase.rpc('list_session_certificates', { _session_id: sessionId });
@@ -118,10 +150,17 @@ export default function MySessions() {
     setCertLoad((m) => ({ ...m, [sessionId]: 'ready' }));
   }, []);
 
+  const fetchAudit = useCallback(async (sessionId: string) => {
+    const { data, error } = await supabase.rpc('list_audit_log', { _session_id: sessionId, _limit: 50 });
+    if (error) return; // not authorized / no access → leave empty
+    setAudit((m) => ({ ...m, [sessionId]: (data ?? []) as AuditEvent[] }));
+  }, []);
+
   function toggleExpand(sessionId: string) {
     setExpanded((cur) => {
       const next = cur === sessionId ? null : sessionId;
       if (next && certs[sessionId] === undefined) fetchCerts(sessionId);
+      if (next && audit[sessionId] === undefined) fetchAudit(sessionId);
       return next;
     });
   }
@@ -366,6 +405,22 @@ export default function MySessions() {
                                     Couldn’t cancel this session: {cancelError[row.session_id]}
                                   </p>
                                 )}
+                              </div>
+                            )}
+                            {(audit[row.session_id]?.length ?? 0) > 0 && (
+                              <div>
+                                <h3 className="mas-detail-heading">Activity</h3>
+                                <ul className="mas-detail-list">
+                                  {audit[row.session_id].map((e) => (
+                                    <li key={e.id}>
+                                      <strong>{AUDIT_LABEL[e.action] ?? e.action}</strong>
+                                      {auditSummary(e) ? ` · ${auditSummary(e)}` : ''}
+                                      <span className="mas-cell-sub">
+                                        {' · '}{e.actor_name || '—'}{' · '}{auditWhen(e.created_at)}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
                               </div>
                             )}
                           </div>
