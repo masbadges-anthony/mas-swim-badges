@@ -42,7 +42,6 @@ import CentreAdmin from './pages/CentreAdmin';
 import ClaimCandidate from './pages/ClaimCandidate';
 import ClaimSlips from './pages/ClaimSlips';
 import Invitations from './pages/Invitations';
-import InviteExaminer from './pages/InviteExaminer';
 import InstructorOnboarding from './pages/InstructorOnboarding';
 import InstructorBlacklist from './pages/InstructorBlacklist';
 import CourseManagement from './pages/CourseManagement';
@@ -353,7 +352,6 @@ function Sidebar({
   const canGrade = hasRole('examiner') || isGovernance;
   const canViewCerts = hasRole('examiner') || isGovernance;
   const canInvitations = hasRole('examiner');
-  const canInvite = isGovernance;
   const canAccounts = hasRole('system_admin');
   const canMyInvoices = hasRole('instructor') || hasRole('partner_center_admin');
   const canClaimSlips = canRegister;
@@ -383,7 +381,7 @@ function Sidebar({
     hasRole('examiner_trainer') || hasRole('partner_center_admin') || hasRole('system_admin');
 
   const assessmentsGroup =
-    canRegister || canSchedule || canInvite || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canOversight;
+    canRegister || canSchedule || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canOversight;
   const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore;
   const adminGroup =
     canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries;
@@ -450,9 +448,8 @@ function Sidebar({
               {canRegister && <NavLink to="/candidates/register" className={navClass}><Icon name="userPlus" /><span>Register candidate</span></NavLink>}
               {canRegisterCentre && <NavLink to="/centres/register" className={navClass}><Icon name="building" /><span>Register a centre</span></NavLink>}
               {canSchedule && <NavLink to="/assessments/schedule" className={navClass}><Icon name="calendar" /><span>Schedule assessment</span></NavLink>}
-              {canInvite && <NavLink to="/assessments/invite" className={navClass}><Icon name="mail" /><span>Invite examiner</span></NavLink>}
               {canGrade && <NavLink to="/assessments/grade" className={navClass}><Icon name="check" /><span>Grading</span></NavLink>}
-              {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Invitations</span></NavLink>}
+              {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Available sessions</span></NavLink>}
               {isGovernance && <NavLink to="/certificates/issue" className={navClass}><Icon name="award" /><span>Issue certificates</span></NavLink>}
               {canViewCerts && <NavLink to="/certificates" className={navClass}><Icon name="award" /><span>Certificates</span></NavLink>}
               {canOversight && <NavLink to="/assessments/oversight" className={navClass}><Icon name="eye" /><span>Oversight</span></NavLink>}
@@ -522,9 +519,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/candidates/register': 'Register candidate',
   '/candidates/claim-slips': 'Claim slips',
   '/assessments/schedule': 'Schedule assessment',
-  '/assessments/invite': 'Invite examiner',
   '/assessments/grade': 'Grading',
-  '/assessments/invitations': 'Invitations',
+  '/assessments/invitations': 'Available sessions',
   '/assessments/oversight': 'Assessments oversight',
   '/assessments/examiners': 'Examiner registry',
   '/certificates/issue': 'Issue certificates',
@@ -664,7 +660,6 @@ export default function App() {
               <Route path="/candidates/register" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RegisterCandidate /></RequireRole>} />
               <Route path="/candidates/claim-slips" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><ClaimSlips /></RequireRole>} />
               <Route path="/assessments/schedule" element={<RequireRole roles={['instructor', 'chairperson', 'board_member', 'chief_examiner']}><RosterBooking /></RequireRole>} />
-              <Route path="/assessments/invite" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><InviteExaminer /></RequireRole>} />
               <Route path="/assessments/grade" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><ExaminerGrading /></RequireRole>} />
               <Route path="/assessments/invitations" element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>} />
               <Route path="/assessments/oversight" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner', 'finance_officer']}><AssessmentsOversight /></RequireRole>} />
