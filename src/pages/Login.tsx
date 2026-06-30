@@ -58,8 +58,8 @@ export default function Login() {
 
       <main className="mas-auth-main">
         <div className="mas-auth-topbar">
-          <Link to="/"><Icon name="arrowLeft" /> Back to home</Link>
-          <span>New here? <Link to="/signup" className="is-accent">Create account</Link></span>
+          <Link to="/" className="mas-auth-back"><Icon name="arrowLeft" /> Back to home</Link>
+          <span className="mas-auth-alt">New here? <Link to="/signup" className="is-accent">Create account</Link></span>
         </div>
 
         <form className="mas-auth-form" onSubmit={onSubmit}>

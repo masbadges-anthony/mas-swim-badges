@@ -61,8 +61,8 @@ export default function Signup() {
 
       <main className="mas-auth-main">
         <div className="mas-auth-topbar">
-          <Link to="/"><Icon name="arrowLeft" /> Back to home</Link>
-          <span>Already have an account? <Link to="/login" className="is-accent">Sign in</Link></span>
+          <Link to="/" className="mas-auth-back"><Icon name="arrowLeft" /> Back to home</Link>
+          <span className="mas-auth-alt">Already have an account? <Link to="/login" className="is-accent">Sign in</Link></span>
         </div>
 
         <form className="mas-auth-form" onSubmit={onSubmit}>

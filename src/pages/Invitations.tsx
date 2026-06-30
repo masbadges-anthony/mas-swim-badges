@@ -6,7 +6,7 @@
 //
 // FIREWALL: no fee amount is returned and none is shown — billable status is implicit,
 // since only paid sessions ever appear in the pool.
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
@@ -115,54 +115,76 @@ export default function Invitations() {
       )}
 
       {load === 'ready' && rows.length > 0 && (
-        <ul className="mas-admin-list">
-          {rows.map((r) => (
-            <li key={r.session_id} className="mas-admin-row" style={{ flexWrap: 'wrap' }}>
-              <div className="mas-admin-main">
-                <h2 className="mas-admin-name">
-                  {r.venue || prettyState(r.state) || 'Assessment session'}
-                </h2>
-                <p className="mas-admin-meta">
-                  <span className="mas-pill">{prettyDate(r.scheduled_on)}</span>
-                  <span className="mas-admin-sub">
-                    {prettyState(r.state)}
-                    {r.state ? ' · ' : ''}
-                    {Number(r.candidate_count)} candidate
-                    {Number(r.candidate_count) === 1 ? '' : 's'}
-                  </span>
-                  {r.open_to_all && <span className="mas-pill">Open to all states</span>}
-                </p>
-                {(r.booker_name || r.booker_phone || r.booker_email || r.centre_name) && (
-                  <p className="mas-admin-sub">
-                    Booker:{' '}
-                    {[
-                      r.booker_name,
-                      r.centre_name,
-                      r.booker_phone,
-                      r.booker_email,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </p>
-                )}
-                {rowError[r.session_id] && (
-                  <p className="mas-status mas-status-bad mas-admin-rowerror">
-                    {rowError[r.session_id]}
-                  </p>
-                )}
-              </div>
-              <div className="mas-admin-action">
-                <button
-                  className="mas-btn-primary"
-                  onClick={() => pickUp(r)}
-                  disabled={busyId === r.session_id}
-                >
-                  {busyId === r.session_id ? 'Working…' : 'Pick up'}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className="mas-table-wrap">
+          <table className="mas-table">
+            <thead>
+              <tr>
+                <th>Venue</th>
+                <th>State</th>
+                <th>Date</th>
+                <th className="mas-num">Candidates</th>
+                <th>Booker contact</th>
+                <th>Scope</th>
+                <th className="mas-table-actioncol">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const count = Number(r.candidate_count);
+                const hasBooker = r.booker_name || r.booker_phone || r.booker_email || r.centre_name;
+                return (
+                  <Fragment key={r.session_id}>
+                    <tr>
+                      <td className="mas-cell-strong">
+                        {r.venue || prettyState(r.state) || 'Assessment session'}
+                      </td>
+                      <td>{prettyState(r.state) || '—'}</td>
+                      <td>{prettyDate(r.scheduled_on)}</td>
+                      <td className="mas-num">{count}</td>
+                      <td>
+                        {hasBooker ? (
+                          <span className="mas-cell-stack">
+                            {r.booker_name && <span className="mas-cell-strong">{r.booker_name}</span>}
+                            {r.centre_name && <span className="mas-cell-sub">{r.centre_name}</span>}
+                            {r.booker_phone && <span className="mas-cell-sub">{r.booker_phone}</span>}
+                            {r.booker_email && <span className="mas-cell-sub">{r.booker_email}</span>}
+                          </span>
+                        ) : (
+                          <span className="mas-cell-sub">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {r.open_to_all ? (
+                          <span className="mas-pill">Open to all states</span>
+                        ) : (
+                          <span className="mas-cell-sub">In-state</span>
+                        )}
+                      </td>
+                      <td className="mas-table-actioncol">
+                        <button
+                          className="mas-btn-primary mas-btn-compact"
+                          onClick={() => pickUp(r)}
+                          disabled={busyId === r.session_id}
+                        >
+                          {busyId === r.session_id ? 'Working…' : 'Pick up'}
+                        </button>
+                      </td>
+                    </tr>
+                    {rowError[r.session_id] && (
+                      <tr className="mas-table-errorrow">
+                        <td colSpan={7}>
+                          <p className="mas-status mas-status-bad mas-admin-rowerror">
+                            {rowError[r.session_id]}
+                          </p>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {load === 'ready' && notice && (

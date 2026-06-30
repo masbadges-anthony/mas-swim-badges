@@ -12,7 +12,7 @@
 //             refund_due (cancelled sessions with an outstanding refund)
 //   payout  ← mark_refund_paid(_invoice_id, _amount, _method, _reference)
 //             → { invoice_id, paid_amount, refunded, fully_refunded }
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
 
@@ -96,6 +96,7 @@ export default function BillingPayments() {
   const [forms, setForms] = useState<Record<string, { amount: string; method: string; reference: string }>>({});
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [settled, setSettled] = useState<Record<string, Settlement>>({});
+  const [expanded, setExpanded] = useState<string | null>(null); // invoice row with its payment form open
 
   // Refunds due — cancelled sessions (>72h, paid) awaiting a payout.
   const [refunds, setRefunds] = useState<RefundDue[]>([]);
@@ -104,6 +105,7 @@ export default function BillingPayments() {
   const [refundForms, setRefundForms] = useState<Record<string, { amount: string; method: string; reference: string }>>({});
   const [refundError, setRefundError] = useState<Record<string, string>>({});
   const [refundOk, setRefundOk] = useState<Record<string, RefundResult>>({});
+  const [refundExpanded, setRefundExpanded] = useState<string | null>(null);
 
   const fetchInvoices = useCallback(async () => {
     setLoad('loading');
@@ -252,109 +254,164 @@ export default function BillingPayments() {
       )}
 
       {load === 'ready' && rows.length > 0 && (
-        <ul className="mas-admin-list">
-          {rows.map((inv) => {
-            const paid = inv.status === 'paid';
-            const settleable = inv.status !== 'paid' && inv.status !== 'void';
-            const summary = settled[inv.invoice_id];
-            const f = form(inv.invoice_id);
-            return (
-              <li key={inv.invoice_id} className="mas-admin-row" style={{ flexWrap: 'wrap' }}>
-                <div className="mas-admin-main">
-                  <h2 className="mas-admin-name">
-                    {inv.receipt_no ?? '— (estimate)'}
-                    <span className="mas-pill" style={{ marginLeft: '0.5rem' }}>{stageLabel(inv.stage)}</span>
-                  </h2>
-                  <p className="mas-admin-meta">
-                    <span className={`mas-outcome ${paid ? 'is-pass' : 'is-refer'}`}>
-                      {statusLabel(inv.status)}
-                    </span>
-                    <span className="mas-admin-sub">
-                      {inv.venue || 'Assessment session'} · {prettyDate(inv.scheduled_on)}
-                      {inv.bill_to_name ? ` · ${inv.bill_to_name}` : ''}
-                    </span>
-                  </p>
-                  <p className="mas-admin-meta">
-                    <span className="mas-admin-sub">
-                      Total <strong>{money(inv.total)}</strong>
-                      {' · '}Paid <strong>{money(inv.paid_to_date)}</strong>
-                      {' · '}Outstanding <strong>{money(inv.outstanding)}</strong>
-                    </span>
-                  </p>
+        <div className="mas-table-wrap">
+          <table className="mas-table">
+            <thead>
+              <tr>
+                <th className="mas-table-expandcol" aria-label="Expand" />
+                <th>Receipt</th>
+                <th>Stage</th>
+                <th>Status</th>
+                <th>Bill to</th>
+                <th>Venue / date</th>
+                <th className="mas-num">Total</th>
+                <th className="mas-num">Paid</th>
+                <th className="mas-num">Outstanding</th>
+                <th className="mas-table-actioncol">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((inv) => {
+                const paid = inv.status === 'paid';
+                const settleable = inv.status !== 'paid' && inv.status !== 'void';
+                const summary = settled[inv.invoice_id];
+                const f = form(inv.invoice_id);
+                const isOpen = expanded === inv.invoice_id;
+                return (
+                  <Fragment key={inv.invoice_id}>
+                    <tr className={isOpen ? 'is-open' : undefined}>
+                      <td className="mas-table-expandcol">
+                        {settleable && (
+                          <button
+                            type="button"
+                            className="mas-table-expandbtn"
+                            onClick={() => {
+                              clearRowError(inv.invoice_id);
+                              setExpanded((cur) => (cur === inv.invoice_id ? null : inv.invoice_id));
+                            }}
+                            aria-expanded={isOpen}
+                            aria-label={isOpen ? 'Collapse payment form' : 'Record a payment'}
+                          >
+                            {isOpen ? '▾' : '▸'}
+                          </button>
+                        )}
+                      </td>
+                      <td className="mas-cell-strong">{inv.receipt_no ?? '— (estimate)'}</td>
+                      <td><span className="mas-pill">{stageLabel(inv.stage)}</span></td>
+                      <td>
+                        <span className={`mas-outcome ${paid ? 'is-pass' : 'is-refer'}`}>
+                          {statusLabel(inv.status)}
+                        </span>
+                      </td>
+                      <td>{inv.bill_to_name || '—'}</td>
+                      <td>
+                        <span className="mas-cell-stack">
+                          <span>{inv.venue || 'Assessment session'}</span>
+                          <span className="mas-cell-sub">{prettyDate(inv.scheduled_on)}</span>
+                        </span>
+                      </td>
+                      <td className="mas-num">{money(inv.total)}</td>
+                      <td className="mas-num">{money(inv.paid_to_date)}</td>
+                      <td className="mas-num">{money(inv.outstanding)}</td>
+                      <td className="mas-table-actioncol">
+                        {settleable ? (
+                          <button
+                            type="button"
+                            className="mas-btn-ghost mas-btn-compact"
+                            onClick={() => {
+                              clearRowError(inv.invoice_id);
+                              setExpanded((cur) => (cur === inv.invoice_id ? null : inv.invoice_id));
+                            }}
+                            aria-expanded={isOpen}
+                          >
+                            {isOpen ? 'Close' : 'Record'}
+                          </button>
+                        ) : (
+                          <span className="mas-cell-sub">—</span>
+                        )}
+                      </td>
+                    </tr>
 
-                  {settleable && (
-                    <div className="mas-grade-actions" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                      <div className="mas-field mas-grade-field">
-                        <label className="mas-field-label" htmlFor={`amount-${inv.invoice_id}`}>
-                          Amount (RM)
-                        </label>
-                        <input
-                          id={`amount-${inv.invoice_id}`}
-                          className="mas-input"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          inputMode="decimal"
-                          value={f.amount}
-                          onChange={(e) => setForm(inv.invoice_id, { amount: e.target.value })}
-                          placeholder={Number(inv.outstanding).toFixed(2)}
-                        />
-                      </div>
-                      <div className="mas-field mas-grade-field">
-                        <label className="mas-field-label" htmlFor={`method-${inv.invoice_id}`}>
-                          Method
-                        </label>
-                        <select
-                          id={`method-${inv.invoice_id}`}
-                          className="mas-select"
-                          value={f.method}
-                          onChange={(e) => setForm(inv.invoice_id, { method: e.target.value })}
-                        >
-                          {METHODS.map((m) => (
-                            <option key={m.value} value={m.value}>{m.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="mas-field mas-grade-field">
-                        <label className="mas-field-label" htmlFor={`ref-${inv.invoice_id}`}>
-                          Reference (optional)
-                        </label>
-                        <input
-                          id={`ref-${inv.invoice_id}`}
-                          className="mas-input"
-                          type="text"
-                          value={f.reference}
-                          onChange={(e) => setForm(inv.invoice_id, { reference: e.target.value })}
-                          placeholder="Transaction / receipt ref"
-                        />
-                      </div>
-                      <button
-                        className="mas-btn-primary"
-                        onClick={() => recordPayment(inv)}
-                        disabled={busyId === inv.invoice_id}
-                      >
-                        {busyId === inv.invoice_id ? 'Recording…' : 'Record payment'}
-                      </button>
-                    </div>
-                  )}
+                    {isOpen && settleable && (
+                      <tr className="mas-table-detailrow">
+                        <td colSpan={10}>
+                          <div className="mas-table-detail">
+                            <div className="mas-grade-actions" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                              <div className="mas-field mas-grade-field">
+                                <label className="mas-field-label" htmlFor={`amount-${inv.invoice_id}`}>
+                                  Amount (RM)
+                                </label>
+                                <input
+                                  id={`amount-${inv.invoice_id}`}
+                                  className="mas-input"
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  inputMode="decimal"
+                                  value={f.amount}
+                                  onChange={(e) => setForm(inv.invoice_id, { amount: e.target.value })}
+                                  placeholder={Number(inv.outstanding).toFixed(2)}
+                                />
+                              </div>
+                              <div className="mas-field mas-grade-field">
+                                <label className="mas-field-label" htmlFor={`method-${inv.invoice_id}`}>
+                                  Method
+                                </label>
+                                <select
+                                  id={`method-${inv.invoice_id}`}
+                                  className="mas-select"
+                                  value={f.method}
+                                  onChange={(e) => setForm(inv.invoice_id, { method: e.target.value })}
+                                >
+                                  {METHODS.map((m) => (
+                                    <option key={m.value} value={m.value}>{m.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="mas-field mas-grade-field">
+                                <label className="mas-field-label" htmlFor={`ref-${inv.invoice_id}`}>
+                                  Reference (optional)
+                                </label>
+                                <input
+                                  id={`ref-${inv.invoice_id}`}
+                                  className="mas-input"
+                                  type="text"
+                                  value={f.reference}
+                                  onChange={(e) => setForm(inv.invoice_id, { reference: e.target.value })}
+                                  placeholder="Transaction / receipt ref"
+                                />
+                              </div>
+                              <button
+                                className="mas-btn-primary"
+                                onClick={() => recordPayment(inv)}
+                                disabled={busyId === inv.invoice_id}
+                              >
+                                {busyId === inv.invoice_id ? 'Recording…' : 'Record payment'}
+                              </button>
+                            </div>
 
-                  {summary && (
-                    <p className="mas-status mas-status-good mas-admin-rowerror">
-                      Payment recorded — paid {money(summary.paid_to_date)} of {money(summary.invoice_total)}
-                      {' · '}{statusLabel(summary.status)}
-                      {summary.fully_paid ? ' · session opened for examiner pickup.' : '.'}
-                    </p>
-                  )}
-                  {rowError[inv.invoice_id] && (
-                    <p className="mas-status mas-status-bad mas-admin-rowerror">
-                      Couldn’t record payment: {rowError[inv.invoice_id]}
-                    </p>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                            {summary && (
+                              <p className="mas-status mas-status-good mas-admin-rowerror">
+                                Payment recorded — paid {money(summary.paid_to_date)} of {money(summary.invoice_total)}
+                                {' · '}{statusLabel(summary.status)}
+                                {summary.fully_paid ? ' · session opened for examiner pickup.' : '.'}
+                              </p>
+                            )}
+                            {rowError[inv.invoice_id] && (
+                              <p className="mas-status mas-status-bad mas-admin-rowerror">
+                                Couldn’t record payment: {rowError[inv.invoice_id]}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* ---- Refunds due ---- */}
@@ -377,101 +434,148 @@ export default function BillingPayments() {
         )}
 
         {refundLoad === 'ready' && refunds.length > 0 && (
-          <ul className="mas-admin-list">
-            {refunds.map((r) => {
-              const f = refundForm(r);
-              const ok = refundOk[r.invoice_id];
-              return (
-                <li key={r.invoice_id} className="mas-admin-row" style={{ flexWrap: 'wrap' }}>
-                  <div className="mas-admin-main">
-                    <h3 className="mas-admin-name">
-                      {r.receipt_no ?? '— (no receipt)'}
-                      <span className="mas-pill" style={{ marginLeft: '0.5rem' }}>Cancelled</span>
-                    </h3>
-                    <p className="mas-admin-meta">
-                      <span className="mas-admin-sub">
-                        {r.venue || 'Assessment session'} · {prettyDate(r.scheduled_on)}
-                        {r.bill_to_name ? ` · ${r.bill_to_name}` : ''}
-                      </span>
-                    </p>
-                    <p className="mas-admin-meta">
-                      <span className="mas-admin-sub">
-                        Paid <strong>{money(r.paid_amount)}</strong>
-                        {' · '}Refunded <strong>{money(r.refunded)}</strong>
-                        {' · '}Refund due <strong>{money(r.refund_due)}</strong>
-                      </span>
-                    </p>
+          <div className="mas-table-wrap">
+            <table className="mas-table">
+              <thead>
+                <tr>
+                  <th className="mas-table-expandcol" aria-label="Expand" />
+                  <th>Receipt</th>
+                  <th>Venue / date</th>
+                  <th>Bill to</th>
+                  <th className="mas-num">Paid</th>
+                  <th className="mas-num">Refunded</th>
+                  <th className="mas-num">Refund due</th>
+                  <th className="mas-table-actioncol">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {refunds.map((r) => {
+                  const f = refundForm(r);
+                  const ok = refundOk[r.invoice_id];
+                  const isOpen = refundExpanded === r.invoice_id;
+                  return (
+                    <Fragment key={r.invoice_id}>
+                      <tr className={isOpen ? 'is-open' : undefined}>
+                        <td className="mas-table-expandcol">
+                          <button
+                            type="button"
+                            className="mas-table-expandbtn"
+                            onClick={() =>
+                              setRefundExpanded((cur) => (cur === r.invoice_id ? null : r.invoice_id))
+                            }
+                            aria-expanded={isOpen}
+                            aria-label={isOpen ? 'Collapse refund form' : 'Record a refund'}
+                          >
+                            {isOpen ? '▾' : '▸'}
+                          </button>
+                        </td>
+                        <td className="mas-cell-strong">
+                          {r.receipt_no ?? '— (no receipt)'}
+                          <span className="mas-pill" style={{ marginLeft: '0.4rem' }}>Cancelled</span>
+                        </td>
+                        <td>
+                          <span className="mas-cell-stack">
+                            <span>{r.venue || 'Assessment session'}</span>
+                            <span className="mas-cell-sub">{prettyDate(r.scheduled_on)}</span>
+                          </span>
+                        </td>
+                        <td>{r.bill_to_name || '—'}</td>
+                        <td className="mas-num">{money(r.paid_amount)}</td>
+                        <td className="mas-num">{money(r.refunded)}</td>
+                        <td className="mas-num">{money(r.refund_due)}</td>
+                        <td className="mas-table-actioncol">
+                          <button
+                            type="button"
+                            className="mas-btn-ghost mas-btn-compact"
+                            onClick={() =>
+                              setRefundExpanded((cur) => (cur === r.invoice_id ? null : r.invoice_id))
+                            }
+                            aria-expanded={isOpen}
+                          >
+                            {isOpen ? 'Close' : 'Refund'}
+                          </button>
+                        </td>
+                      </tr>
 
-                    <div className="mas-grade-actions" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                      <div className="mas-field mas-grade-field">
-                        <label className="mas-field-label" htmlFor={`refund-amount-${r.invoice_id}`}>
-                          Amount (RM)
-                        </label>
-                        <input
-                          id={`refund-amount-${r.invoice_id}`}
-                          className="mas-input"
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          inputMode="decimal"
-                          value={f.amount}
-                          onChange={(e) => setRefundField(r.invoice_id, r, { amount: e.target.value })}
-                          placeholder={Number(r.refund_due).toFixed(2)}
-                        />
-                      </div>
-                      <div className="mas-field mas-grade-field">
-                        <label className="mas-field-label" htmlFor={`refund-method-${r.invoice_id}`}>
-                          Method
-                        </label>
-                        <select
-                          id={`refund-method-${r.invoice_id}`}
-                          className="mas-select"
-                          value={f.method}
-                          onChange={(e) => setRefundField(r.invoice_id, r, { method: e.target.value })}
-                        >
-                          {METHODS.map((m) => (
-                            <option key={m.value} value={m.value}>{m.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="mas-field mas-grade-field">
-                        <label className="mas-field-label" htmlFor={`refund-ref-${r.invoice_id}`}>
-                          Reference (optional)
-                        </label>
-                        <input
-                          id={`refund-ref-${r.invoice_id}`}
-                          className="mas-input"
-                          type="text"
-                          value={f.reference}
-                          onChange={(e) => setRefundField(r.invoice_id, r, { reference: e.target.value })}
-                          placeholder="Transaction / payout ref"
-                        />
-                      </div>
-                      <button
-                        className="mas-btn-primary"
-                        onClick={() => markRefund(r)}
-                        disabled={refundBusy === r.invoice_id}
-                      >
-                        {refundBusy === r.invoice_id ? 'Recording…' : 'Mark refunded'}
-                      </button>
-                    </div>
+                      {isOpen && (
+                        <tr className="mas-table-detailrow">
+                          <td colSpan={8}>
+                            <div className="mas-table-detail">
+                              <div className="mas-grade-actions" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                                <div className="mas-field mas-grade-field">
+                                  <label className="mas-field-label" htmlFor={`refund-amount-${r.invoice_id}`}>
+                                    Amount (RM)
+                                  </label>
+                                  <input
+                                    id={`refund-amount-${r.invoice_id}`}
+                                    className="mas-input"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    inputMode="decimal"
+                                    value={f.amount}
+                                    onChange={(e) => setRefundField(r.invoice_id, r, { amount: e.target.value })}
+                                    placeholder={Number(r.refund_due).toFixed(2)}
+                                  />
+                                </div>
+                                <div className="mas-field mas-grade-field">
+                                  <label className="mas-field-label" htmlFor={`refund-method-${r.invoice_id}`}>
+                                    Method
+                                  </label>
+                                  <select
+                                    id={`refund-method-${r.invoice_id}`}
+                                    className="mas-select"
+                                    value={f.method}
+                                    onChange={(e) => setRefundField(r.invoice_id, r, { method: e.target.value })}
+                                  >
+                                    {METHODS.map((m) => (
+                                      <option key={m.value} value={m.value}>{m.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="mas-field mas-grade-field">
+                                  <label className="mas-field-label" htmlFor={`refund-ref-${r.invoice_id}`}>
+                                    Reference (optional)
+                                  </label>
+                                  <input
+                                    id={`refund-ref-${r.invoice_id}`}
+                                    className="mas-input"
+                                    type="text"
+                                    value={f.reference}
+                                    onChange={(e) => setRefundField(r.invoice_id, r, { reference: e.target.value })}
+                                    placeholder="Transaction / payout ref"
+                                  />
+                                </div>
+                                <button
+                                  className="mas-btn-primary"
+                                  onClick={() => markRefund(r)}
+                                  disabled={refundBusy === r.invoice_id}
+                                >
+                                  {refundBusy === r.invoice_id ? 'Recording…' : 'Mark refunded'}
+                                </button>
+                              </div>
 
-                    {ok && (
-                      <p className="mas-status mas-status-good mas-admin-rowerror">
-                        Refund recorded — refunded {money(ok.refunded)} of {money(ok.paid_amount)}
-                        {ok.fully_refunded ? ' · fully refunded.' : '.'}
-                      </p>
-                    )}
-                    {refundError[r.invoice_id] && (
-                      <p className="mas-status mas-status-bad mas-admin-rowerror">
-                        Couldn’t record refund: {refundError[r.invoice_id]}
-                      </p>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                              {ok && (
+                                <p className="mas-status mas-status-good mas-admin-rowerror">
+                                  Refund recorded — refunded {money(ok.refunded)} of {money(ok.paid_amount)}
+                                  {ok.fully_refunded ? ' · fully refunded.' : '.'}
+                                </p>
+                              )}
+                              {refundError[r.invoice_id] && (
+                                <p className="mas-status mas-status-bad mas-admin-rowerror">
+                                  Couldn’t record refund: {refundError[r.invoice_id]}
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </section>

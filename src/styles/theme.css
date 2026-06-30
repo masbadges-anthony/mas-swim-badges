@@ -611,9 +611,17 @@
 .mas-app .mas-auth-foot { font-family: ui-monospace, monospace; font-size: 0.72rem; letter-spacing: 0.08em; color: #9fc0ef; }
 
 .mas-app .mas-auth-main { background: var(--mas-paper); display: flex; flex-direction: column; padding: 2.5rem 3rem; }
-.mas-app .mas-auth-topbar { display: flex; align-items: center; justify-content: space-between; font-size: 0.88rem; }
+.mas-app .mas-auth-topbar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 0.5rem 1.25rem; font-size: 0.88rem;
+  padding-bottom: 1.1rem; margin-bottom: 0.4rem; border-bottom: 1px solid var(--mas-line);
+}
 .mas-app .mas-auth-topbar a { color: var(--mas-muted); text-decoration: none; }
+.mas-app .mas-auth-topbar a:hover { color: var(--mas-ink); }
+.mas-app .mas-auth-back { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600; }
+.mas-app .mas-auth-topbar .mas-auth-alt { color: var(--mas-muted); }
 .mas-app .mas-auth-topbar a.is-accent { color: var(--brand); font-weight: 600; }
+.mas-app .mas-auth-topbar a.is-accent:hover { color: var(--mas-navy); }
 .mas-app .mas-auth-form { margin: auto; width: 100%; max-width: 380px; }
 .mas-app .mas-auth-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.7rem; color: var(--mas-navy); }
 .mas-app .mas-auth-lede { color: var(--mas-muted); margin: 0.45rem 0 1.5rem; line-height: 1.5; }

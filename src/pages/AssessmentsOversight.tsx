@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
 
@@ -93,6 +93,15 @@ export default function AssessmentsOversight() {
   const [centres, setCentres] = useState<Record<string, string>>({});
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [load, setLoad] = useState<Load>('loading');
+  const [expandedSession, setExpandedSession] = useState<string | null>(null); // one open detail row
+
+  function prettyDate(s: string | null): string {
+    if (!s) return 'Date TBC';
+    const d = new Date(s.length <= 10 ? s + 'T00:00:00' : s);
+    return Number.isNaN(d.getTime())
+      ? s
+      : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
 
   // Per-invoice payment-recording state.
   const [pay, setPay] = useState<Record<string, PayDraft>>({});
@@ -342,25 +351,76 @@ export default function AssessmentsOversight() {
         <p className="mas-status">No sessions scheduled yet.</p>
       )}
 
-      {load === 'ready' &&
-        sessions.map((s) => {
-          const roster = resultsBySession[s.id] ?? [];
-          const invoiceList = invoicesBySession[s.id] ?? [];
-          const canSwap = !!s.examiner_profile_id && !SWAP_LOCKED.has(s.status);
-          const swapOptions = examinerList.filter((e) => e.id !== s.examiner_profile_id);
-          return (
-            <div key={s.id} className="mas-grade-session">
-              <div className="mas-grade-session-head">
-                <h2 className="mas-admin-name">{s.venue || 'Assessment session'}</h2>
-                <p className="mas-admin-sub">
-                  {s.state}
-                  {s.scheduled_on ? ` · ${s.scheduled_on}` : ''}
-                  {` · ${s.status}`}
-                  {s.examiner_profile_id ? ` · ${examiners[s.examiner_profile_id] ?? 'Examiner'}` : ' · unassigned'}
-                  {s.partner_center_id ? ` · ${centres[s.partner_center_id] ?? 'Centre'}` : ''}
-                </p>
-              </div>
-              {roster.length === 0 ? (
+      {load === 'ready' && sessions.length > 0 && (
+        <div className="mas-table-wrap">
+          <table className="mas-table">
+            <thead>
+              <tr>
+                <th className="mas-table-expandcol" aria-label="Expand" />
+                <th>Venue</th>
+                <th>State</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Examiner</th>
+                <th className="mas-num">Candidates</th>
+                <th className="mas-table-actioncol">Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map((s) => {
+                const roster = resultsBySession[s.id] ?? [];
+                const invoiceList = invoicesBySession[s.id] ?? [];
+                const canSwap = !!s.examiner_profile_id && !SWAP_LOCKED.has(s.status);
+                const swapOptions = examinerList.filter((e) => e.id !== s.examiner_profile_id);
+                const isOpen = expandedSession === s.id;
+                return (
+                  <Fragment key={s.id}>
+                    <tr className={isOpen ? 'is-open' : undefined}>
+                      <td className="mas-table-expandcol">
+                        <button
+                          type="button"
+                          className="mas-table-expandbtn"
+                          onClick={() => setExpandedSession((cur) => (cur === s.id ? null : s.id))}
+                          aria-expanded={isOpen}
+                          aria-label={isOpen ? 'Collapse session detail' : 'Expand session detail'}
+                        >
+                          {isOpen ? '▾' : '▸'}
+                        </button>
+                      </td>
+                      <td className="mas-cell-strong">
+                        <span className="mas-cell-stack">
+                          <span>{s.venue || 'Assessment session'}</span>
+                          {s.partner_center_id && (
+                            <span className="mas-cell-sub">{centres[s.partner_center_id] ?? 'Centre'}</span>
+                          )}
+                        </span>
+                      </td>
+                      <td>{s.state || '—'}</td>
+                      <td>{prettyDate(s.scheduled_on)}</td>
+                      <td>{pretty(s.status)}</td>
+                      <td>
+                        {s.examiner_profile_id
+                          ? examiners[s.examiner_profile_id] ?? 'Examiner'
+                          : <span className="mas-cell-sub">Unassigned</span>}
+                      </td>
+                      <td className="mas-num">{roster.length}</td>
+                      <td className="mas-table-actioncol">
+                        <button
+                          type="button"
+                          className="mas-btn-ghost mas-btn-compact"
+                          onClick={() => setExpandedSession((cur) => (cur === s.id ? null : s.id))}
+                          aria-expanded={isOpen}
+                        >
+                          {isOpen ? 'Close' : 'Open'}
+                        </button>
+                      </td>
+                    </tr>
+
+                    {isOpen && (
+                      <tr className="mas-table-detailrow">
+                        <td colSpan={8}>
+                          <div className="mas-table-detail">
+                            {roster.length === 0 ? (
                 <p className="mas-status">No candidates rostered.</p>
               ) : (
                 <ul className="mas-admin-list">
@@ -551,9 +611,17 @@ export default function AssessmentsOversight() {
                   {inqOk[s.id] && <p className="mas-status mas-status-good">Inquiry raised — see the inquiries panel below.</p>}
                 </div>
               </div>
-            </div>
-          );
-        })}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="mas-grade-session" style={{ marginTop: '1.5rem' }}>
         <div className="mas-grade-session-head">
