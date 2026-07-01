@@ -25,6 +25,7 @@ interface CertDoc {
   candidate_name: string;
   centre_name: string | null;
   instructor_name: string | null;
+  examiner_name: string | null;
   issued_by_name: string | null;
 }
 
@@ -183,6 +184,9 @@ export default function PrintableCertificate() {
                 {doc.centre_name ? `${doc.centre_name}` : 'Independent'}
                 {doc.instructor_name ? `  ·  Instructor: ${doc.instructor_name}` : ''}
               </p>
+              {doc.examiner_name && (
+                <p className="mas-cert-sub">Assessed by: {doc.examiner_name}</p>
+              )}
             </div>
             <div className="mas-cert-serial">{doc.serial}</div>
           </div>
