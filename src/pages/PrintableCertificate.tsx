@@ -55,11 +55,14 @@ const PAGE_H = 210;
 // Single source of truth for overlay coordinates (percentages of page).
 // Kept identical between the HTML preview and the PDF generator.
 const SLOT = {
-  serial: { xPct: 97.5, yPct: 7.0, align: 'right' as const, size: 11, weight: 'normal' as const },
-  date:   { xPct: 97.5, yPct: 10.3, align: 'right' as const, size: 11, weight: 'normal' as const },
-  name:   { xPct: 60.0, yPct: 40.0, align: 'center' as const, size: 28, weight: 'bold' as const },
-  inst:   { xPct: 33.0, yPct: 89.0, align: 'left' as const, size: 12, weight: 'bold' as const },
-  exam:   { xPct: 49.5, yPct: 89.0, align: 'left' as const, size: 12, weight: 'bold' as const },
+  // top-right corner block, beside "Serial No." / "Date" labels
+  serial: { xPct: 97.5, yPct: 4.5, align: 'right' as const, size: 11, weight: 'normal' as const },
+  date:   { xPct: 97.5, yPct: 7.5, align: 'right' as const, size: 11, weight: 'normal' as const },
+  // student name on the ruled line under "This is to certify that", left-of-centre
+  name:   { xPct: 58.0, yPct: 33.5, align: 'center' as const, size: 28, weight: 'bold' as const },
+  // signature lines at bottom — instructor + examiner, above their labels
+  inst:   { xPct: 40.0, yPct: 89.0, align: 'left' as const, size: 12, weight: 'bold' as const },
+  exam:   { xPct: 56.0, yPct: 89.0, align: 'left' as const, size: 12, weight: 'bold' as const },
 };
 
 function mmX(pct: number) { return (pct / 100) * PAGE_W; }
@@ -137,13 +140,13 @@ const CSS = `
 
 /* Coordinates below MUST match SLOT above. Percentages of the page. */
 /* Right-anchored (transform lifts the baseline visually the same as jsPDF's 'right' align) */
-.mas-cert-slot.slot-serial { top: 7.0%;  right: 2.5%; }
-.mas-cert-slot.slot-date   { top: 10.3%; right: 2.5%; }
-/* Centre-anchored name — position at the visual centre of the ruled line */
-.mas-cert-slot.slot-name   { top: 40.0%; left: 60.0%; transform: translate(-50%, -50%); }
-/* Left-anchored signee names */
-.mas-cert-slot.slot-inst   { top: 89.0%; left: 33.0%; transform: translateY(-50%); }
-.mas-cert-slot.slot-exam   { top: 89.0%; left: 49.5%; transform: translateY(-50%); }
+.mas-cert-slot.slot-serial { top: 4.5%;  right: 2.5%; }
+.mas-cert-slot.slot-date   { top: 7.5%;  right: 2.5%; }
+/* Centre-anchored name — sits on the ruled line under "This is to certify that" */
+.mas-cert-slot.slot-name   { top: 33.5%; left: 58.0%; transform: translate(-50%, -50%); }
+/* Left-anchored signee names above their labels at bottom */
+.mas-cert-slot.slot-inst   { top: 89.0%; left: 40.0%; transform: translateY(-50%); }
+.mas-cert-slot.slot-exam   { top: 89.0%; left: 56.0%; transform: translateY(-50%); }
 
 @media print {
   @page { size: A4 landscape; margin: 0; }
