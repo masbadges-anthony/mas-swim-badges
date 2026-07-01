@@ -1,21 +1,14 @@
 // #16 — Accounts / Examiner payouts, dense-table conversion.
 //
-// Scope narrowed in this rebuild: this screen is now the single legitimate home
-// for the examiner-payout action (money out from MAS to examiners). Everything
-// else the old page did — building invoices, recording invoice payments, issuing
-// certificates, closing sessions — has moved to the surfaces that own those flows
-// (BillingPayments for money-in, auto-issue + auto-close for lifecycle). Keeping
-// them here would risk double-invoicing and conflict with auto-close.
+// Tight-row style matching Invoices & Payments: single-line rows, plain text
+// links, no pill styles, wide page. Payout form still lives inline in an
+// expanded detail row (record_examiner_payout needs real inputs).
 //
 // Wire (unchanged where used):
 //   list  ← list_sessions_overview() → session_id, status, venue, scheduled_on,
 //           state, examiner_name, invoice_paid, payout_recorded, …
 //   expected ← expected_examiner_payout(_session_id) → number
 //   pay   ← record_examiner_payout(_session_id, _amount, _reference)
-//
-// House law: dense table · Awaiting payout / Paid / Archived tabs · expand-row
-// for the payout form (record_examiner_payout takes real inputs — a modal
-// would be worse; inline expansion mirrors StoreAdmin/MyInvoices).
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
@@ -40,6 +33,20 @@ type Tab = 'awaiting' | 'paid' | 'archived';
 
 const TERMINAL = new Set(['completed', 'closed', 'archived']);
 
+const CSS = `
+.mas-page.mas-page-wide { max-width: none !important; width: auto !important; margin-left: 0 !important; margin-right: 0 !important; }
+.mas-tight th, .mas-tight td { padding: 0.35rem 0.6rem; white-space: nowrap; vertical-align: middle; }
+.mas-tight tbody tr { line-height: 1.3; }
+.mas-tight .mas-link { color: var(--mas-navy, #1E2752); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
+.mas-tight .mas-link:hover { text-decoration: none; }
+.mas-tight .mas-link + .mas-link { margin-left: 0.6rem; }
+.mas-payout-form { display:flex; gap:0.5rem; align-items:end; flex-wrap:wrap; }
+.mas-payout-form label { display:flex; flex-direction:column; font-size:0.8rem; color:var(--mas-muted,#5b6472); }
+.mas-payout-form input {
+  font:inherit; padding:0.35rem 0.5rem; border:1px solid var(--mas-line,#e3e9f3); border-radius:6px;
+}
+`;
+
 function money(n: number | string | null | undefined): string {
   return `RM ${Number(n ?? 0).toFixed(2)}`;
 }
@@ -54,9 +61,6 @@ function pretty(s: string | null): string {
   return s.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
-// Payout status is derived from three signals: whether a payout has been
-// recorded, whether the invoice is paid (payouts prerequisite on money in),
-// and whether the session is archived.
 type PayoutBucket = 'awaiting' | 'paid' | 'archived' | 'not_ready';
 function payoutBucket(s: SessionOverview): PayoutBucket {
   if (s.status === 'archived') return 'archived';
@@ -65,14 +69,6 @@ function payoutBucket(s: SessionOverview): PayoutBucket {
   return 'not_ready';
 }
 
-const CSS = `
-.mas-payout-form { display:flex; gap:0.5rem; align-items:end; flex-wrap:wrap; }
-.mas-payout-form label { display:flex; flex-direction:column; font-size:0.8rem; color:var(--mas-muted,#5b6472); }
-.mas-payout-form input {
-  font:inherit; padding:0.35rem 0.5rem; border:1px solid var(--mas-line,#e3e9f3); border-radius:6px;
-}
-`;
-
 export default function Accounts() {
   const [sessions, setSessions] = useState<SessionOverview[]>([]);
   const [load, setLoad] = useState<Load>('loading');
@@ -80,7 +76,6 @@ export default function Accounts() {
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  // Per-row payout inputs + state.
   const [expected, setExpected] = useState<Record<string, number | null>>({});
   const [amount, setAmount] = useState<Record<string, string>>({});
   const [reference, setReference] = useState<Record<string, string>>({});
@@ -159,7 +154,7 @@ export default function Accounts() {
   }, [sessions, tab, query]);
 
   return (
-    <section className="mas-page">
+    <section className="mas-page mas-page-wide">
       <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Accounts</p>
@@ -212,13 +207,13 @@ export default function Accounts() {
 
       {load === 'ready' && filtered.length > 0 && (
         <div className="mas-table-wrap">
-          <table className="mas-table">
+          <table className="mas-table mas-tight">
             <thead>
               <tr>
-                <th className="mas-table-expandcol" aria-label="Expand" />
-                <th>Session</th>
+                <th>Venue / date</th>
+                <th>Centre</th>
                 <th>Examiner</th>
-                <th>Scheduled</th>
+                <th className="mas-num">Candidates</th>
                 <th>Invoice</th>
                 <th>Payout</th>
                 <th className="mas-table-actioncol">Action</th>
@@ -231,42 +226,18 @@ export default function Accounts() {
                 return (
                   <Fragment key={s.session_id}>
                     <tr className={isOpen ? 'is-open' : undefined}>
-                      <td className="mas-table-expandcol">
-                        <button
-                          type="button"
-                          className="mas-table-expandbtn"
-                          onClick={() => toggleExpand(s.session_id)}
-                          aria-expanded={isOpen}
-                          aria-label={isOpen ? 'Collapse' : 'Expand'}
-                        >
-                          {isOpen ? '▾' : '▸'}
-                        </button>
-                      </td>
                       <td className="mas-cell-strong">
-                        <span className="mas-cell-stack">
-                          <span>{s.venue || pretty(s.state) || 'Assessment session'}</span>
-                          <span className="mas-cell-sub">
-                            {s.centre_name ? `${s.centre_name} · ` : ''}
-                            {Number(s.candidate_count)} candidate{Number(s.candidate_count) === 1 ? '' : 's'}
-                          </span>
-                        </span>
+                        {(s.venue || pretty(s.state) || 'Assessment session')} · {prettyDate(s.scheduled_on)}
                       </td>
+                      <td>{s.centre_name || <span className="mas-cell-sub">—</span>}</td>
                       <td>{s.examiner_name || <span className="mas-cell-sub">unassigned</span>}</td>
-                      <td>{prettyDate(s.scheduled_on)}</td>
-                      <td>
-                        <span className={`mas-outcome ${s.invoice_paid ? 'is-pass' : 'is-refer'}`}>
-                          {s.invoice_status ? pretty(s.invoice_status) : 'None'}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`mas-outcome ${s.payout_recorded ? 'is-pass' : 'is-refer'}`}>
-                          {s.payout_recorded ? 'Recorded' : 'Pending'}
-                        </span>
-                      </td>
+                      <td className="mas-num">{Number(s.candidate_count)}</td>
+                      <td>{s.invoice_status ? pretty(s.invoice_status) : 'None'}</td>
+                      <td>{s.payout_recorded ? 'Recorded' : 'Pending'}</td>
                       <td className="mas-table-actioncol">
                         {canRecord && (
-                          <button className="mas-btn-ghost mas-btn-compact" onClick={() => toggleExpand(s.session_id)}>
-                            {isOpen ? 'Close' : 'Record payout'}
+                          <button className="mas-link" onClick={() => toggleExpand(s.session_id)}>
+                            {isOpen ? 'Close' : 'Record'}
                           </button>
                         )}
                       </td>
@@ -283,34 +254,32 @@ export default function Accounts() {
                             </p>
 
                             {canRecord ? (
-                              <>
-                                <div className="mas-payout-form">
-                                  <label>Amount (RM)
-                                    <input
-                                      type="number" step="0.01"
-                                      value={amount[s.session_id] ?? ''}
-                                      onChange={(e) => setAmount((m) => ({ ...m, [s.session_id]: e.target.value }))}
-                                      style={{ width: '10rem' }}
-                                    />
-                                  </label>
-                                  <label>Reference
-                                    <input
-                                      type="text"
-                                      value={reference[s.session_id] ?? ''}
-                                      onChange={(e) => setReference((m) => ({ ...m, [s.session_id]: e.target.value }))}
-                                      placeholder="payout proof / receipt"
-                                      style={{ width: '16rem' }}
-                                    />
-                                  </label>
-                                  <button
-                                    className="mas-btn-primary mas-btn-compact"
-                                    onClick={() => recordPayout(s)}
-                                    disabled={busy === s.session_id}
-                                  >
-                                    {busy === s.session_id ? 'Recording…' : 'Record payout'}
-                                  </button>
-                                </div>
-                              </>
+                              <div className="mas-payout-form">
+                                <label>Amount (RM)
+                                  <input
+                                    type="number" step="0.01"
+                                    value={amount[s.session_id] ?? ''}
+                                    onChange={(e) => setAmount((m) => ({ ...m, [s.session_id]: e.target.value }))}
+                                    style={{ width: '10rem' }}
+                                  />
+                                </label>
+                                <label>Reference
+                                  <input
+                                    type="text"
+                                    value={reference[s.session_id] ?? ''}
+                                    onChange={(e) => setReference((m) => ({ ...m, [s.session_id]: e.target.value }))}
+                                    placeholder="payout proof / receipt"
+                                    style={{ width: '16rem' }}
+                                  />
+                                </label>
+                                <button
+                                  className="mas-btn-primary mas-btn-compact"
+                                  onClick={() => recordPayout(s)}
+                                  disabled={busy === s.session_id}
+                                >
+                                  {busy === s.session_id ? 'Recording…' : 'Record payout'}
+                                </button>
+                              </div>
                             ) : (
                               <p className="mas-status">
                                 {s.payout_recorded ? 'Payout already recorded.'
