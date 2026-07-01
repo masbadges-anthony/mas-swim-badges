@@ -56,8 +56,8 @@ const PAGE_H = 210;
 // Kept identical between the HTML preview and the PDF generator.
 const SLOT = {
   // top-right corner block, beside "Serial No." / "Date" labels
-  serial: { xPct: 97.5, yPct: 4.5, align: 'right' as const, size: 11, weight: 'normal' as const },
-  date:   { xPct: 97.5, yPct: 7.5, align: 'right' as const, size: 11, weight: 'normal' as const },
+  serial: { xPct: 97.5, yPct: 4.5, align: 'right' as const, size: 9,  weight: 'normal' as const },
+  date:   { xPct: 97.5, yPct: 6.5, align: 'right' as const, size: 11, weight: 'normal' as const },
   // student name on the ruled line under "This is to certify that", left-of-centre
   name:   { xPct: 58.0, yPct: 33.5, align: 'center' as const, size: 28, weight: 'bold' as const },
   // signature lines at bottom — instructor + examiner, above their labels
@@ -140,8 +140,8 @@ const CSS = `
 
 /* Coordinates below MUST match SLOT above. Percentages of the page. */
 /* Right-anchored (transform lifts the baseline visually the same as jsPDF's 'right' align) */
-.mas-cert-slot.slot-serial { top: 4.5%;  right: 2.5%; }
-.mas-cert-slot.slot-date   { top: 7.5%;  right: 2.5%; }
+.mas-cert-slot.slot-serial { top: 4.5%;  right: 2.5%; font-size: 9pt; }
+.mas-cert-slot.slot-date   { top: 6.5%;  right: 2.5%; }
 /* Centre-anchored name — sits on the ruled line under "This is to certify that" */
 .mas-cert-slot.slot-name   { top: 33.5%; left: 58.0%; transform: translate(-50%, -50%); }
 /* Left-anchored signee names above their labels at bottom */
