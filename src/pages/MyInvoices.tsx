@@ -1,10 +1,14 @@
 // Instructor's own invoices, as a dense table (house UI law). Doubles as the
 // instructor's booked-session billing view, so "Cancel session" lives here.
 //   list   ← list_my_invoices() → invoice_id, session_id, status, total, currency,
-//            receipt_no, paid_at, venue, scheduled_on, created_at
+//            receipt_no, paid_at, venue, scheduled_on, created_at, session_status
 //   cancel ← cancel_session(_session_id) → { session_id, status, within_72h, refund_due }
 //   View   → /billing/invoice/:invoice_id  (printable A5 invoice)
 //   Receipt→ /billing/receipt/:invoice_id  (printable A5 receipt, once paid)
+//
+// Cancel is only offered when the session is still cancellable: session_status is
+// not one of {completed, closed, cancelled, archived}. The backend also enforces
+// this; the button just shouldn't be visible when the action wouldn't succeed.
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
@@ -20,6 +24,7 @@ interface MyInvoice {
   venue: string | null;
   scheduled_on: string | null;
   created_at: string;
+  session_status: string | null;
 }
 interface CancelResult {
   session_id: string;
@@ -29,6 +34,10 @@ interface CancelResult {
 }
 type Load = 'loading' | 'ready' | 'error';
 type Tab = 'all' | 'outstanding' | 'paid';
+
+// Session statuses where the session is finished (or already cancelled) and
+// Cancel would either fail or be nonsensical.
+const TERMINAL_SESSION = new Set(['completed', 'closed', 'cancelled', 'archived']);
 
 function money(n: number | string | null | undefined): string {
   return `RM ${Number(n ?? 0).toFixed(2)}`;
@@ -167,9 +176,12 @@ export default function MyInvoices() {
               {filtered.map((inv) => {
                 const paid = inv.status === 'paid';
                 const result = cancelResult[inv.session_id];
+                const sessionTerminal =
+                  !!inv.session_status && TERMINAL_SESSION.has(inv.session_status);
                 const showCancel =
                   primaryInvoiceBySession.get(inv.session_id) === inv.invoice_id &&
                   inv.status !== 'void' &&
+                  !sessionTerminal &&
                   !result;
                 return (
                   <Fragment key={inv.invoice_id}>
