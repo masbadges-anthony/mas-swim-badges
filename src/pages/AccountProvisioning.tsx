@@ -1,14 +1,12 @@
-// #18 — Staff account provisioning.
+// #18 — Staff account provisioning. Tight single-line rows, Edit name action,
+// past-date guarded on the expiry field.
 //
-// Admin-only surface at /admin/staff. Calls the admin-create-user Edge Function
-// which invites a new user via Supabase Auth AND grants their membership in one
-// atomic step. The invite email lands them on /auth/callback → /set-password.
-//
-// House law: dense table · Active / Pending / All tabs · inline-add row.
-// Inline-add: email · full name · role · conditional scope · expiry · +Create.
-//
-// Reads via list_provisioned_accounts() (unit 18.2). Writes via Edge Function
-// (unit 18.1's SQL + admin_create_user_index.ts).
+// Actions:
+//   Edit name         → admin-manage-user { action: 'update_name', new_name }
+//   Change email      → admin-manage-user { action: 'update_email', new_email }
+//   Reset password    → admin-manage-user { action: 'reset_password' }
+//   Suspend/Reactivate→ admin-manage-user { action: 'suspend' | 'reactivate' }
+//   Delete            → admin-manage-user { action: 'delete' }
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
@@ -22,7 +20,7 @@ interface Account {
   last_sign_in_at: string | null;
   email_confirmed_at: string | null;
   banned_until: string | null;
-  status: string; // 'active' | 'invited_pending' | 'suspended' | 'no_membership'
+  status: string;
 }
 interface RoleRow { role: string; }
 interface StateRow { state: string; }
@@ -46,8 +44,17 @@ function scopeKind(role: string): 'state' | 'centre' | 'centre_optional' | 'none
   if (role === 'instructor') return 'centre_optional';
   return 'none';
 }
+function todayISO(): string {
+  const d = new Date();
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
 
 const CSS = `
+.mas-tight th, .mas-tight td { padding: 0.35rem 0.6rem; white-space: nowrap; vertical-align: middle; }
+.mas-tight tbody tr { line-height: 1.3; }
+.mas-tight .mas-link { color: var(--mas-navy, #1E2752); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
+.mas-tight .mas-link:hover { text-decoration: none; }
 .mas-addrow td { background:#f5f8fc; }
 .mas-addrow-fields { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
 .mas-addrow-fields input, .mas-addrow-fields select {
@@ -71,12 +78,10 @@ export default function AccountProvisioning() {
   const [tab, setTab] = useState<Tab>('active');
   const [query, setQuery] = useState('');
 
-  // Reference data for the inline-add row
   const [roles, setRoles] = useState<string[]>([]);
   const [states, setStates] = useState<string[]>([]);
   const [centres, setCentres] = useState<CentreRow[]>([]);
 
-  // Create-form state
   const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState('');
@@ -87,11 +92,12 @@ export default function AccountProvisioning() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [createOk, setCreateOk] = useState<string | null>(null);
 
-  // Row action state
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [rowMenuOpen, setRowMenuOpen] = useState<string | null>(null);
   const [rowMenuAnchor, setRowMenuAnchor] = useState<{ x: number; y: number } | null>(null);
   const [rowMsg, setRowMsg] = useState<Record<string, { ok?: string; err?: string }>>({});
+
+  const minDate = useMemo(() => todayISO(), []);
 
   const fetchAccounts = useCallback(async () => {
     setLoad('loading');
@@ -118,13 +124,11 @@ export default function AccountProvisioning() {
     return () => { cancelled = true; };
   }, [fetchAccounts]);
 
-  // Click-outside-to-close for the row action menu.
   useEffect(() => {
     if (!rowMenuOpen) return;
     const onDown = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null;
       if (!t) { setRowMenuOpen(null); return; }
-      // Don't close if the click was inside the menu itself or on the trigger.
       if (t.closest('[data-mas-row-menu]')) return;
       if (t.closest('[data-mas-row-menu-trigger]')) return;
       setRowMenuOpen(null);
@@ -139,10 +143,12 @@ export default function AccountProvisioning() {
   }, [rowMenuOpen]);
 
   const kind = scopeKind(role);
+  const expiryTooEarly = !!expiresAt && expiresAt < minDate;
   const canCreate =
     email.includes('@') && !!fullName.trim() && !!role &&
     (kind !== 'state' || !!state) &&
     (kind !== 'centre' || !!centreId) &&
+    !expiryTooEarly &&
     !creating;
 
   async function create() {
@@ -165,8 +171,6 @@ export default function AccountProvisioning() {
       setCreateError(error.message || 'Failed to create account.');
       return;
     }
-    // Edge Function returns a JSON body via data; error branches surface via .error above,
-    // but a 4xx-with-JSON might land in data as { error: ... } — handle both.
     const resp = data as { ok?: boolean; error?: string; detail?: string; email?: string } | null;
     if (!resp?.ok) {
       const msg = resp?.error === 'email_exists'
@@ -193,18 +197,15 @@ export default function AccountProvisioning() {
     });
     setRowBusy(null);
     if (error) {
-      // supabase.functions.invoke throws on non-2xx but the friendly detail is on
-      // the response body. Try to fetch it from error.context.body if present.
       let friendly = error.message;
       try {
-        // FunctionsHttpError puts the Response on error.context; extract JSON.
         const ctx = (error as unknown as { context?: Response }).context;
         if (ctx && typeof ctx.json === 'function') {
           const body = await ctx.json();
           if (body?.detail) friendly = body.detail;
           else if (body?.error) friendly = body.error;
         }
-      } catch (_e) { /* fall through with generic message */ }
+      } catch (_e) { /* fall through */ }
       setRowMsg((m) => ({ ...m, [a.profile_id]: { err: friendly } }));
       return;
     }
@@ -213,7 +214,8 @@ export default function AccountProvisioning() {
       setRowMsg((m) => ({ ...m, [a.profile_id]: { err: `${resp?.error ?? 'failed'}${resp?.detail ? ' — ' + resp.detail : ''}` } }));
       return;
     }
-    const okMsg = action === 'update_email' ? 'Email updated. Verification email sent to the new address.'
+    const okMsg = action === 'update_name' ? 'Name updated.'
+      : action === 'update_email' ? 'Email updated. Verification email sent to the new address.'
       : action === 'reset_password' ? 'Password-reset email sent.'
       : action === 'suspend' ? 'Account suspended.'
       : action === 'reactivate' ? 'Account reactivated.'
@@ -223,6 +225,13 @@ export default function AccountProvisioning() {
     fetchAccounts();
   }
 
+  async function onEditName(a: Account) {
+    const nn = window.prompt(`Edit name for ${a.email}:`, a.full_name ?? '');
+    if (nn == null) return;
+    const trimmed = nn.trim();
+    if (!trimmed || trimmed === (a.full_name ?? '').trim()) return;
+    await callAction(a, 'update_name', { new_name: trimmed });
+  }
   async function onChangeEmail(a: Account) {
     const ne = window.prompt(`Change email for ${a.full_name || a.email}.\n\nNew email:`, a.email);
     if (!ne || !ne.trim() || !ne.includes('@')) return;
@@ -313,12 +322,16 @@ export default function AccountProvisioning() {
 
       {createError && <p className="mas-status mas-status-bad">{createError}</p>}
       {createOk && <p className="mas-status mas-status-good">{createOk}</p>}
+      {expiryTooEarly && (
+        <p className="mas-status mas-status-bad">Expiry date can’t be in the past.</p>
+      )}
 
       <div className="mas-table-wrap">
-        <table className="mas-table">
+        <table className="mas-table mas-tight">
           <thead>
             <tr>
-              <th>Person</th>
+              <th>Name</th>
+              <th>Email</th>
               <th>Role(s)</th>
               <th>Created</th>
               <th>Last sign-in</th>
@@ -327,10 +340,9 @@ export default function AccountProvisioning() {
             </tr>
           </thead>
           <tbody>
-            {/* Inline-add row on the Active tab only */}
             {tab === 'active' && (
               <tr className="mas-addrow">
-                <td colSpan={6}>
+                <td colSpan={7}>
                   <div className="mas-addrow-fields">
                     <input type="email" value={email} autoComplete="off"
                       placeholder="Email"
@@ -355,6 +367,7 @@ export default function AccountProvisioning() {
                       </select>
                     )}
                     <input type="date" value={expiresAt}
+                      min={minDate}
                       onChange={(e) => setExpiresAt(e.target.value)}
                       title="Expires (optional)" />
                     <button className="mas-btn-primary mas-btn-compact" onClick={create} disabled={!canCreate}>
@@ -366,74 +379,48 @@ export default function AccountProvisioning() {
             )}
 
             {load === 'loading' && (
-              <tr><td colSpan={6} className="mas-status">Loading…</td></tr>
+              <tr><td colSpan={7} className="mas-status">Loading…</td></tr>
             )}
             {load === 'error' && (
-              <tr><td colSpan={5} className="mas-status mas-status-bad">Couldn’t load accounts.</td></tr>
+              <tr><td colSpan={7} className="mas-status mas-status-bad">Couldn’t load accounts.</td></tr>
             )}
             {load === 'ready' && filtered.length === 0 && (
-              <tr><td colSpan={6} className="mas-status">
+              <tr><td colSpan={7} className="mas-status">
                 {tab === 'pending' ? 'No pending invitations.' : 'No accounts in this view.'}
               </td></tr>
             )}
 
             {filtered.map((a) => (
               <tr key={a.profile_id}>
-                <td className="mas-cell-strong">
-                  <span className="mas-cell-stack">
-                    <span>{a.full_name || '(no name)'}</span>
-                    <span className="mas-cell-sub">{a.email}</span>
-                  </span>
-                </td>
-                <td>
-                  {a.roles ? (
-                    a.roles.split(', ').map((r) => (
-                      <span key={r} className="mas-pill" style={{ marginRight: '0.3rem' }}>{pretty(r)}</span>
-                    ))
-                  ) : (
-                    <span className="mas-cell-sub">no membership</span>
-                  )}
-                </td>
+                <td className="mas-cell-strong">{a.full_name || '(no name)'}</td>
+                <td>{a.email}</td>
+                <td>{a.roles ? a.roles.split(', ').map(pretty).join(', ') : <span className="mas-cell-sub">no membership</span>}</td>
                 <td>{fmt(a.created_at)}</td>
                 <td>{fmt(a.last_sign_in_at)}</td>
                 <td>
-                  <span className={`mas-outcome ${
-                    a.status === 'active' ? 'is-pass'
-                    : a.status === 'invited_pending' ? 'is-refer'
-                    : a.status === 'suspended' ? 'is-refer'
-                    : ''
-                  }`}>
-                    {a.status === 'active' ? 'Active'
-                    : a.status === 'invited_pending' ? 'Invited'
-                    : a.status === 'suspended' ? 'Suspended'
-                    : 'No membership'}
-                  </span>
+                  {a.status === 'active' ? 'Active'
+                  : a.status === 'invited_pending' ? 'Invited'
+                  : a.status === 'suspended' ? 'Suspended'
+                  : 'No membership'}
                   {rowMsg[a.profile_id]?.ok && (
-                    <p className="mas-status mas-status-good" style={{ margin: '0.25rem 0 0', fontSize: '0.8rem' }}>
-                      {rowMsg[a.profile_id].ok}
-                    </p>
+                    <span className="mas-cell-sub" style={{ marginLeft: '0.5rem', color: 'var(--mas-good, #216938)' }}>
+                      · {rowMsg[a.profile_id].ok}
+                    </span>
                   )}
                   {rowMsg[a.profile_id]?.err && (
-                    <p className="mas-status mas-status-bad" style={{ margin: '0.25rem 0 0', fontSize: '0.8rem' }}>
-                      {rowMsg[a.profile_id].err}
-                    </p>
+                    <span className="mas-cell-sub" style={{ marginLeft: '0.5rem', color: 'var(--mas-red, #C62026)' }}>
+                      · {rowMsg[a.profile_id].err}
+                    </span>
                   )}
                 </td>
                 <td className="mas-table-actioncol">
                   <button
                     data-mas-row-menu-trigger
-                    className="mas-btn-ghost mas-btn-compact"
+                    className="mas-link"
                     onClick={(e) => {
-                      if (rowMenuOpen === a.profile_id) {
-                        setRowMenuOpen(null);
-                        return;
-                      }
+                      if (rowMenuOpen === a.profile_id) { setRowMenuOpen(null); return; }
                       const rect = e.currentTarget.getBoundingClientRect();
-                      // Anchor the menu just below and left-aligned to the trigger's right edge.
-                      setRowMenuAnchor({
-                        x: rect.right,
-                        y: rect.bottom + 4,
-                      });
+                      setRowMenuAnchor({ x: rect.right, y: rect.bottom + 4 });
                       setRowMenuOpen(a.profile_id);
                     }}
                     disabled={rowBusy === a.profile_id}
@@ -458,9 +445,8 @@ export default function AccountProvisioning() {
             role="menu"
             style={{
               position: 'fixed',
-              // Right-align the menu to the trigger's right edge; adjust to keep on-screen.
               left: Math.max(8, Math.min(rowMenuAnchor.x - 208, window.innerWidth - 216)),
-              top: Math.min(rowMenuAnchor.y, window.innerHeight - 200),
+              top: Math.min(rowMenuAnchor.y, window.innerHeight - 240),
               zIndex: 1000,
               background: '#fff',
               border: '1px solid var(--mas-line, #e3e9f3)',
@@ -470,6 +456,7 @@ export default function AccountProvisioning() {
               padding: '0.3rem 0',
             }}
           >
+            <button className="mas-menu-item" onClick={() => onEditName(target)}>Edit name</button>
             <button className="mas-menu-item" onClick={() => onChangeEmail(target)}>Change email</button>
             <button className="mas-menu-item" onClick={() => onResetPassword(target)}>Send reset password</button>
             {target.status === 'suspended' ? (
