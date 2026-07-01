@@ -25,7 +25,6 @@ import Courses from './pages/Courses';
 import Verify from './pages/Verify';
 import SearchResults from './pages/SearchResults';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
 import ClaimSignup from './pages/ClaimSignup';
 import AuthCallback from './pages/AuthCallback';
 import ParentDashboard from './pages/ParentDashboard';
@@ -749,7 +748,6 @@ export default function App() {
             </Route>
 
             <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
             <Route path="/claim-signup" element={<ClaimSignup />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route element={<Protected />}>
