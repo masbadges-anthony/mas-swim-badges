@@ -1,4 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+// #16 — Store admin, dense-table conversion.
+// Two independent surfaces on one page, each dense-table + tabs + (products) inline-add:
+//   ORDERS  — tabs: Awaiting payment / Paid · to ship / Shipped
+//            row expands for the payment/tracking form (paid/placed states)
+//   CATALOGUE — tabs: Active / Hidden
+//              inline-add row: code · name · category · price · +Save
+// Reads/writes: unchanged wire.
+//   list_store_orders(_status), list_store_products(_include_inactive)
+//   record_store_payment, mark_store_order_paid, fulfil_store_order, cancel_store_order
+//   upsert_store_product
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
 
@@ -11,190 +21,408 @@ interface Product {
   id: string; code: string; name: string; description: string | null;
   category: string | null; unit_price: number; active: boolean; sort_order: number;
 }
+type Load = 'loading' | 'ready' | 'error';
+type OrderTab = 'placed' | 'paid' | 'fulfilled';
+type ProdTab = 'active' | 'hidden';
 
-const STAT: Record<string, { label: string; cls: string }> = {
-  placed:    { label: 'Awaiting payment', cls: 'is-warning' },
-  paid:      { label: 'Paid · to ship', cls: 'is-info' },
-  fulfilled: { label: 'Shipped', cls: 'is-success' },
-  cancelled: { label: 'Cancelled', cls: '' },
+const ORDER_TAB_LABEL: Record<OrderTab, string> = {
+  placed: 'Awaiting payment',
+  paid: 'Paid · to ship',
+  fulfilled: 'Shipped',
 };
-const FILTERS = ['placed', 'paid', 'fulfilled'] as const;
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  placed: 'Awaiting payment',
+  paid: 'Paid · to ship',
+  fulfilled: 'Shipped',
+  cancelled: 'Cancelled',
+};
+
+const CSS = `
+.mas-addrow td { background:#f5f8fc; }
+.mas-addrow-fields { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
+.mas-addrow-fields input[type=text], .mas-addrow-fields input[type=number] {
+  font:inherit; padding:0.35rem 0.5rem; border:1px solid var(--mas-line,#e3e9f3); border-radius:6px;
+}
+.mas-addrow-fields input[type=text] { min-width:9rem; }
+.mas-addrow-fields input.wide { min-width:13rem; }
+.mas-addrow-fields input.num { min-width:6rem; }
+.mas-order-detail { display:flex; gap:0.5rem; align-items:end; flex-wrap:wrap; }
+.mas-order-detail label { display:flex; flex-direction:column; font-size:0.8rem; color:var(--mas-muted,#5b6472); }
+.mas-order-detail input, .mas-order-detail select {
+  font:inherit; padding:0.35rem 0.5rem; border:1px solid var(--mas-line,#e3e9f3); border-radius:6px;
+}
+`;
+
+function money(n: unknown): string {
+  return `RM ${Number(n ?? 0).toFixed(2)}`;
+}
 
 export default function StoreAdmin() {
+  // ---------- Orders ----------
   const [orders, setOrders] = useState<Order[]>([]);
-  const [filter, setFilter] = useState<string>('placed');
+  const [orderLoad, setOrderLoad] = useState<Load>('loading');
+  const [orderTab, setOrderTab] = useState<OrderTab>('placed');
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [orderError, setOrderError] = useState<Record<string, string>>({});
   const [pay, setPay] = useState<Record<string, { method: string; amount: string; reference: string; proof: string }>>({});
   const [track, setTrack] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState<string | null>(null);
 
+  // ---------- Products ----------
   const [products, setProducts] = useState<Product[]>([]);
+  const [prodLoad, setProdLoad] = useState<Load>('loading');
+  const [prodTab, setProdTab] = useState<ProdTab>('active');
   const [np, setNp] = useState({ code: '', name: '', category: '', price: '' });
+  const [addBusy, setAddBusy] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [prodBusy, setProdBusy] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    const [o, p] = await Promise.all([
-      supabase.rpc('list_store_orders', { _status: filter }),
-      supabase.rpc('list_store_products', { _include_inactive: true }),
-    ]);
-    setOrders((o.data ?? []) as Order[]);
-    setProducts((p.data ?? []) as Product[]);
-  }, [filter]);
-  useEffect(() => { load(); }, [load]);
+  const loadOrders = useCallback(async () => {
+    setOrderLoad('loading');
+    const { data, error } = await supabase.rpc('list_store_orders', { _status: orderTab });
+    if (error) { setOrderLoad('error'); return; }
+    setOrders((data ?? []) as Order[]);
+    setOrderLoad('ready');
+  }, [orderTab]);
 
-  async function recordPayment(id: string) {
-    const p = pay[id] ?? { method: 'transfer', amount: '', reference: '', proof: '' };
-    if (!p.amount) { alert('Enter amount.'); return; }
-    setBusy(id);
-    await supabase.rpc('record_store_payment', {
-      _order: id, _method: p.method, _amount: Number(p.amount),
+  const loadProducts = useCallback(async () => {
+    setProdLoad('loading');
+    const { data, error } = await supabase.rpc('list_store_products', { _include_inactive: true });
+    if (error) { setProdLoad('error'); return; }
+    setProducts((data ?? []) as Product[]);
+    setProdLoad('ready');
+  }, []);
+
+  useEffect(() => { loadOrders(); }, [loadOrders]);
+  useEffect(() => { loadProducts(); }, [loadProducts]);
+
+  // ---------- Order actions ----------
+  function setPayField(id: string, patch: Partial<{ method: string; amount: string; reference: string; proof: string }>) {
+    setPay((p) => {
+      const prev = p[id] ?? { method: 'transfer', amount: '', reference: '', proof: '' };
+      return { ...p, [id]: { ...prev, ...patch } };
+    });
+  }
+
+  async function recordPayment(o: Order) {
+    const p = pay[o.id] ?? { method: 'transfer', amount: '', reference: '', proof: '' };
+    if (!p.amount) {
+      setOrderError((m) => ({ ...m, [o.id]: 'Enter an amount.' }));
+      return;
+    }
+    setBusy(o.id); setOrderError((m) => { const n = { ...m }; delete n[o.id]; return n; });
+    const { error } = await supabase.rpc('record_store_payment', {
+      _order: o.id, _method: p.method, _amount: Number(p.amount),
       _reference: p.reference || null, _proof_url: p.proof || null,
     });
-    setBusy(null); load();
-  }
-  async function markPaid(id: string) {
-    setBusy(id);
-    const { error } = await supabase.rpc('mark_store_order_paid', { _order: id });
     setBusy(null);
-    if (error) { alert(error.message); return; }
-    load();
+    if (error) { setOrderError((m) => ({ ...m, [o.id]: error.message })); return; }
+    loadOrders();
   }
-  async function fulfil(id: string) {
-    setBusy(id);
-    await supabase.rpc('fulfil_store_order', { _order: id, _tracking: track[id] || null });
-    setBusy(null); load();
+  async function markPaid(o: Order) {
+    setBusy(o.id); setOrderError((m) => { const n = { ...m }; delete n[o.id]; return n; });
+    const { error } = await supabase.rpc('mark_store_order_paid', { _order: o.id });
+    setBusy(null);
+    if (error) { setOrderError((m) => ({ ...m, [o.id]: error.message })); return; }
+    loadOrders();
   }
-  async function cancel(id: string) {
-    setBusy(id);
-    await supabase.rpc('cancel_store_order', { _order: id });
-    setBusy(null); load();
+  async function fulfil(o: Order) {
+    setBusy(o.id); setOrderError((m) => { const n = { ...m }; delete n[o.id]; return n; });
+    const { error } = await supabase.rpc('fulfil_store_order', { _order: o.id, _tracking: track[o.id] || null });
+    setBusy(null);
+    if (error) { setOrderError((m) => ({ ...m, [o.id]: error.message })); return; }
+    loadOrders();
   }
+  async function cancel(o: Order) {
+    setBusy(o.id); setOrderError((m) => { const n = { ...m }; delete n[o.id]; return n; });
+    const { error } = await supabase.rpc('cancel_store_order', { _order: o.id });
+    setBusy(null);
+    if (error) { setOrderError((m) => ({ ...m, [o.id]: error.message })); return; }
+    loadOrders();
+  }
+
+  // ---------- Product actions ----------
+  const canAdd = np.code.trim().length > 0 && np.name.trim().length > 0 && !addBusy;
   async function addProduct() {
-    if (!np.code || !np.name) { alert('Code and name required.'); return; }
-    await supabase.rpc('upsert_store_product', {
-      _code: np.code, _name: np.name, _category: np.category || null,
+    if (!canAdd) return;
+    setAddBusy(true); setAddError(null);
+    const { error } = await supabase.rpc('upsert_store_product', {
+      _code: np.code.trim(), _name: np.name.trim(),
+      _category: np.category.trim() || null,
       _unit_price: Number(np.price || 0), _active: true,
     });
+    setAddBusy(false);
+    if (error) { setAddError(error.message); return; }
     setNp({ code: '', name: '', category: '', price: '' });
-    load();
+    loadProducts();
   }
   async function toggleProduct(p: Product) {
-    await supabase.rpc('upsert_store_product', {
+    setProdBusy(p.id);
+    const { error } = await supabase.rpc('upsert_store_product', {
       _code: p.code, _name: p.name, _category: p.category, _unit_price: p.unit_price,
       _description: p.description, _active: !p.active, _sort_order: p.sort_order,
     });
-    load();
+    setProdBusy(null);
+    if (error) return;
+    loadProducts();
   }
+
+  const prodCounts = useMemo(() => ({
+    active: products.filter((p) => p.active).length,
+    hidden: products.filter((p) => !p.active).length,
+  }), [products]);
+  const filteredProducts = useMemo(
+    () => products.filter((p) => (prodTab === 'active' ? p.active : !p.active)),
+    [products, prodTab],
+  );
 
   return (
     <section className="mas-page">
+      <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Store · admin</p>
         <h1>Store orders</h1>
-        <p className="mas-lede">Record payments, mark orders paid, and ship. Manage the catalogue below.</p>
+        <p className="mas-lede">
+          Record payments, mark orders paid, and ship. Manage the catalogue below.
+        </p>
       </header>
 
-      <div className="mas-segmented" style={{ marginBottom: '1.25rem' }}>
-        {FILTERS.map((f) => (
-          <button key={f} type="button" className={filter === f ? 'is-active' : ''} onClick={() => setFilter(f)}>
-            {STAT[f].label}
-          </button>
-        ))}
+      {/* ---- Orders ---- */}
+      <div className="mas-admin-toolbar" style={{ gap: '0.6rem', flexWrap: 'wrap' }}>
+        <button className="mas-btn-ghost" onClick={loadOrders} disabled={orderLoad === 'loading'}>Refresh</button>
+        <div className="mas-tabs" role="tablist" style={{ display: 'flex', gap: '0.3rem' }}>
+          {(['placed', 'paid', 'fulfilled'] as OrderTab[]).map((t) => (
+            <button key={t} role="tab" aria-selected={orderTab === t}
+              className={orderTab === t ? 'mas-btn-primary mas-btn-compact' : 'mas-btn-ghost mas-btn-compact'}
+              onClick={() => { setOrderTab(t); setExpanded(null); }}>
+              {ORDER_TAB_LABEL[t]}
+            </button>
+          ))}
+        </div>
+        {orderLoad === 'ready' && <span className="mas-admin-count">{orders.length} shown</span>}
       </div>
 
-      {orders.length === 0 && <p className="mas-status">No orders in this state.</p>}
-      {orders.map((o) => {
-        const p = pay[o.id] ?? { method: 'transfer', amount: '', reference: '', proof: '' };
-        return (
-          <div key={o.id} className="mas-form" style={{ marginBottom: '0.9rem' }}>
-            <div className="mas-form-cardhead">
-              <div>
-                <span className={`mas-badge ${STAT[o.status]?.cls ?? ''}`}>{STAT[o.status]?.label ?? o.status}</span>
-                <h2 style={{ marginTop: '0.5rem' }}>{o.buyer ?? '—'}{o.centre ? ` · ${o.centre}` : ''}</h2>
-              </div>
-              <span className="mas-field-opt">RM {Number(o.total_amount).toFixed(2)}</span>
-            </div>
-            {o.shipping_address && <p className="mas-field-note" style={{ marginTop: 0 }}>Ship to: {o.shipping_address}</p>}
-            <p className="mas-field-note">Recorded payments: RM {Number(o.paid_amount ?? 0).toFixed(2)} of RM {Number(o.total_amount).toFixed(2)}</p>
+      {orderLoad === 'loading' && <p className="mas-status">Loading orders…</p>}
+      {orderLoad === 'error' && <p className="mas-status mas-status-bad">Couldn’t load orders.</p>}
+      {orderLoad === 'ready' && orders.length === 0 && (
+        <p className="mas-status">No orders in this state.</p>
+      )}
 
-            {o.status === 'placed' && (
-              <>
-                <div className="mas-form-grid" style={{ marginTop: '0.5rem' }}>
-                  <div className="mas-field">
-                    <label className="mas-field-label">Method</label>
-                    <select className="mas-select" value={p.method} onChange={(e) => setPay((pp) => ({ ...pp, [o.id]: { ...p, method: e.target.value } }))}>
-                      <option value="transfer">Bank transfer</option>
-                      <option value="qr">QR pay</option>
-                      <option value="cash">Cash</option>
-                    </select>
-                  </div>
-                  <div className="mas-field">
-                    <label className="mas-field-label">Amount (RM)</label>
-                    <input className="mas-input" type="number" value={p.amount} onChange={(e) => setPay((pp) => ({ ...pp, [o.id]: { ...p, amount: e.target.value } }))} />
-                  </div>
-                  <div className="mas-field">
-                    <label className="mas-field-label">Reference <span className="mas-field-opt">(optional)</span></label>
-                    <input className="mas-input" value={p.reference} onChange={(e) => setPay((pp) => ({ ...pp, [o.id]: { ...p, reference: e.target.value } }))} />
-                  </div>
-                  <div className="mas-field">
-                    <label className="mas-field-label">Proof URL <span className="mas-field-opt">(optional)</span></label>
-                    <input className="mas-input" value={p.proof} onChange={(e) => setPay((pp) => ({ ...pp, [o.id]: { ...p, proof: e.target.value } }))} />
-                  </div>
-                </div>
-                <div className="mas-form-actions" style={{ marginTop: '0.75rem', gap: '0.6rem' }}>
-                  <button className="mas-btn-ghost" disabled={busy === o.id} onClick={() => recordPayment(o.id)}>Record payment</button>
-                  <button className="mas-btn-success" disabled={busy === o.id} onClick={() => markPaid(o.id)}>Mark paid</button>
-                  <button className="mas-btn-danger" disabled={busy === o.id} onClick={() => cancel(o.id)}>Cancel</button>
-                </div>
-              </>
-            )}
+      {orderLoad === 'ready' && orders.length > 0 && (
+        <div className="mas-table-wrap">
+          <table className="mas-table">
+            <thead>
+              <tr>
+                <th className="mas-table-expandcol" aria-label="Expand" />
+                <th>Buyer / centre</th>
+                <th>Status</th>
+                <th className="mas-num">Total</th>
+                <th className="mas-num">Paid</th>
+                <th className="mas-table-actioncol">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((o) => {
+                const p = pay[o.id] ?? { method: 'transfer', amount: '', reference: '', proof: '' };
+                const isOpen = expanded === o.id;
+                const canExpand = o.status === 'placed' || o.status === 'paid';
+                return (
+                  <Fragment key={o.id}>
+                    <tr className={isOpen ? 'is-open' : undefined}>
+                      <td className="mas-table-expandcol">
+                        {canExpand && (
+                          <button
+                            type="button"
+                            className="mas-table-expandbtn"
+                            onClick={() => setExpanded((cur) => (cur === o.id ? null : o.id))}
+                            aria-expanded={isOpen}
+                            aria-label={isOpen ? 'Collapse' : 'Expand'}
+                          >
+                            {isOpen ? '▾' : '▸'}
+                          </button>
+                        )}
+                      </td>
+                      <td className="mas-cell-strong">
+                        <span className="mas-cell-stack">
+                          <span>{o.buyer || '—'}</span>
+                          {o.centre && <span className="mas-cell-sub">{o.centre}</span>}
+                        </span>
+                      </td>
+                      <td><span className="mas-pill">{ORDER_STATUS_LABEL[o.status] ?? o.status}</span></td>
+                      <td className="mas-num">{money(o.total_amount)}</td>
+                      <td className="mas-num">{money(o.paid_amount)}</td>
+                      <td className="mas-table-actioncol">
+                        {o.status === 'fulfilled' && o.tracking && (
+                          <span className="mas-cell-sub">{o.tracking}</span>
+                        )}
+                        {canExpand && (
+                          <button
+                            className="mas-btn-ghost mas-btn-compact"
+                            onClick={() => setExpanded((cur) => (cur === o.id ? null : o.id))}
+                          >
+                            {isOpen ? 'Close' : 'Manage'}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                    {isOpen && canExpand && (
+                      <tr className="mas-table-detailrow">
+                        <td colSpan={6}>
+                          <div className="mas-table-detail">
+                            {o.shipping_address && (
+                              <p className="mas-cell-sub" style={{ marginBottom: '0.5rem' }}>
+                                Ship to: {o.shipping_address}
+                              </p>
+                            )}
 
-            {o.status === 'paid' && (
-              <div style={{ marginTop: '0.5rem' }}>
-                <input className="mas-input" placeholder="Tracking / dispatch note (optional)" value={track[o.id] ?? ''}
-                  onChange={(e) => setTrack((t) => ({ ...t, [o.id]: e.target.value }))} style={{ marginBottom: '0.6rem' }} />
-                <div className="mas-form-actions" style={{ gap: '0.6rem' }}>
-                  <button className="mas-btn-success" disabled={busy === o.id} onClick={() => fulfil(o.id)}>Mark shipped</button>
-                  <button className="mas-btn-danger" disabled={busy === o.id} onClick={() => cancel(o.id)}>Cancel</button>
-                </div>
-              </div>
-            )}
+                            {o.status === 'placed' && (
+                              <>
+                                <div className="mas-order-detail">
+                                  <label>Method
+                                    <select value={p.method} onChange={(e) => setPayField(o.id, { method: e.target.value })}>
+                                      <option value="transfer">Bank transfer</option>
+                                      <option value="qr">QR pay</option>
+                                      <option value="cash">Cash</option>
+                                    </select>
+                                  </label>
+                                  <label>Amount (RM)
+                                    <input type="number" value={p.amount} onChange={(e) => setPayField(o.id, { amount: e.target.value })} style={{ width: '8rem' }} />
+                                  </label>
+                                  <label>Reference
+                                    <input type="text" value={p.reference} onChange={(e) => setPayField(o.id, { reference: e.target.value })} style={{ width: '12rem' }} />
+                                  </label>
+                                  <label>Proof URL
+                                    <input type="text" value={p.proof} onChange={(e) => setPayField(o.id, { proof: e.target.value })} style={{ width: '14rem' }} />
+                                  </label>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+                                  <button className="mas-btn-ghost mas-btn-compact" disabled={busy === o.id} onClick={() => recordPayment(o)}>Record payment</button>
+                                  <button className="mas-btn-primary mas-btn-compact" disabled={busy === o.id} onClick={() => markPaid(o)}>Mark paid</button>
+                                  <button className="mas-btn-ghost mas-btn-compact" disabled={busy === o.id} onClick={() => cancel(o)}>Cancel order</button>
+                                </div>
+                              </>
+                            )}
 
-            {o.status === 'fulfilled' && o.tracking && <p className="mas-status mas-status-good">Shipped · {o.tracking}</p>}
-          </div>
-        );
-      })}
+                            {o.status === 'paid' && (
+                              <>
+                                <div className="mas-order-detail">
+                                  <label style={{ flex: '1 1 auto' }}>Tracking / dispatch note
+                                    <input type="text" value={track[o.id] ?? ''} onChange={(e) => setTrack((t) => ({ ...t, [o.id]: e.target.value }))} placeholder="optional" />
+                                  </label>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+                                  <button className="mas-btn-primary mas-btn-compact" disabled={busy === o.id} onClick={() => fulfil(o)}>Mark shipped</button>
+                                  <button className="mas-btn-ghost mas-btn-compact" disabled={busy === o.id} onClick={() => cancel(o)}>Cancel order</button>
+                                </div>
+                              </>
+                            )}
 
-      <header className="mas-page-head mas-section-head"><h2>Catalogue</h2></header>
-      <div className="mas-form">
-        <div className="mas-form-cardhead"><div><p className="mas-eyebrow">Add / update</p><h2>Product</h2></div></div>
-        <div className="mas-form-grid">
-          <div className="mas-field"><label className="mas-field-label">Code</label>
-            <input className="mas-input" value={np.code} onChange={(e) => setNp({ ...np, code: e.target.value })} placeholder="unique_code" /></div>
-          <div className="mas-field"><label className="mas-field-label">Name</label>
-            <input className="mas-input" value={np.name} onChange={(e) => setNp({ ...np, name: e.target.value })} /></div>
-          <div className="mas-field"><label className="mas-field-label">Category</label>
-            <input className="mas-input" value={np.category} onChange={(e) => setNp({ ...np, category: e.target.value })} placeholder="Promotion / Teaching" /></div>
-          <div className="mas-field"><label className="mas-field-label">Unit price (RM)</label>
-            <input className="mas-input" type="number" value={np.price} onChange={(e) => setNp({ ...np, price: e.target.value })} /></div>
+                            {orderError[o.id] && (
+                              <p className="mas-status mas-status-bad" style={{ marginTop: '0.4rem' }}>
+                                {orderError[o.id]}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-        <div className="mas-form-actions" style={{ marginTop: '0.75rem' }}>
-          <button className="mas-btn-primary" onClick={addProduct}>Save product</button>
+      )}
+
+      {/* ---- Catalogue ---- */}
+      <header className="mas-page-head mas-section-head" style={{ marginTop: '2rem' }}>
+        <h2>Catalogue</h2>
+      </header>
+
+      <div className="mas-admin-toolbar" style={{ gap: '0.6rem', flexWrap: 'wrap' }}>
+        <button className="mas-btn-ghost" onClick={loadProducts} disabled={prodLoad === 'loading'}>Refresh</button>
+        <div className="mas-tabs" role="tablist" style={{ display: 'flex', gap: '0.3rem' }}>
+          <button role="tab" aria-selected={prodTab === 'active'}
+            className={prodTab === 'active' ? 'mas-btn-primary mas-btn-compact' : 'mas-btn-ghost mas-btn-compact'}
+            onClick={() => setProdTab('active')}>Active ({prodCounts.active})</button>
+          <button role="tab" aria-selected={prodTab === 'hidden'}
+            className={prodTab === 'hidden' ? 'mas-btn-primary mas-btn-compact' : 'mas-btn-ghost mas-btn-compact'}
+            onClick={() => setProdTab('hidden')}>Hidden ({prodCounts.hidden})</button>
         </div>
       </div>
 
-      <ul className="mas-admin-list">
-        {products.map((p) => (
-          <li key={p.id} className="mas-admin-row">
-            <div className="mas-admin-main">
-              <h3 className="mas-admin-name">{p.name} <span className="mas-mono">{p.code}</span></h3>
-              <p className="mas-admin-meta">
-                <span className="mas-pill">RM {Number(p.unit_price).toFixed(2)}</span>
-                <span className={`mas-badge ${p.active ? 'is-success' : ''}`}>{p.active ? 'Active' : 'Hidden'}</span>
-              </p>
-            </div>
-            <button className="mas-btn-ghost" onClick={() => toggleProduct(p)}>{p.active ? 'Hide' : 'Show'}</button>
-          </li>
-        ))}
-      </ul>
+      {addError && <p className="mas-status mas-status-bad">Couldn’t save product: {addError}</p>}
+
+      <div className="mas-table-wrap">
+        <table className="mas-table">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th className="mas-num">Price</th>
+              <th>Status</th>
+              <th className="mas-table-actioncol">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {prodTab === 'active' && (
+              <tr className="mas-addrow">
+                <td colSpan={6}>
+                  <div className="mas-addrow-fields">
+                    <input type="text" value={np.code} autoComplete="off"
+                      placeholder="unique_code"
+                      onChange={(e) => setNp({ ...np, code: e.target.value })} />
+                    <input type="text" className="wide" value={np.name}
+                      placeholder="Product name"
+                      onChange={(e) => setNp({ ...np, name: e.target.value })} />
+                    <input type="text" value={np.category}
+                      placeholder="Promotion / Teaching"
+                      onChange={(e) => setNp({ ...np, category: e.target.value })} />
+                    <input type="number" className="num" value={np.price}
+                      placeholder="RM"
+                      onChange={(e) => setNp({ ...np, price: e.target.value })} />
+                    <button className="mas-btn-primary mas-btn-compact" onClick={addProduct} disabled={!canAdd}>
+                      {addBusy ? 'Saving…' : '+ Save'}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            )}
+
+            {prodLoad === 'loading' && (
+              <tr><td colSpan={6} className="mas-status">Loading…</td></tr>
+            )}
+            {prodLoad === 'error' && (
+              <tr><td colSpan={6} className="mas-status mas-status-bad">Couldn’t load products.</td></tr>
+            )}
+            {prodLoad === 'ready' && filteredProducts.length === 0 && (
+              <tr><td colSpan={6} className="mas-status">
+                {prodTab === 'active' ? 'No active products.' : 'No hidden products.'}
+              </td></tr>
+            )}
+
+            {filteredProducts.map((p) => (
+              <tr key={p.id}>
+                <td className="mas-serial">{p.code}</td>
+                <td className="mas-cell-strong">{p.name}</td>
+                <td>{p.category || '—'}</td>
+                <td className="mas-num">{money(p.unit_price)}</td>
+                <td>
+                  <span className={`mas-outcome ${p.active ? 'is-pass' : 'is-refer'}`}>
+                    {p.active ? 'Active' : 'Hidden'}
+                  </span>
+                </td>
+                <td className="mas-table-actioncol">
+                  <button className="mas-btn-ghost mas-btn-compact" onClick={() => toggleProduct(p)} disabled={prodBusy === p.id}>
+                    {prodBusy === p.id ? '…' : p.active ? 'Hide' : 'Show'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
