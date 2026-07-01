@@ -381,7 +381,7 @@ function Sidebar({
   const canRegisterCentre = hasRole('instructor');
   const canPartnerApps = hasRole('chairperson') || hasRole('board_member');
   const canRoleRegistry = hasRole('system_admin');
-  const canSwimmerRegistry = hasRole('chairperson') || hasRole('system_admin') || hasRole('finance_officer');
+  const canSwimmerRegistry = hasRole('instructor') || hasRole('partner_center_admin') || hasRole('chairperson') || hasRole('system_admin') || hasRole('finance_officer');
   const canAuditLog = hasRole('system_admin') || hasRole('chairperson');
   const canExaminerRegistry = hasRole('chief_examiner');
   const canCentreBilling = hasRole('chairperson') || hasRole('board_member') || hasRole('system_admin');
@@ -478,10 +478,19 @@ function Sidebar({
         {canBuyStore && <NavLink to="/store" className={navClass}><Icon name="card" /><span>Store</span></NavLink>}
 
         {assessmentsGroup && (
+          {(canRegister || canSwimmerRegistry || canClaimSlips) && (
+          <details className="mas-navgroup" open>
+            <summary>Candidates</summary>
+            <div className="mas-navgroup-items">
+              {canRegister && <NavLink to="/candidates/register" className={navClass}><Icon name="userPlus" /><span>Register candidate</span></NavLink>}
+              {canSwimmerRegistry && <NavLink to="/registry/swimmers" className={navClass}><Icon name="users" /><span>Swimmer registry</span></NavLink>}
+              {canClaimSlips && <NavLink to="/candidates/claim-slips" className={navClass}><Icon name="printer" /><span>Claim slips</span></NavLink>}
+            </div>
+          </details>
+          )}
           <details className="mas-navgroup" open>
             <summary>Assessments</summary>
             <div className="mas-navgroup-items">
-              {canRegister && <NavLink to="/candidates/register" className={navClass}><Icon name="userPlus" /><span>Register candidate</span></NavLink>}
               {canRegisterCentre && <NavLink to="/centres/register" className={navClass}><Icon name="building" /><span>Register a centre</span></NavLink>}
               {canSchedule && <NavLink to="/assessments/schedule" className={navClass}><Icon name="calendar" /><span>Schedule assessment</span></NavLink>}
               {canMySessions && <NavLink to="/my-sessions" className={navClass}><Icon name="calendar" /><span>My sessions</span></NavLink>}
@@ -491,7 +500,6 @@ function Sidebar({
               {canViewCerts && <NavLink to="/certificates" className={navClass}><Icon name="award" /><span>Certificates</span></NavLink>}
               {canOversight && <NavLink to="/assessments/oversight" className={navClass}><Icon name="eye" /><span>Oversight</span></NavLink>}
               {canExaminerRegistry && <NavLink to="/assessments/examiners" className={navClass}><Icon name="users" /><span>Examiner registry</span></NavLink>}
-              {canClaimSlips && <NavLink to="/candidates/claim-slips" className={navClass}><Icon name="printer" /><span>Claim slips</span></NavLink>}
             </div>
           </details>
         )}
@@ -515,7 +523,6 @@ function Sidebar({
             <div className="mas-navgroup-items">
               {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span><AttentionDot count={unhandledEnquiries} label="unhandled enquiries" /></NavLink>}
               {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span><AttentionDot count={unhandledPartnerApps} label="new applications" /></NavLink>}
-              {canSwimmerRegistry && <NavLink to="/registry/swimmers" className={navClass}><Icon name="users" /><span>Swimmer registry</span></NavLink>}
               {canRoleRegistry && <NavLink to="/admin/role-registry" className={navClass}><Icon name="settings" /><span>Roles &amp; policies</span></NavLink>}
               {canAuditLog && <NavLink to="/admin/audit-log" className={navClass}><Icon name="file" /><span>Audit log</span></NavLink>}
               {canManageCentres && <NavLink to="/admin/centres" className={navClass}><Icon name="building" /><span>Manage centres</span></NavLink>}
@@ -725,7 +732,7 @@ export default function App() {
               <Route path="/centres/register" element={<RequireRole roles={['instructor']}><RegisterCentre /></RequireRole>} />
               <Route path="/admin/partner-applications" element={<RequireRole roles={['chairperson', 'board_member']}><PartnerApplications /></RequireRole>} />
               <Route path="/admin/role-registry" element={<RequireRole roles={['system_admin']}><RoleRegistry /></RequireRole>} />
-              <Route path="/registry/swimmers" element={<RequireRole roles={['chairperson', 'system_admin', 'finance_officer']}><SwimmerRegistry /></RequireRole>} />
+              <Route path="/registry/swimmers" element={<RequireRole roles={['instructor', 'partner_center_admin', 'chairperson', 'system_admin', 'finance_officer']}><SwimmerRegistry /></RequireRole>} />
               <Route path="/admin/audit-log" element={<RequireRole roles={['system_admin', 'chairperson']}><AuditLog /></RequireRole>} />
               <Route path="/admin/memberships" element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>} />
             </Route>
