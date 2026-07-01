@@ -21,6 +21,9 @@ interface BillingInvoice {
   session_status: string | null;
   bill_to_name: string | null;
   created_at: string;
+  last_payment_ref: string | null;
+  last_payment_method: string | null;
+  last_payment_at: string | null;
 }
 interface Settlement { paid_to_date: number; invoice_total: number; status: string; fully_paid: boolean; }
 interface RefundDue {
@@ -66,6 +69,13 @@ function statusLabel(s: string): string {
   if (s === 'paid') return 'Paid';
   if (s === 'void') return 'Void';
   return s.replace(/_/g, ' ');
+}
+function methodLabel(m: string | null): string {
+  if (!m) return '';
+  if (m === 'transfer') return 'Transfer';
+  if (m === 'qr') return 'QR';
+  if (m === 'cash') return 'Cash';
+  return m;
 }
 function openDoc(kind: 'invoice' | 'receipt', invoiceId: string) {
   window.open(`/billing/${kind}/${invoiceId}`, '_blank', 'noopener');
@@ -193,6 +203,7 @@ export default function BillingPayments() {
                 <th>Receipt</th><th>Stage</th><th>Status</th><th>Bill to</th>
                 <th>Venue / date</th>
                 <th className="mas-num">Total</th><th className="mas-num">Paid</th><th className="mas-num">Outstanding</th>
+                <th>Payment ref</th>
                 <th className="mas-table-actioncol">Actions</th>
               </tr>
             </thead>
@@ -215,6 +226,16 @@ export default function BillingPayments() {
                       <td className="mas-num">{money(inv.total)}</td>
                       <td className="mas-num">{money(inv.paid_to_date)}</td>
                       <td className="mas-num">{money(inv.outstanding)}</td>
+                      <td>
+                        {inv.last_payment_ref || inv.last_payment_method ? (
+                          <>
+                            {methodLabel(inv.last_payment_method)}
+                            {inv.last_payment_ref ? ` · ${inv.last_payment_ref}` : ''}
+                          </>
+                        ) : (
+                          <span className="mas-cell-sub">—</span>
+                        )}
+                      </td>
                       <td className="mas-table-actioncol">
                         {!isUnissuedBonus && (
                           <button type="button" className="mas-link" onClick={() => openDoc('invoice', inv.invoice_id)}>View</button>
@@ -239,7 +260,7 @@ export default function BillingPayments() {
 
                     {isOpen && settleable && (
                       <tr className="mas-table-detailrow">
-                        <td colSpan={9}>
+                        <td colSpan={10}>
                           <div className="mas-table-detail">
                             <div className="mas-grade-actions" style={{ flexWrap: 'wrap', alignItems: 'flex-end' }}>
                               <div className="mas-field mas-grade-field">
