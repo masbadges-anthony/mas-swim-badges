@@ -61,8 +61,8 @@ const SLOT = {
   // student name on the ruled line under "This is to certify that", left-of-centre
   name:   { xPct: 42.0, yPct: 33.5, align: 'left' as const, size: 24, weight: 'bold' as const, maxWidthMm: 140, minSize: 14 },
   // signature lines at bottom — instructor + examiner, above their labels
-  inst:   { xPct: 37.0, yPct: 89.0, align: 'left' as const, size: 12, weight: 'bold' as const },
-  exam:   { xPct: 56.0, yPct: 89.0, align: 'left' as const, size: 12, weight: 'bold' as const },
+  inst:   { xPct: 40.0, yPct: 89.0, align: 'left' as const, size: 12, weight: 'bold' as const },
+  exam:   { xPct: 52.0, yPct: 89.0, align: 'left' as const, size: 12, weight: 'bold' as const },
 };
 
 function mmX(pct: number) { return (pct / 100) * PAGE_W; }
@@ -157,8 +157,8 @@ const CSS = `
 /* Centre-anchored name — sits on the ruled line under "This is to certify that" */
 .mas-cert-slot.slot-name   { top: 33.5%; left: 42.0%; transform: translateY(-50%); }
 /* Left-anchored signee names above their labels at bottom */
-.mas-cert-slot.slot-inst   { top: 89.0%; left: 37.0%; transform: translateY(-50%); }
-.mas-cert-slot.slot-exam   { top: 89.0%; left: 56.0%; transform: translateY(-50%); }
+.mas-cert-slot.slot-inst   { top: 89.0%; left: 40.0%; transform: translateY(-50%); }
+.mas-cert-slot.slot-exam   { top: 89.0%; left: 52.0%; transform: translateY(-50%); }
 
 @media print {
   @page { size: A4 landscape; margin: 0; }
