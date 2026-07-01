@@ -1,0 +1,18 @@
+# Netlify header rules. Applied at CDN edge to all responses matching each path.
+#
+# CRITICAL: index.html must never be cached. Because Vite emits content-hashed
+# asset filenames (assets/index-a1b2c3.js), the ONLY way a client can end up on
+# a stale bundle is if the HTML pointing at those bundles is itself stale.
+# Setting Cache-Control: no-store guarantees index.html is always fetched
+# fresh — the hashed assets it references are then correct by construction.
+#
+# Hashed assets are safe to cache forever — their name changes when they change.
+
+/index.html
+  Cache-Control: no-store, must-revalidate
+
+/
+  Cache-Control: no-store, must-revalidate
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
