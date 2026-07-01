@@ -7,6 +7,16 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
 
+// This registry is wide (10 columns) — let it use more width than the default
+// 1100px page cap, keep the swimmer cell on one line, and scroll horizontally
+// on narrow screens rather than crushing columns.
+const CSS = `
+.mas-swimmer-page { max-width: 1500px !important; }
+.mas-swimmer-table { min-width: 1180px; }
+.mas-swimmer-table td, .mas-swimmer-table th { white-space: nowrap; }
+.mas-swimmer-table .mas-cell-wrap { white-space: normal; }
+`;
+
 interface SwimmerRow {
   candidate_id: string;
   full_name: string;
@@ -132,7 +142,8 @@ export default function SwimmerRegistry() {
   }, [rows, tab, query]);
 
   return (
-    <section className="mas-page">
+    <section className="mas-page mas-swimmer-page">
+      <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Registry</p>
         <h1>Swimmer registry</h1>
@@ -172,10 +183,9 @@ export default function SwimmerRegistry() {
 
       {load === 'ready' && filtered.length > 0 && (
         <div className="mas-table-wrap">
-          <table className="mas-table">
+          <table className="mas-table mas-swimmer-table">
             <thead>
               <tr>
-                <th className="mas-table-expandcol" aria-label="Expand" />
                 <th>Swimmer</th>
                 <th>Instructor</th>
                 <th>Centre</th>
@@ -184,6 +194,7 @@ export default function SwimmerRegistry() {
                 <th>Active</th>
                 <th>Claim</th>
                 <th>Parent contact</th>
+                <th>Certificates</th>
                 <th className="mas-table-actioncol">Action</th>
               </tr>
             </thead>
@@ -194,14 +205,6 @@ export default function SwimmerRegistry() {
                 return (
                   <Fragment key={r.candidate_id}>
                     <tr className={isOpen ? 'is-open' : undefined}>
-                      <td className="mas-table-expandcol">
-                        <button type="button" className="mas-table-expandbtn"
-                          onClick={() => toggleExpand(r.candidate_id)}
-                          aria-expanded={isOpen}
-                          aria-label={isOpen ? 'Collapse' : 'Expand'}>
-                          {isOpen ? '▾' : '▸'}
-                        </button>
-                      </td>
                       <td className="mas-cell-strong">
                         <span className="mas-cell-stack">
                           <span>
@@ -214,7 +217,7 @@ export default function SwimmerRegistry() {
                         </span>
                       </td>
                       <td>{r.instructor_name || '—'}</td>
-                      <td>{r.centre_name || 'Independent'}</td>
+                      <td className="mas-cell-wrap">{r.centre_name || 'Independent'}</td>
                       <td>
                         {r.highest_level ? (
                           <span className="mas-cell-stack">
@@ -242,6 +245,11 @@ export default function SwimmerRegistry() {
                             {r.parent_phone && <span className="mas-cell-sub"><a href={`tel:${r.parent_phone}`}>{r.parent_phone}</a></span>}
                           </span>
                         ) : '—'}
+                      </td>
+                      <td>
+                        <button className="mas-btn-ghost mas-btn-compact" onClick={() => toggleExpand(r.candidate_id)} aria-expanded={isOpen}>
+                          {isOpen ? 'Hide' : `View (${r.cert_count})`}
+                        </button>
                       </td>
                       <td className="mas-table-actioncol">
                         {r.status === 'anonymized' ? (
