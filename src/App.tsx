@@ -591,7 +591,16 @@ function AppLayout() {
     <div className="mas-layout">
       <style>{`
         .mas-shell-main:has(.mas-page-wide),
-        .mas-main:has(.mas-page-wide) { max-width: none !important; width: auto !important; }
+        .mas-main:has(.mas-page-wide) {
+          max-width: none !important;
+          width: auto !important;
+        }
+        .mas-page-wide {
+          max-width: none !important;
+          width: auto !important;
+          margin-left: 0 !important;
+          margin-right: 0 !important;
+        }
       `}</style>
       <Sidebar
         open={sidebarOpen}
