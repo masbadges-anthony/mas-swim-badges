@@ -51,6 +51,7 @@ function todayISO(): string {
 }
 
 const CSS = `
+.mas-page.mas-page-wide { max-width: none; width: 100%; }
 .mas-tight th, .mas-tight td { padding: 0.35rem 0.6rem; white-space: nowrap; vertical-align: middle; }
 .mas-tight tbody tr { line-height: 1.3; }
 .mas-tight .mas-link { color: var(--mas-navy, #1E2752); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
@@ -282,7 +283,7 @@ export default function AccountProvisioning() {
   }, [accounts, tab, query]);
 
   return (
-    <section className="mas-page">
+    <section className="mas-page mas-page-wide">
       <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Administration</p>
