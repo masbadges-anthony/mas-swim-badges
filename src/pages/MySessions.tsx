@@ -362,7 +362,7 @@ export default function MySessions() {
                                       <li key={ct.serial}>
                                         <strong>{ct.candidate_name}</strong> · {pretty(ct.level)}{' '}
                                         <a
-                                          href={`/verify/${ct.serial}`}
+                                          href={`/certificate/${ct.serial}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                         >
