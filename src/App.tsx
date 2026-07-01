@@ -40,7 +40,6 @@ import Certificates from './pages/Certificates';
 import CertificateIssuance from './pages/CertificateIssuance';
 import CentreManagement from './pages/CentreManagement';
 import MembershipManagement from './pages/MembershipManagement';
-import AssessmentsOversight from './pages/AssessmentsOversight';
 import AccountSettings from './pages/AccountSettings';
 import CentreAdmin from './pages/CentreAdmin';
 import ClaimCandidate from './pages/ClaimCandidate';
@@ -332,8 +331,6 @@ function Sidebar({
   const canManageCentres = hasRole('chairperson') || hasRole('board_member');
   const canManageMembers = hasRole('chairperson') || hasRole('board_member');
   const canCentreAdmin = hasRole('partner_center_admin');
-  const canOversight =
-    isGovernance || hasRole('finance_officer') || hasRole('system_admin');
   const canRegister = hasRole('instructor') || isGovernance;
   const canSchedule = hasRole('instructor') || isGovernance;
   const canGrade = hasRole('examiner') || isGovernance;
@@ -372,7 +369,7 @@ function Sidebar({
     hasRole('examiner_trainer') || hasRole('partner_center_admin') || hasRole('system_admin');
 
   const assessmentsGroup =
-    canRegister || canSchedule || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canOversight || canMySessions;
+    canRegister || canSchedule || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canMySessions;
   const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore || canBilling;
   const adminGroup =
     canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries || canProvisionAccounts;
@@ -465,7 +462,6 @@ function Sidebar({
               {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Available sessions</span><AttentionDot count={openSessions} variant="count" label="available sessions" /></NavLink>}
               {isGovernance && <NavLink to="/certificates/issue" className={navClass}><Icon name="award" /><span>Issue certificates</span></NavLink>}
               {canViewCerts && <NavLink to="/certificates" end className={navClass}><Icon name="award" /><span>Certificates</span></NavLink>}
-              {canOversight && <NavLink to="/assessments/oversight" className={navClass}><Icon name="eye" /><span>Oversight</span></NavLink>}
               {canExaminerRegistry && <NavLink to="/assessments/examiners" className={navClass}><Icon name="users" /><span>Examiner registry</span></NavLink>}
             </div>
           </details>
@@ -536,7 +532,6 @@ const PAGE_TITLES: Record<string, string> = {
   '/assessments/schedule': 'Schedule assessment',
   '/assessments/grade': 'Grading',
   '/assessments/invitations': 'Available sessions',
-  '/assessments/oversight': 'Assessments oversight',
   '/assessments/examiners': 'Examiner registry',
   '/certificates/issue': 'Issue certificates',
   '/certificates': 'Certificates',
@@ -694,7 +689,6 @@ export default function App() {
               <Route path="/my-sessions" element={<RequireRole roles={['instructor', 'master_trainer', 'examiner', 'finance_officer', 'chairperson', 'board_member', 'chief_examiner', 'system_admin']}><MySessions /></RequireRole>} />
               <Route path="/assessments/grade" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><ExaminerGrading /></RequireRole>} />
               <Route path="/assessments/invitations" element={<RequireRole roles={['examiner']}><Invitations /></RequireRole>} />
-              <Route path="/assessments/oversight" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner', 'finance_officer', 'system_admin']}><AssessmentsOversight /></RequireRole>} />
               <Route path="/assessments/examiners" element={<RequireRole roles={['chief_examiner']}><ExaminerRegistry /></RequireRole>} />
               <Route path="/certificates/issue" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><CertificateIssuance /></RequireRole>} />
               <Route path="/certificates" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>} />
