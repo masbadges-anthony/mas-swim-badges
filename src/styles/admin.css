@@ -741,3 +741,20 @@
   background: #1E2752 !important;
   color: #ffffff !important;
 }
+
+/* ---- Top-align portal content vertically -----------------------------------
+   The content column was centering its page vertically (big empty space above).
+   Pin the page to the top with a little breathing room. Covers both a flex
+   column that justifies-center and a page centered by auto margins. Uses
+   !important so it wins over theme.css, which loads last. */
+.mas-app .mas-shell-main,
+.mas-app .mas-shell-main .mas-main {
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+}
+.mas-app .mas-shell-main .mas-main > .mas-page,
+.mas-app .mas-page {
+  margin-top: 0 !important;
+  margin-bottom: auto !important;   /* if vertically centered by auto margins, pin to top */
+  padding-top: 1.5rem;              /* a bit of top margin */
+}
