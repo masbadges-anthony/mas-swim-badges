@@ -42,8 +42,10 @@ const METHODS = [
 ];
 
 const CSS = `
+.mas-page.mas-page-wide { max-width: none !important; width: auto !important; margin-left: 0 !important; margin-right: 0 !important; }
 .mas-tight th, .mas-tight td { padding: 0.35rem 0.6rem; white-space: nowrap; vertical-align: middle; }
 .mas-tight tbody tr { line-height: 1.3; }
+.mas-tight td.mas-billto-cell { white-space: normal; word-break: break-all; }
 .mas-tight .mas-link { color: var(--mas-navy, #1E2752); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
 .mas-tight .mas-link:hover { text-decoration: none; }
 .mas-tight .mas-link + .mas-link { margin-left: 0.6rem; }
@@ -172,7 +174,7 @@ export default function BillingPayments() {
   }
 
   return (
-    <section className="mas-page">
+    <section className="mas-page mas-page-wide">
       <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Billing</p>
@@ -221,7 +223,7 @@ export default function BillingPayments() {
                       <td className="mas-cell-strong">{inv.receipt_no ?? '— (estimate)'}</td>
                       <td>{stageLabel(inv.stage)}</td>
                       <td>{statusLabel(inv.status)}</td>
-                      <td>{inv.bill_to_name || '—'}</td>
+                      <td className="mas-billto-cell">{inv.bill_to_name || '—'}</td>
                       <td>{inv.venue || 'Assessment session'} · {prettyDate(inv.scheduled_on)}</td>
                       <td className="mas-num">{money(inv.total)}</td>
                       <td className="mas-num">{money(inv.paid_to_date)}</td>
