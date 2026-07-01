@@ -477,8 +477,7 @@ function Sidebar({
         <NavLink to="/dashboard" className={navClass}><Icon name="grid" /><span>Dashboard</span></NavLink>
         {canBuyStore && <NavLink to="/store" className={navClass}><Icon name="card" /><span>Store</span></NavLink>}
 
-        {assessmentsGroup && (
-          {(canRegister || canSwimmerRegistry || canClaimSlips) && (
+        {assessmentsGroup && (canRegister || canSwimmerRegistry || canClaimSlips) && (
           <details className="mas-navgroup" open>
             <summary>Candidates</summary>
             <div className="mas-navgroup-items">
@@ -487,7 +486,9 @@ function Sidebar({
               {canClaimSlips && <NavLink to="/candidates/claim-slips" className={navClass}><Icon name="printer" /><span>Claim slips</span></NavLink>}
             </div>
           </details>
-          )}
+        )}
+
+        {assessmentsGroup && (
           <details className="mas-navgroup" open>
             <summary>Assessments</summary>
             <div className="mas-navgroup-items">
