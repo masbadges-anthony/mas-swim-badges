@@ -26,6 +26,9 @@ import Verify from './pages/Verify';
 import SearchResults from './pages/SearchResults';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ClaimSignup from './pages/ClaimSignup';
+import AuthCallback from './pages/AuthCallback';
+import ParentDashboard from './pages/ParentDashboard';
 import NotFound from './pages/NotFound';
 import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
@@ -742,6 +745,11 @@ export default function App() {
 
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/claim-signup" element={<ClaimSignup />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route element={<Protected />}>
+              <Route path="/parent" element={<ParentDashboard />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
           </ErrorBoundary>
