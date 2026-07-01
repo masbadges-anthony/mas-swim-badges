@@ -29,6 +29,8 @@ import Signup from './pages/Signup';
 import ClaimSignup from './pages/ClaimSignup';
 import AuthCallback from './pages/AuthCallback';
 import ParentDashboard from './pages/ParentDashboard';
+import SetPassword from './pages/SetPassword';
+import AccountProvisioning from './pages/AccountProvisioning';
 import NotFound from './pages/NotFound';
 import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
@@ -387,6 +389,7 @@ function Sidebar({
   const canRoleRegistry = hasRole('system_admin');
   const canSwimmerRegistry = hasRole('instructor') || hasRole('partner_center_admin') || hasRole('chairperson') || hasRole('system_admin') || hasRole('finance_officer');
   const canAuditLog = hasRole('system_admin') || hasRole('chairperson');
+  const canProvisionAccounts = hasRole('system_admin') || hasRole('chairperson');
   const canExaminerRegistry = hasRole('chief_examiner');
   const canCentreBilling = hasRole('chairperson') || hasRole('board_member') || hasRole('system_admin');
   const canBuyStore = hasRole('instructor') || hasRole('partner_center_admin');
@@ -513,6 +516,7 @@ function Sidebar({
           <details className="mas-navgroup" open>
             <summary>Billing</summary>
             <div className="mas-navgroup-items">
+              {canProvisionAccounts && <NavLink to="/admin/staff" className={navClass}><Icon name="people" /><span>Staff accounts</span></NavLink>}
               {canAccounts && <NavLink to="/admin/accounts" className={navClass}><Icon name="card" /><span>Examiner payouts</span></NavLink>}
               {canCentreBilling && <NavLink to="/admin/centre-billing" className={navClass}><Icon name="building" /><span>Centre billing</span></NavLink>}
               {canManageStore && <NavLink to="/admin/store" className={navClass}><Icon name="inbox" /><span>Store orders</span></NavLink>}
@@ -577,6 +581,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/assessments/examiners': 'Examiner registry',
   '/certificates/issue': 'Issue certificates',
   '/certificates': 'Certificates',
+  '/admin/staff': 'Staff accounts',
   '/admin/accounts': 'Examiner payouts',
   '/admin/centre-billing': 'Centre billing',
   '/billing/payments': 'Invoices & Payments',
@@ -749,6 +754,8 @@ export default function App() {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route element={<Protected />}>
               <Route path="/parent" element={<ParentDashboard />} />
+              <Route path="/set-password" element={<SetPassword />} />
+              <Route path="/admin/staff" element={<RequireRole roles={['system_admin', 'chairperson']}><AccountProvisioning /></RequireRole>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
