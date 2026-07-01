@@ -1,760 +1,1783 @@
-/* Admin module styles — authenticated write surfaces (centre recognition,
-   candidate registration, and future role modules). Scoped under .mas-app to
-   match public.css; falls back to the --navy token + neutral fallbacks so it
-   works even before all brand tokens are defined. */
+/* theme.css — unified design layer, loaded LAST. Restyles both properties:
+   • Public site (www)  -> Docmed/Knuford-style: airy, trustworthy, modern sans.
+   • Portal (apps)      -> Adminator-style: light canvas, soft white cards.
+   Scoped under .mas-app; public vs portal split via .mas-site / .mas-shell-main.
+   Builds on the tokens in public.css and overrides where needed. */
 
-/* ---- Toolbar + lists (centre recognition) ---------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Nunito+Sans:wght@400;600;700&display=swap');
 
-.mas-app .mas-admin-toolbar {
+/* ---------- Tokens ---------- */
+.mas-app {
+  --mas-navy: #0a1f44;
+  --mas-navy-light: #16407e;
+  --mas-ink: #11213f;
+  --mas-muted: #64748b;
+  --mas-line: #e6ebf2;
+  --mas-paper: #f4f7fb;
+  --mas-card: #ffffff;
+  --mas-good: #16a34a;
+  --mas-bad: #dc2626;
+
+  --brand: #1d6fd6;
+  --brand-dark: #1559ad;
+  --brand-tint: #eaf2fc;
+  --amber: #f4b400;
+
+  --r: 14px;
+  --r-sm: 10px;
+  --sh-sm: 0 1px 2px rgba(16, 30, 61, .05);
+  --sh: 0 6px 20px rgba(16, 30, 61, .08);
+  --sh-lg: 0 16px 40px rgba(16, 30, 61, .12);
+
+  background: var(--mas-paper);
+  color: var(--mas-ink);
+}
+
+/* ---------- Typography ---------- */
+.mas-app h1, .mas-app h2, .mas-app h3, .mas-app h4 {
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.mas-app .mas-eyebrow {
+  font-family: 'Poppins', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+.mas-app .mas-lede { color: var(--mas-muted); font-size: 1.06rem; line-height: 1.6; }
+
+/* =====================================================================
+   PUBLIC SITE
+   ===================================================================== */
+
+/* Top nav */
+.mas-app .mas-topnav {
+  padding: 0.75rem 2rem;
+  box-shadow: var(--sh-sm);
+  border-bottom: 1px solid var(--mas-line);
+}
+.mas-app .mas-topnav-links { gap: 1.4rem; margin-left: 1rem; }
+.mas-app .mas-topnav-links a {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--mas-ink);
+  border-bottom: none;
+  padding: 0.35rem 0;
+  position: relative;
+}
+.mas-app .mas-topnav-links a:hover { color: var(--brand); }
+.mas-app .mas-topnav-links a.is-active { color: var(--brand); border-bottom: none; }
+.mas-app .mas-topnav-links a.is-active::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -2px;
+  height: 2px; background: var(--brand); border-radius: 2px;
+}
+.mas-app .mas-login-btn {
+  background: var(--brand);
+  border-radius: 999px;
+  padding: 0.6rem 1.4rem;
+  box-shadow: 0 4px 12px rgba(29, 111, 214, .28);
+  font-family: 'Poppins', sans-serif;
+}
+.mas-app .mas-login-btn:hover { background: var(--brand-dark); }
+
+/* Hero */
+.mas-app .mas-hero {
+  background:
+    radial-gradient(1200px 400px at 85% -10%, rgba(244, 180, 0, .18), transparent 60%),
+    linear-gradient(135deg, var(--mas-navy), var(--mas-navy-light));
+  border-radius: 24px;
+  padding: 3.5rem 2.75rem;
+  margin-bottom: 2.5rem;
+  box-shadow: var(--sh-lg);
+}
+.mas-app .mas-hero .mas-eyebrow { color: #8fc0ff; }
+.mas-app .mas-hero-title { font-size: clamp(2.4rem, 5.5vw, 3.6rem); color: #fff; max-width: 18ch; }
+.mas-app .mas-hero .mas-lede { color: #cfe0f7; font-size: 1.15rem; max-width: 56ch; }
+.mas-app .mas-hero-cta .mas-btn {
+  border-radius: 999px;
+  padding: 0.7rem 1.6rem;
+  font-family: 'Poppins', sans-serif;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .18);
+}
+
+/* Pathway */
+.mas-app .mas-pathway { border-radius: var(--r); box-shadow: var(--sh-sm); padding: 1.25rem 1.5rem; }
+.mas-app .mas-path-step { font-family: 'Poppins', sans-serif; font-size: 0.9rem; }
+.mas-app .mas-path-dot { width: 14px; height: 14px; box-shadow: 0 0 0 4px rgba(0, 0, 0, .03); }
+
+/* Audience / feature cards */
+.mas-app .mas-entry {
+  border-radius: var(--r);
+  border: 1px solid var(--mas-line);
+  box-shadow: var(--sh-sm);
+  padding: 1.75rem;
+  position: relative;
+  overflow: hidden;
+}
+.mas-app .mas-entry::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--brand), var(--amber));
+  opacity: 0; transition: opacity .15s ease;
+}
+.mas-app .mas-entry:hover { transform: translateY(-4px); box-shadow: var(--sh); }
+.mas-app .mas-entry:hover::before { opacity: 1; }
+.mas-app .mas-entry h2 { font-size: 1.35rem; }
+.mas-app .mas-entry-go { color: var(--brand); font-family: 'Poppins', sans-serif; }
+
+/* Verify strip */
+.mas-app .mas-verify-strip {
+  border-radius: var(--r);
+  border-left: 5px solid var(--brand);
+  box-shadow: var(--sh-sm);
+}
+.mas-app .mas-verify-strip:hover { box-shadow: var(--sh); }
+.mas-app .mas-verify-strip .mas-entry-go { color: var(--brand); }
+
+/* Trust bar */
+.mas-app .mas-trustbar li {
+  background: #fff;
+  border: 1px solid var(--mas-line);
+  box-shadow: var(--sh-sm);
+  border-radius: var(--r);
+  padding: 1.25rem 1rem;
+}
+.mas-app .mas-trustbar strong { font-family: 'Poppins', sans-serif; color: var(--mas-navy); }
+
+/* Public page headings */
+.mas-app .mas-site .mas-page-head h1 { color: var(--mas-navy); font-size: clamp(2rem, 4.5vw, 2.7rem); }
+
+/* Directory + verify cards (public surfaces) */
+.mas-app .mas-card { border-radius: var(--r); box-shadow: var(--sh-sm); border: 1px solid var(--mas-line); }
+.mas-app .mas-card:hover { box-shadow: var(--sh); }
+.mas-app .mas-card-title { font-family: 'Poppins', sans-serif; }
+.mas-app .mas-card-state { background: var(--brand-tint); color: var(--brand-dark); }
+.mas-app .mas-result { border-radius: var(--r); box-shadow: var(--sh); }
+
+/* Footer */
+.mas-app .mas-site-footer { background: var(--mas-navy); }
+
+/* Shared buttons (public) */
+.mas-app .mas-btn { border-radius: 999px; font-family: 'Poppins', sans-serif; background: var(--brand); }
+.mas-app .mas-btn:hover { background: var(--brand-dark); }
+
+/* =====================================================================
+   PORTAL (Adminator-style)
+   ===================================================================== */
+
+/* Canvas */
+.mas-app .mas-shell-main { background: var(--mas-paper); }
+.mas-app .mas-shell-main .mas-main { padding: 0; }
+
+/* Top app-bar */
+.mas-app .mas-topbar-app {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin: 0 0 1rem;
-}
-
-.mas-app .mas-admin-count {
-  font-size: 0.9rem;
-  color: var(--muted, #5b6472);
-}
-
-.mas-app .mas-admin-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.mas-app .mas-admin-row {
-  display: flex;
-  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 1.1rem;
-  background: var(--surface, #ffffff);
-  border: 1px solid var(--border, #e3e7ee);
-  border-radius: 12px;
-}
-
-.mas-app .mas-admin-main {
-  min-width: 0;
-}
-
-.mas-app .mas-admin-name {
-  margin: 0 0 0.35rem;
-  font-family: 'Barlow Condensed', system-ui, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  font-size: 1.25rem;
-  color: var(--navy, #0b1f3a);
-}
-
-.mas-app .mas-admin-meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin: 0 0 0.4rem;
-}
-
-.mas-app .mas-pill {
-  display: inline-block;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  background: var(--navy, #0b1f3a);
-  color: #ffffff;
-  font-size: 0.78rem;
-  letter-spacing: 0.02em;
-}
-
-.mas-app .mas-admin-sub,
-.mas-app .mas-admin-line {
-  font-size: 0.9rem;
-  color: var(--muted, #5b6472);
-  margin: 0;
-}
-
-.mas-app .mas-admin-line {
-  margin: 0.15rem 0;
-}
-
-.mas-app .mas-admin-contact {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  font-size: 0.9rem;
-  margin-top: 0.3rem;
-}
-
-.mas-app .mas-admin-contact a {
-  color: var(--navy, #0b1f3a);
-}
-
-.mas-app .mas-admin-action {
-  flex: 0 0 auto;
-}
-
-.mas-app .mas-admin-rowerror {
-  margin-top: 0.5rem;
-}
-
-/* ---- Buttons --------------------------------------------------------------- */
-
-.mas-app .mas-btn-primary {
-  font: inherit;
-  cursor: pointer;
-  padding: 0.55rem 1.1rem;
-  border: 0;
-  border-radius: 8px;
-  background: var(--navy, #0b1f3a);
-  color: #ffffff;
-  font-weight: 600;
-}
-.mas-app .mas-btn-primary:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.mas-app .mas-btn-ghost {
-  font: inherit;
-  cursor: pointer;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid var(--border, #e3e7ee);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--navy, #0b1f3a);
-}
-.mas-app .mas-btn-ghost:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.mas-app .mas-status-good {
-  color: var(--ok, #1a7f4b);
-}
-
-/* ---- Forms (candidate registration) ---------------------------------------- */
-
-.mas-app .mas-form {
-  display: grid;
-  gap: 1rem;
-  max-width: 32rem;
-  padding: 1.25rem;
-  background: var(--surface, #ffffff);
-  border: 1px solid var(--border, #e3e7ee);
-  border-radius: 12px;
-}
-
-.mas-app .mas-field {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.mas-app .mas-input {
-  font: inherit;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid var(--border, #e3e7ee);
-  border-radius: 8px;
-  background: #ffffff;
-  color: inherit;
-}
-.mas-app .mas-input:focus {
-  outline: 2px solid var(--navy, #0b1f3a);
-  outline-offset: 1px;
-}
-
-.mas-app .mas-field-note {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--muted, #5b6472);
-}
-
-.mas-app .mas-checkbox-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  font-size: 0.92rem;
-  line-height: 1.4;
-  cursor: pointer;
-}
-.mas-app .mas-checkbox-row input {
-  margin-top: 0.2rem;
-  flex: 0 0 auto;
-}
-
-.mas-app .mas-form-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.mas-app .mas-section-head {
-  margin-top: 2rem;
-}
-
-@media (max-width: 560px) {
-  .mas-app .mas-admin-row {
-    flex-direction: column;
-  }
-  .mas-app .mas-admin-action {
-    align-self: stretch;
-  }
-  .mas-app .mas-btn-primary {
-    width: 100%;
-  }
-  .mas-app .mas-form-actions .mas-btn-primary {
-    width: 100%;
-  }
-}
-
-/* ---- Dense data table ------------------------------------------------------ */
-/* Spreadsheet-style table for high-row-count screens (e.g. examiner grading at
-   50+ candidates). Scoped under .mas-app like the rest of the admin module. */
-
-.mas-app .mas-table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--border, #e3e7ee);
-  border-radius: 12px;
-  background: var(--surface, #ffffff);
-}
-
-.mas-app .mas-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.mas-app .mas-table th,
-.mas-app .mas-table td {
-  padding: 0.4rem 0.7rem;
-  text-align: left;
-  vertical-align: middle;
-  border-bottom: 1px solid var(--border, #e3e7ee);
-}
-
-.mas-app .mas-table thead th {
+  padding: 0.85rem 1.75rem;
+  background: #fff;
+  border-bottom: 1px solid var(--mas-line);
+  box-shadow: var(--sh-sm);
   position: sticky;
   top: 0;
-  z-index: 1;
-  background: var(--navy, #1e2752);
-  color: #ffffff;
-  font-family: 'Barlow Condensed', system-ui, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  font-size: 0.82rem;
-  font-weight: 600;
-  white-space: nowrap;
+  z-index: 15;
 }
+.mas-app .mas-topbar-title { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--mas-navy); font-size: 1.1rem; }
+.mas-app .mas-topbar-right { display: flex; align-items: center; gap: 1rem; }
+.mas-app .mas-topbar-user { color: var(--mas-muted); font-size: 0.88rem; }
+.mas-app .mas-topbar-link { color: var(--brand); text-decoration: none; font-weight: 600; font-size: 0.88rem; }
+.mas-app .mas-topbar-link:hover { text-decoration: underline; }
 
-.mas-app .mas-table tbody tr:last-child td {
-  border-bottom: 0;
-}
+/* Sidebar refinements */
+.mas-app .mas-sidebar { box-shadow: var(--sh-sm); }
+.mas-app .mas-sidenav a { font-family: 'Poppins', sans-serif; font-size: 0.88rem; font-weight: 500; }
+.mas-app .mas-sidenav a.is-active { background: var(--brand-tint); color: var(--brand-dark); box-shadow: inset 3px 0 0 var(--brand); }
+.mas-app .mas-sidenav a:hover { background: #f1f5fb; color: var(--brand-dark); }
+.mas-app .mas-navgroup > summary { color: var(--mas-muted); }
+.mas-app .mas-navgroup > summary:hover { color: var(--brand-dark); }
 
-.mas-app .mas-table-expandcol {
-  width: 2.2rem;
-  text-align: center;
-}
-.mas-app .mas-table-actioncol {
-  text-align: right;
-  white-space: nowrap;
-}
+/* Portal page = padded canvas; panels become cards */
+.mas-app .mas-shell-main .mas-page { max-width: 1100px; padding: 1.75rem 1.75rem 3rem; }
+.mas-app .mas-shell-main .mas-page-head { margin-bottom: 1.5rem; }
+.mas-app .mas-shell-main .mas-page-head h1 { color: var(--mas-navy); font-size: 1.7rem; }
+.mas-app .mas-shell-main .mas-section-head { margin-top: 2rem; }
 
-.mas-app .mas-table-expandbtn {
-  font: inherit;
-  cursor: pointer;
-  border: 0;
-  background: transparent;
-  color: var(--navy, #1e2752);
-  padding: 0.1rem 0.3rem;
-  line-height: 1;
-}
-
-.mas-app .mas-select-compact {
-  padding: 0.3rem 0.5rem;
-  font-size: 0.85rem;
-}
-.mas-app .mas-btn-compact {
-  padding: 0.3rem 0.7rem;
-  font-size: 0.85rem;
-}
-
-/* Cell helpers shared across the dense list screens (billing, oversight,
-   available sessions). Keep cells terse — stack secondary lines beneath. */
-.mas-app .mas-table .mas-cell-strong {
-  font-weight: 600;
-  color: var(--navy, #1e2752);
-}
-.mas-app .mas-table .mas-cell-stack {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.3;
-}
-.mas-app .mas-table .mas-cell-sub {
-  color: var(--muted, #5b6472);
-  font-size: 0.82rem;
-}
-
-/* Right-align numeric money/count columns (mirrors theme.css .mas-num, kept
-   here so the dense admin tables align even where theme.css isn't the winner). */
-.mas-app .mas-table .mas-num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-/* Expandable detail row — re-houses each row's form/controls beneath it. */
-.mas-app .mas-table tbody tr.is-open > td {
-  border-bottom-color: transparent;
-}
-.mas-app .mas-table-detailrow > td {
-  padding: 0;
-  background: var(--paper, #f5f8fc);
-}
-.mas-app .mas-table-detail {
-  padding: 0.85rem 1rem 1rem;
-}
-.mas-app .mas-table-detail .mas-admin-list {
-  margin-top: 0;
-}
-.mas-app .mas-table-errorrow > td {
-  padding-top: 0;
-}
-
-/* ---- Checkpoint bar (reusable session-progress strip) ---------------------- */
-/* A compact horizontal run of milestones. Each step is filled green when done
-   and muted grey when pending; a connector line joins adjacent steps. */
-.mas-app .mas-checkpoints {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 0;
-}
-.mas-app .mas-checkpoint {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1 1 0;
-  min-width: 3.2rem;
-  position: relative;
-  text-align: center;
-}
-/* Connector between dots — drawn behind, from each step back to the previous. */
-.mas-app .mas-checkpoint::before {
-  content: '';
-  position: absolute;
-  top: 0.6rem;
-  right: 50%;
-  left: -50%;
-  height: 2px;
-  background: var(--border, #e3e7ee);
-}
-.mas-app .mas-checkpoint:first-child::before {
-  display: none;
-}
-.mas-app .mas-checkpoint.is-done::before {
-  background: var(--ok, #1a7f4b);
-}
-.mas-app .mas-checkpoint-dot {
-  position: relative;
-  z-index: 1;
-  width: 1.2rem;
-  height: 1.2rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1;
-  background: var(--paper, #f5f8fc);
-  border: 2px solid var(--border, #d4dae6);
-  color: var(--muted, #5b6472);
-}
-.mas-app .mas-checkpoint.is-done .mas-checkpoint-dot {
-  background: var(--ok, #1a7f4b);
-  border-color: var(--ok, #1a7f4b);
-  color: #ffffff;
-}
-.mas-app .mas-checkpoint-label {
-  margin-top: 0.3rem;
-  font-size: 0.68rem;
-  line-height: 1.15;
-  color: var(--muted, #5b6472);
-}
-.mas-app .mas-checkpoint.is-done .mas-checkpoint-label {
-  color: var(--navy, #1e2752);
-}
-
-/* Session detail row: examiner contact + cancel action side by side. */
-.mas-app .mas-session-detail {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-}
-.mas-app .mas-detail-heading {
-  margin: 0 0 0.4rem;
-  font-family: 'Barlow Condensed', system-ui, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  font-size: 0.85rem;
-  color: var(--navy, #1e2752);
-}
-.mas-app .mas-detail-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  line-height: 1.5;
-}
-
-/* ---- Grading (examiner) ---------------------------------------------------- */
-
-.mas-app .mas-grade-session {
-  margin-bottom: 1.5rem;
-}
-
-.mas-app .mas-grade-session-head {
-  margin-bottom: 0.5rem;
-}
-
-.mas-app .mas-grade-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.mas-app .mas-outcome {
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-.mas-app .mas-outcome.is-pass {
-  color: var(--ok, #1a7f4b);
-}
-.mas-app .mas-outcome.is-refer {
-  color: var(--warn, #b4690e);
-}
-
-/* Function-based grading: candidate stacks its controls full-width. */
-.mas-app .mas-grade-candidate {
-  align-items: stretch;
-}
-.mas-app .mas-grade-candidate .mas-admin-main {
-  width: 100%;
-}
-.mas-app .mas-grade-field {
-  margin-top: 0.75rem;
-  max-width: 18rem;
-}
-
-.mas-app .mas-grade-levels {
-  display: grid;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-.mas-app .mas-grade-level {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--border, #e3e7ee);
-  border-radius: 8px;
-  background: var(--surface, #ffffff);
-}
-.mas-app .mas-grade-level-name {
-  font-weight: 600;
-  color: var(--navy, #1e2752);
-}
-.mas-app .mas-grade-level .mas-grade-actions {
-  margin-left: auto;
-}
-
-.mas-app .mas-grade-submit {
-  margin-top: 0.5rem;
-}
-
-/* Dense candidate rows + their expandable detail panel. */
-.mas-app .mas-grade-namecell {
-  font-weight: 600;
-  color: var(--navy, #1e2752);
-  white-space: nowrap;
-}
-.mas-app .mas-grade-row.is-open > td {
-  border-bottom-color: transparent;
-}
-
-/* Collapsed-row outcome summary: tight pills, one per graded level. */
-.mas-app .mas-grade-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-.mas-app .mas-grade-summary-empty {
-  color: var(--muted, #5b6472);
-}
-.mas-app .mas-summary-pill {
-  display: inline-block;
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  font-size: 0.74rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.mas-app .mas-summary-pill.is-pass {
-  background: rgba(26, 127, 75, 0.12);
-  color: var(--ok, #1a7f4b);
-}
-.mas-app .mas-summary-pill.is-refer {
-  background: rgba(180, 105, 14, 0.12);
-  color: var(--warn, #b4690e);
-}
-
-/* The slide-down grading panel reuses the chain-reveal level controls. */
-.mas-app .mas-grade-detail-row > td {
-  padding: 0;
-  background: var(--paper, #f5f8fc);
-}
-.mas-app .mas-grade-detail {
-  padding: 0.75rem 1rem 1rem 2.9rem;
-}
-.mas-app .mas-grade-detail .mas-grade-levels {
-  margin-top: 0;
-}
-
-@media (max-width: 560px) {
-  .mas-app .mas-grade-actions {
-    align-self: stretch;
-  }
-  .mas-app .mas-grade-actions .mas-btn-primary,
-  .mas-app .mas-grade-actions .mas-btn-ghost {
-    flex: 1 1 0;
-  }
-  .mas-app .mas-grade-field {
-    max-width: none;
-  }
-  .mas-app .mas-grade-level .mas-grade-actions {
-    margin-left: 0;
-    width: 100%;
-  }
-}
-
-/* ---- Confirm modal --------------------------------------------------------- */
-
-.mas-app .mas-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgba(11, 31, 58, 0.45);
-}
-
-.mas-app .mas-modal {
-  width: 100%;
-  max-width: 28rem;
+/* Forms as cards */
+.mas-app .mas-shell-main .mas-form {
+  background: var(--mas-card);
+  border: 1px solid var(--mas-line);
+  border-radius: var(--r);
+  box-shadow: var(--sh-sm);
   padding: 1.5rem;
-  background: var(--surface, #ffffff);
-  border: 1px solid var(--border, #e3e7ee);
-  border-radius: 12px;
-  box-shadow: 0 18px 48px rgba(11, 31, 58, 0.25);
+}
+.mas-app .mas-input, .mas-app .mas-select {
+  border-radius: var(--r-sm);
+  border: 1px solid var(--mas-line);
+  padding: 0.6rem 0.8rem;
+}
+.mas-app .mas-input:focus-visible, .mas-app .mas-select:focus-visible {
+  outline: 3px solid var(--brand-tint); border-color: var(--brand);
+}
+.mas-app .mas-field-label { color: var(--mas-ink); font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.9rem; }
+
+/* Buttons (portal) */
+.mas-app .mas-btn-primary {
+  background: var(--brand); color: #fff; border: none;
+  border-radius: var(--r-sm); padding: 0.55rem 1.1rem;
+  font-family: 'Poppins', sans-serif; font-weight: 600; cursor: pointer;
+  box-shadow: 0 3px 10px rgba(29, 111, 214, .22);
+}
+.mas-app .mas-btn-primary:hover { background: var(--brand-dark); }
+.mas-app .mas-btn-primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.mas-app .mas-btn-ghost {
+  background: #fff; color: var(--mas-ink);
+  border: 1px solid var(--mas-line); border-radius: var(--r-sm);
+  padding: 0.5rem 1rem; font-family: 'Poppins', sans-serif; font-weight: 600; cursor: pointer;
+}
+.mas-app .mas-btn-ghost:hover { border-color: var(--brand); color: var(--brand-dark); background: var(--brand-tint); }
+
+/* Lists become card rows */
+.mas-app .mas-shell-main .mas-admin-list { display: flex; flex-direction: column; gap: 0.6rem; padding: 0; margin: 0; list-style: none; }
+.mas-app .mas-shell-main .mas-admin-row {
+  background: var(--mas-card);
+  border: 1px solid var(--mas-line);
+  border-radius: var(--r);
+  box-shadow: var(--sh-sm);
+  padding: 1rem 1.15rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.mas-app .mas-shell-main .mas-admin-name { font-family: 'Poppins', sans-serif; font-size: 1.02rem; color: var(--mas-navy); }
+.mas-app .mas-admin-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+.mas-app .mas-admin-count { color: var(--mas-muted); font-size: 0.85rem; }
+
+/* Badges */
+.mas-app .mas-pill {
+  background: var(--brand-tint); color: var(--brand-dark);
+  border-radius: 999px; padding: 0.2rem 0.7rem; font-size: 0.74rem; font-weight: 700;
+  font-family: 'Poppins', sans-serif; text-transform: none; letter-spacing: 0;
+}
+.mas-app .mas-outcome { border-radius: 999px; padding: 0.2rem 0.7rem; font-size: 0.74rem; font-weight: 700; }
+.mas-app .mas-outcome.is-pass { background: #e7f6ed; color: var(--mas-good); }
+.mas-app .mas-outcome.is-refer { background: #fdeaea; color: var(--mas-bad); }
+.mas-app .mas-status-good { color: var(--mas-good); }
+.mas-app .mas-status-bad { color: var(--mas-bad); }
+
+/* ---------- Dashboard ---------- */
+.mas-app .mas-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.mas-app .mas-dash-card {
+  display: block; text-decoration: none; color: inherit;
+  background: var(--mas-card); border: 1px solid var(--mas-line);
+  border-radius: var(--r); box-shadow: var(--sh-sm);
+  padding: 1.25rem 1.25rem 1.1rem; position: relative; overflow: hidden;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.mas-app .mas-dash-card:hover { transform: translateY(-3px); box-shadow: var(--sh); }
+.mas-app .mas-dash-accent { display: block; width: 38px; height: 38px; border-radius: 10px; margin-bottom: 0.75rem; }
+.mas-app .mas-dash-card h3 { font-family: 'Poppins', sans-serif; font-size: 1.02rem; color: var(--mas-navy); margin-bottom: 0.25rem; }
+.mas-app .mas-dash-card p { color: var(--mas-muted); font-size: 0.88rem; line-height: 1.45; margin: 0; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 820px) {
+  .mas-app .mas-topnav { padding: 0.75rem 1rem; }
+  .mas-app .mas-hero { padding: 2.25rem 1.5rem; }
+  .mas-app .mas-topbar-app { padding: 0.75rem 1rem; }
+  .mas-app .mas-topbar-user { display: none; }
 }
 
-.mas-app .mas-modal-title {
-  margin: 0 0 0.75rem;
-  font-family: 'Barlow Condensed', system-ui, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  font-size: 1.4rem;
-  color: var(--navy, #1E2752);
-}
+/* =====================================================================
+   ADMINATOR REFINEMENTS (portal)
+   ===================================================================== */
 
-.mas-app .mas-modal-body {
-  margin: 0 0 1.25rem;
-  line-height: 1.5;
-}
+/* Cooler canvas */
+.mas-app { --mas-paper: #eef1f6; }
 
-.mas-app .mas-modal-actions {
+/* Sidebar items with leading icons */
+.mas-app .mas-sidenav a {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.6rem;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.46rem 0.7rem;
+  border-radius: 9px;
 }
-
-/* ---- Issuance -------------------------------------------------------------- */
-
-.mas-app .mas-issued {
-  display: grid;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
-}
-
-.mas-app .mas-serial {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+.mas-app .mas-sidenav a svg { flex: 0 0 auto; color: #94a3b8; }
+.mas-app .mas-sidenav a:hover { background: #eef2f8; color: var(--mas-navy); }
+.mas-app .mas-sidenav a:hover svg { color: var(--brand); }
+.mas-app .mas-sidenav a.is-active {
+  background: #e9eef6;
+  color: var(--mas-navy);
+  box-shadow: none;
   font-weight: 600;
-  letter-spacing: 0.01em;
+}
+.mas-app .mas-sidenav a.is-active svg { color: var(--brand); }
+
+/* Section labels */
+.mas-app .mas-navgroup { margin-top: 0.9rem; }
+.mas-app .mas-navgroup > summary {
+  color: #9aa4b8;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  padding: 0.35rem 0.7rem;
+}
+.mas-app .mas-navgroup-items { gap: 1px; }
+
+/* Profile card at sidebar foot */
+.mas-app .mas-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--mas-line);
+  text-decoration: none;
+}
+.mas-app .mas-avatar {
+  width: 38px; height: 38px; border-radius: 11px;
+  background: var(--brand); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.82rem; flex: 0 0 auto;
+}
+.mas-app .mas-avatar-sm { width: 34px; height: 34px; border-radius: 50%; font-size: 0.78rem; }
+.mas-app .mas-profile-meta { display: flex; flex-direction: column; min-width: 0; }
+.mas-app .mas-profile-name {
+  font-size: 0.8rem; font-weight: 600; color: var(--mas-ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;
+}
+.mas-app .mas-profile-role { font-size: 0.72rem; color: var(--mas-muted); }
+
+/* Top app-bar: breadcrumb + avatar */
+.mas-app .mas-breadcrumb { display: flex; align-items: center; gap: 0.5rem; }
+.mas-app .mas-crumb-muted { color: var(--mas-muted); font-size: 0.9rem; }
+.mas-app .mas-crumb-sep { color: #cbd5e1; }
+.mas-app .mas-crumb-here { font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--mas-navy); font-size: 1.05rem; }
+.mas-app .mas-topbar-right .mas-signout { padding: 0.4rem 0.9rem; }
+
+/* Top app-bar on mobile: stop the breadcrumb / "View site" / "Sign out" cluster
+   from colliding in one horizontal strip. Desktop layout is untouched. */
+@media (max-width: 600px) {
+  /* Left cluster (hamburger + breadcrumb) keeps the hamburger far left and lets
+     the breadcrumb shrink. Drop the "Portal ›" prefix — the active page is shown
+     in the sidebar too — and truncate a long page name rather than overflow. */
+  .mas-app .mas-topbar-app { gap: 0.75rem; }
+  .mas-app .mas-breadcrumb { min-width: 0; }
+  .mas-app .mas-crumb-muted,
+  .mas-app .mas-crumb-sep { display: none; }
+  .mas-app .mas-crumb-here {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1rem;
+  }
+
+  /* Right cluster keeps its natural width (never shrinks under the breadcrumb).
+     "View site" is a low-frequency action — hide it on mobile (still reachable by
+     URL); "Sign out" stays as a compact text button; the avatar stays far right. */
+  .mas-app .mas-topbar-right { flex: 0 0 auto; gap: 0.6rem; }
+  .mas-app .mas-topbar-link { display: none; }
+  .mas-app .mas-topbar-right .mas-signout { padding: 0.35rem 0.6rem; }
 }
 
-/* ---- Scheduling roster ----------------------------------------------------- */
+/* Welcome header + stat cards */
+.mas-app .mas-shell-main .mas-dash-head h1 { font-size: clamp(1.8rem, 3vw, 2.3rem); }
+.mas-app .mas-welcome-name { color: var(--brand); }
 
-.mas-app .mas-roster {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.mas-app .mas-statgrid {
   display: grid;
-  gap: 0.4rem;
-  max-height: 22rem;
-  overflow-y: auto;
-  border: 1px solid var(--border, #e3e7ee);
-  border-radius: 8px;
-  padding: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 1.75rem;
+}
+.mas-app .mas-stat {
+  background: #fff;
+  border: 1px solid var(--mas-line);
+  border-radius: var(--r);
+  box-shadow: var(--sh-sm);
+  padding: 1.1rem 1.25rem;
+}
+.mas-app .mas-stat-top { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
+.mas-app .mas-stat-icon {
+  width: 38px; height: 38px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+}
+.mas-app .mas-stat-label { color: var(--mas-muted); font-size: 0.85rem; font-weight: 600; }
+.mas-app .mas-stat-value {
+  font-family: 'Poppins', sans-serif; font-weight: 700;
+  font-size: 1.95rem; color: var(--mas-navy); line-height: 1;
 }
 
-.mas-app .mas-roster-row {
+/* =====================================================================
+   COMPONENT LIBRARY (Adminator parity) — forms, buttons, alerts,
+   badges, progress, spinners, tables, avatar groups.
+   ===================================================================== */
+
+/* ---------- Forms ---------- */
+.mas-app .mas-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.25rem; }
+.mas-app .mas-form-grid .mas-col-2 { grid-column: 1 / -1; }
+.mas-app .mas-req { color: var(--mas-bad); margin-left: 2px; }
+.mas-app .mas-field-note { color: var(--mas-muted); font-size: 0.8rem; margin-top: 0.35rem; }
+
+.mas-app .mas-input-icon { position: relative; display: block; }
+.mas-app .mas-input-icon > svg {
+  position: absolute; left: 0.78rem; top: 50%; transform: translateY(-50%);
+  width: 18px; height: 18px; color: #94a3b8; pointer-events: none;
+}
+.mas-app .mas-input-icon .mas-input { padding-left: 2.45rem; width: 100%; }
+
+.mas-app .mas-input-group { display: flex; align-items: stretch; }
+.mas-app .mas-input-prefix {
+  display: flex; align-items: center; padding: 0 0.85rem;
+  background: #f1f5f9; border: 1px solid var(--mas-line); border-right: none;
+  border-radius: var(--r-sm) 0 0 var(--r-sm); color: var(--mas-muted);
+  font-family: ui-monospace, monospace; font-size: 0.82rem; white-space: nowrap;
+}
+.mas-app .mas-input-group .mas-input { border-radius: 0 var(--r-sm) var(--r-sm) 0; flex: 1; }
+
+.mas-app .mas-switch { display: inline-flex; align-items: center; gap: 0.65rem; cursor: pointer; }
+.mas-app .mas-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.mas-app .mas-switch-slider {
+  width: 40px; height: 22px; border-radius: 999px; background: #cbd5e1;
+  position: relative; transition: background .15s ease; flex: 0 0 auto;
+}
+.mas-app .mas-switch-slider::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+  border-radius: 50%; background: #fff; transition: transform .15s ease; box-shadow: 0 1px 2px rgba(0,0,0,.25);
+}
+.mas-app .mas-switch input:checked + .mas-switch-slider { background: var(--brand); }
+.mas-app .mas-switch input:checked + .mas-switch-slider::after { transform: translateX(18px); }
+.mas-app .mas-switch input:focus-visible + .mas-switch-slider { outline: 3px solid var(--brand-tint); }
+.mas-app .mas-switch-text { font-size: 0.9rem; color: var(--mas-ink); }
+
+.mas-app .mas-section-count { color: #cbd5e1; font-family: ui-monospace, monospace; font-size: 0.8rem; margin-left: 0.5rem; }
+
+/* ---------- Buttons (full set) ---------- */
+.mas-app [class*="mas-btn-"] {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.9rem;
+  border-radius: var(--r-sm); padding: 0.55rem 1.1rem; border: 1px solid transparent;
+  cursor: pointer; line-height: 1.2; text-decoration: none; transition: filter .12s ease, background .12s ease;
+}
+.mas-app [class*="mas-btn-"]:disabled { opacity: .55; cursor: not-allowed; }
+.mas-app .mas-btn-secondary { background: #fff; color: var(--mas-ink); border-color: var(--mas-line); }
+.mas-app .mas-btn-secondary:hover { background: #f8fafc; }
+.mas-app .mas-btn-success { background: #16a34a; color: #fff; box-shadow: 0 3px 10px rgba(22,163,74,.22); }
+.mas-app .mas-btn-warning { background: #f59e0b; color: #fff; box-shadow: 0 3px 10px rgba(245,158,11,.22); }
+.mas-app .mas-btn-danger  { background: #dc2626; color: #fff; box-shadow: 0 3px 10px rgba(220,38,38,.22); }
+.mas-app .mas-btn-info    { background: #0ea5e9; color: #fff; box-shadow: 0 3px 10px rgba(14,165,233,.22); }
+.mas-app .mas-btn-success:hover, .mas-app .mas-btn-warning:hover,
+.mas-app .mas-btn-danger:hover,  .mas-app .mas-btn-info:hover { filter: brightness(.94); }
+
+/* soft / tonal */
+.mas-app .mas-btn-soft { background: var(--brand-tint); color: var(--brand-dark); }
+.mas-app .mas-btn-soft.is-success { background: #e7f6ed; color: #15803d; }
+.mas-app .mas-btn-soft.is-warning { background: #fdf2dd; color: #b45309; }
+.mas-app .mas-btn-soft.is-danger  { background: #fdeaea; color: #b91c1c; }
+.mas-app .mas-btn-soft.is-info    { background: #e6f6fe; color: #0369a1; }
+.mas-app .mas-btn-soft:hover { filter: brightness(.97); }
+
+/* outline */
+.mas-app .mas-btn-outline { background: #fff; color: var(--brand-dark); border-color: var(--brand); }
+.mas-app .mas-btn-outline.is-success { color: #15803d; border-color: #16a34a; }
+.mas-app .mas-btn-outline.is-danger  { color: #b91c1c; border-color: #dc2626; }
+.mas-app .mas-btn-outline.is-ghost   { color: var(--mas-ink); border-color: var(--mas-line); }
+.mas-app .mas-btn-outline:hover { background: var(--brand-tint); }
+
+/* sizes */
+.mas-app .mas-btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+.mas-app .mas-btn-lg { padding: 0.7rem 1.5rem; font-size: 1rem; }
+
+/* segmented control */
+.mas-app .mas-segmented { display: inline-flex; background: #eef2f7; border-radius: var(--r-sm); padding: 3px; gap: 2px; }
+.mas-app .mas-segmented button {
+  border: none; background: transparent; cursor: pointer; padding: 0.4rem 0.9rem;
+  border-radius: 8px; font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.85rem; color: var(--mas-muted);
+}
+.mas-app .mas-segmented button.is-active { background: #fff; color: var(--mas-navy); box-shadow: var(--sh-sm); }
+
+/* ---------- Alerts ---------- */
+.mas-app .mas-alert {
+  display: flex; align-items: flex-start; gap: 0.75rem;
+  padding: 0.95rem 1.1rem; border-radius: var(--r); margin-bottom: 0.85rem;
+  border-left: 4px solid var(--brand); background: var(--brand-tint);
+}
+.mas-app .mas-alert > svg { flex: 0 0 auto; width: 20px; height: 20px; margin-top: 1px; color: var(--brand); }
+.mas-app .mas-alert-body { flex: 1; min-width: 0; }
+.mas-app .mas-alert-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.92rem; color: var(--mas-navy); }
+.mas-app .mas-alert-text { color: #475569; font-size: 0.88rem; margin-top: 1px; }
+.mas-app .mas-alert-x { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.1rem; line-height: 1; }
+.mas-app .mas-alert.is-success { background: #ecfdf3; border-color: #16a34a; } .mas-app .mas-alert.is-success > svg { color: #16a34a; }
+.mas-app .mas-alert.is-warning { background: #fffbeb; border-color: #f59e0b; } .mas-app .mas-alert.is-warning > svg { color: #d97706; }
+.mas-app .mas-alert.is-danger  { background: #fef2f2; border-color: #dc2626; } .mas-app .mas-alert.is-danger  > svg { color: #dc2626; }
+
+/* ---------- Badges ---------- */
+.mas-app .mas-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.74rem; font-weight: 700;
+  font-family: 'Poppins', sans-serif; background: #eef2f7; color: #475569;
+}
+.mas-app .mas-badge.is-primary { background: var(--brand-tint); color: var(--brand-dark); }
+.mas-app .mas-badge.is-success { background: #e7f6ed; color: #15803d; }
+.mas-app .mas-badge.is-warning { background: #fdf2dd; color: #b45309; }
+.mas-app .mas-badge.is-danger  { background: #fdeaea; color: #b91c1c; }
+.mas-app .mas-badge.is-info    { background: #e6f6fe; color: #0369a1; }
+.mas-app .mas-badge.is-purple  { background: #f3eafe; color: #7c3aed; }
+.mas-app .mas-badge.is-solid   { background: var(--brand); color: #fff; }
+.mas-app .mas-badge-dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.mas-app .mas-badge.is-live  { color: #2563eb; } .mas-app .mas-badge.is-online { color: #16a34a; }
+.mas-app .mas-badge.is-idle  { color: #d97706; } .mas-app .mas-badge.is-down   { color: #dc2626; }
+
+/* ---------- Progress ---------- */
+.mas-app .mas-progress { height: 8px; background: #e9eef5; border-radius: 999px; overflow: hidden; }
+.mas-app .mas-progress.is-thin { height: 4px; }
+.mas-app .mas-progress-bar { height: 100%; background: var(--brand); border-radius: 999px; transition: width .3s ease; }
+.mas-app .mas-progress-bar.is-success { background: #16a34a; }
+.mas-app .mas-progress-bar.is-warning { background: #f59e0b; }
+.mas-app .mas-progress-bar.is-danger  { background: #dc2626; }
+.mas-app .mas-progress-bar.is-striped {
+  background-image: linear-gradient(45deg, rgba(255,255,255,.25) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.25) 50%, rgba(255,255,255,.25) 75%, transparent 75%, transparent);
+  background-size: 1rem 1rem; animation: mas-stripes 1s linear infinite;
+}
+@keyframes mas-stripes { from { background-position: 1rem 0; } to { background-position: 0 0; } }
+
+/* ---------- Spinner ---------- */
+.mas-app .mas-spinner {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 3px solid #e2e8f0; border-top-color: var(--brand);
+  animation: mas-spin .7s linear infinite; display: inline-block;
+}
+.mas-app .mas-spinner.is-sm { width: 16px; height: 16px; border-width: 2px; }
+@keyframes mas-spin { to { transform: rotate(360deg); } }
+
+/* ---------- Tables ---------- */
+.mas-app .mas-table-card {
+  background: #fff; border: 1px solid var(--mas-line); border-radius: var(--r);
+  box-shadow: var(--sh-sm); padding: 1.25rem 1.4rem;
+}
+.mas-app .mas-table { width: 100%; border-collapse: collapse; }
+.mas-app .mas-table thead th {
+  text-align: left; font-family: 'Poppins', sans-serif; font-weight: 700;
+  font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: #9aa4b8;
+  padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--mas-line);
+}
+.mas-app .mas-table tbody td { padding: 0.7rem 0.75rem; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; color: var(--mas-ink); }
+.mas-app .mas-table tbody tr:hover { background: #f8fafc; }
+.mas-app .mas-table tbody tr.is-selected { background: var(--brand-tint); }
+.mas-app .mas-table .mas-num { text-align: right; font-variant-numeric: tabular-nums; }
+.mas-app .mas-table-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 0.85rem; color: var(--mas-muted); font-size: 0.85rem; }
+.mas-app .mas-table-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.mas-app .mas-table-toolbar .mas-input { flex: 1; min-width: 200px; }
+.mas-app .mas-cell-user { display: flex; align-items: center; gap: 0.65rem; }
+.mas-app .mas-cell-user .mas-avatar { width: 32px; height: 32px; border-radius: 50%; font-size: 0.72rem; }
+.mas-app .mas-cell-user-meta { display: flex; flex-direction: column; line-height: 1.25; }
+.mas-app .mas-cell-user-name { font-weight: 600; color: var(--mas-navy); }
+.mas-app .mas-cell-user-sub { color: var(--mas-muted); font-size: 0.78rem; }
+.mas-app .mas-row-actions { display: flex; align-items: center; gap: 0.6rem; color: #94a3b8; }
+.mas-app .mas-row-actions button { background: none; border: none; cursor: pointer; color: inherit; padding: 2px; }
+.mas-app .mas-row-actions button:hover { color: var(--brand); }
+
+/* ---------- Avatar group ---------- */
+.mas-app .mas-avatar-group { display: inline-flex; }
+.mas-app .mas-avatar-group .mas-avatar { width: 34px; height: 34px; border-radius: 50%; border: 2px solid #fff; margin-left: -10px; font-size: 0.72rem; }
+.mas-app .mas-avatar-group .mas-avatar:first-child { margin-left: 0; }
+
+/* =====================================================================
+   AUTH (split-screen) + ERROR PAGES
+   ===================================================================== */
+.mas-app .mas-auth { display: grid; grid-template-columns: 1.05fr 1fr; min-height: 100vh; }
+.mas-app .mas-auth-brand {
+  position: relative; overflow: hidden; padding: 2.5rem 3rem;
+  display: flex; flex-direction: column; justify-content: space-between; color: #fff;
+  background:
+    radial-gradient(900px 380px at 80% -10%, rgba(244,180,0,.22), transparent 60%),
+    linear-gradient(150deg, var(--mas-navy), var(--brand));
+}
+.mas-app .mas-auth-brand-logo { background: #fff; border-radius: 14px; padding: 0.6rem 0.9rem; align-self: flex-start; box-shadow: var(--sh); }
+.mas-app .mas-auth-brand-logo img { height: 46px; width: auto; display: block; }
+.mas-app .mas-auth-eyebrow { font-family: 'Poppins', sans-serif; letter-spacing: 0.18em; text-transform: uppercase; font-size: 0.72rem; color: #bcd4f7; }
+.mas-app .mas-auth-headline { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: clamp(1.9rem, 3vw, 2.6rem); line-height: 1.12; margin: 0.6rem 0 0.9rem; max-width: 16ch; }
+.mas-app .mas-auth-sub { color: #d3e2f7; max-width: 44ch; line-height: 1.55; }
+.mas-app .mas-auth-quote { margin-top: 1.5rem; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: var(--r); padding: 1.1rem 1.25rem; max-width: 42ch; }
+.mas-app .mas-auth-quote p { font-style: italic; line-height: 1.5; }
+.mas-app .mas-auth-quote span { display: block; margin-top: 0.6rem; font-size: 0.82rem; color: #bcd4f7; }
+.mas-app .mas-auth-foot { font-family: ui-monospace, monospace; font-size: 0.72rem; letter-spacing: 0.08em; color: #9fc0ef; }
+
+.mas-app .mas-auth-main { background: var(--mas-paper); display: flex; flex-direction: column; padding: 2.5rem 3rem; }
+.mas-app .mas-auth-topbar {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  gap: 0.5rem 1.25rem; font-size: 0.88rem;
+  padding-bottom: 1.1rem; margin-bottom: 0.4rem; border-bottom: 1px solid var(--mas-line);
+}
+.mas-app .mas-auth-topbar a { color: var(--mas-muted); text-decoration: none; }
+.mas-app .mas-auth-topbar a:hover { color: var(--mas-ink); }
+.mas-app .mas-auth-back { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600; }
+.mas-app .mas-auth-topbar .mas-auth-alt { color: var(--mas-muted); }
+.mas-app .mas-auth-topbar a.is-accent { color: var(--brand); font-weight: 600; }
+.mas-app .mas-auth-topbar a.is-accent:hover { color: var(--mas-navy); }
+.mas-app .mas-auth-form { margin: auto; width: 100%; max-width: 380px; }
+.mas-app .mas-auth-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.7rem; color: var(--mas-navy); }
+.mas-app .mas-auth-lede { color: var(--mas-muted); margin: 0.45rem 0 1.5rem; line-height: 1.5; }
+.mas-app .mas-auth-field { margin-bottom: 1.1rem; }
+.mas-app .mas-auth-field label { display: block; font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 0.85rem; color: var(--mas-ink); margin-bottom: 0.4rem; }
+.mas-app .mas-auth-row { display: flex; align-items: center; justify-content: space-between; }
+.mas-app .mas-auth-link { color: var(--brand); font-size: 0.82rem; text-decoration: none; font-weight: 600; }
+.mas-app .mas-auth-submit { width: 100%; margin-top: 0.4rem; padding: 0.7rem; }
+.mas-app .mas-auth-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; border-radius: var(--r-sm); padding: 0.6rem 0.8rem; font-size: 0.85rem; margin-bottom: 1rem; }
+.mas-app .mas-auth-note { background: #ecfdf3; border: 1px solid #bbf7d0; color: #15803d; border-radius: var(--r-sm); padding: 0.6rem 0.8rem; font-size: 0.85rem; margin-bottom: 1rem; }
+.mas-app .mas-auth-check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--mas-ink); }
+
+.mas-app .mas-error {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem;
+  background:
+    radial-gradient(700px 320px at 70% 10%, rgba(29,111,214,.10), transparent 60%),
+    var(--mas-paper);
+}
+.mas-app .mas-error-card { background: #fff; border-radius: 22px; box-shadow: var(--sh-lg); padding: 3rem 3.5rem; max-width: 540px; width: 100%; text-align: center; }
+.mas-app .mas-error-eyebrow { font-family: ui-monospace, monospace; letter-spacing: 0.18em; text-transform: uppercase; font-size: 0.72rem; color: #94a3b8; }
+.mas-app .mas-error-code {
+  font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 5.5rem; line-height: 1; margin: 0.4rem 0;
+  background: linear-gradient(135deg, var(--brand), #7c5cff); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.mas-app .mas-error-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.5rem; color: var(--mas-navy); }
+.mas-app .mas-error-text { color: var(--mas-muted); line-height: 1.55; margin: 0.75rem auto 1.5rem; max-width: 40ch; }
+.mas-app .mas-error-actions { display: flex; gap: 0.75rem; justify-content: center; }
+.mas-app .mas-error-meta { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--mas-line); font-family: ui-monospace, monospace; font-size: 0.74rem; color: #94a3b8; letter-spacing: 0.06em; }
+.mas-app .mas-error-meta b { color: var(--mas-muted); }
+
+@media (max-width: 860px) {
+  .mas-app .mas-auth { grid-template-columns: 1fr; }
+  .mas-app .mas-auth-brand { display: none; }
+  .mas-app .mas-auth-main { padding: 1.75rem 1.25rem; }
+  .mas-app .mas-form-grid { grid-template-columns: 1fr; }
+  .mas-app .mas-error-card { padding: 2.25rem 1.5rem; }
+}
+
+/* =====================================================================
+   PORTAL LAYOUT CORRECTIONS  (left-align, colours, logo)
+   Loaded last so these win. Fixes content centring inherited from the
+   public reading column, nav colours, canvas tint, and logo size.
+   ===================================================================== */
+
+/* Neutral cool-grey canvas + slightly softer portal text */
+.mas-app { --mas-paper: #f1f2f6; }
+.mas-app .mas-shell-main { color: #2b3444; }
+
+/* LEFT-ALIGN portal content — it was inheriting the public site's centred
+   column (margin:0 auto), which made pages float in the middle. */
+.mas-app .mas-shell-main .mas-main { padding: 1.5rem 2rem 3rem; }
+.mas-app .mas-shell-main .mas-page {
+  max-width: 1040px;
+  margin: 0;            /* was auto-centred */
+  text-align: left;
+}
+.mas-app .mas-shell-main .mas-page-head { text-align: left; margin-bottom: 1.5rem; }
+.mas-app .mas-shell-main .mas-page-head h1 { color: #18212f; }
+.mas-app .mas-shell-main .mas-page > * { margin-left: 0; margin-right: 0; }
+
+/* Forms fill the page width (Adminator cards are full-width with 2-col grids) */
+.mas-app .mas-shell-main .mas-form { max-width: none; margin: 0; }
+
+/* Page header as a row: title block left, action buttons right */
+.mas-app .mas-page-head-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1.5rem; flex-wrap: wrap;
+}
+.mas-app .mas-page-head-row > div { min-width: 0; }
+.mas-app .mas-page-actions { display: flex; gap: 0.6rem; flex-shrink: 0; padding-top: 0.4rem; }
+
+/* Card head inside a form: eyebrow + title left, badge right, divider under */
+.mas-app .mas-form-cardhead {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+  padding-bottom: 1.1rem; margin-bottom: 1.4rem; border-bottom: 1px solid var(--mas-line);
+}
+.mas-app .mas-form-cardhead h2 { font-family: 'Poppins', sans-serif; font-size: 1.15rem; color: var(--mas-navy); margin: 0.15rem 0 0; }
+.mas-app .mas-section-rowhead { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+
+/* Sidebar nav colours to match Adminator: lighter inactive text, grey icons,
+   blue icon + soft-grey pill on the active item */
+.mas-app .mas-sidenav a { color: #5b6b84; font-weight: 500; }
+.mas-app .mas-sidenav a > svg { color: #aab4c5; }
+.mas-app .mas-sidenav a:hover { background: #f2f5fa; color: #0a1f44; }
+.mas-app .mas-sidenav a:hover > svg { color: var(--brand); }
+.mas-app .mas-sidenav a.is-active { background: #e9eef6; color: #0a1f44; font-weight: 600; }
+.mas-app .mas-sidenav a.is-active > svg { color: var(--brand); }
+
+/* Logo: 60% of current size (170px → ~102px), centred in the sidebar */
+.mas-app .mas-sidebar .mas-brand { display: flex; justify-content: center; padding: 0.4rem 0 1.1rem; }
+.mas-app .mas-sidebar .mas-logo { width: 102px; height: auto; }
+
+/* Inline "(optional)" hint on field labels */
+.mas-app .mas-field-opt { color: #9aa4b8; font-weight: 500; font-size: 0.8rem; }
+
+/* =====================================================================
+   PUBLIC SITE: widen body + align top menu to one container
+   (SwimSafer-style centred container; tweak --mas-container to taste)
+   ===================================================================== */
+.mas-app { --mas-container: 1200px; }
+
+/* Header stays a full-bleed bar (border/shadow span the page); its row is
+   constrained to the container and aligned with the body below. */
+.mas-app .mas-topnav { display: block; padding-left: 0; padding-right: 0; }
+.mas-app .mas-topnav-inner {
+  max-width: var(--mas-container);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1.75rem;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
-.mas-app .mas-roster-name {
-  margin: 0;
-  font-size: 0.95rem;
+/* Wider, centred content body on the SAME container so it lines up with the menu. */
+.mas-app .mas-site .mas-main { max-width: none; width: 100%; padding: 0; }
+.mas-app .mas-site .mas-page {
+  max-width: var(--mas-container);
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.5rem 1.75rem 3.5rem;
+  box-sizing: border-box;
 }
 
-.mas-app .mas-roster-level {
-  flex: 0 0 auto;
-  max-width: 11rem;
+/* Footer columns aligned to the same container too. */
+.mas-app .mas-site-footer .mas-footer-cols {
+  max-width: var(--mas-container);
+  margin: 0 auto;
+  padding-left: 1.75rem;
+  padding-right: 1.75rem;
+  box-sizing: border-box;
 }
 
-/* ---- Revoke inline editor -------------------------------------------------- */
+@media (max-width: 640px) {
+  .mas-app .mas-topnav-inner { padding: 0 1rem; }
+  .mas-app .mas-site .mas-page { padding: 1.75rem 1rem 2.5rem; }
+  .mas-app .mas-site-footer .mas-footer-cols { padding-left: 1rem; padding-right: 1rem; }
+}
 
-.mas-app .mas-revoke {
+/* =====================================================================
+   PUBLIC HEADER + CONTENT REFINEMENT  (supersedes the block above)
+   Single aligned row: [logo] [nav] ............ [Portal login]
+   Header bar is full-bleed; its row + the body share one container.
+   ===================================================================== */
+
+/* Full-bleed bar; the inner row is the container and flexes in one line. The
+   header is a block so the utility strip stacks ABOVE the main nav row. */
+.mas-app .mas-topnav { display: block; padding: 0; background: #fff; }
+.mas-app .mas-topnav-inner {
+  width: 100%;
+  max-width: var(--mas-container);
+  margin: 0 auto;
+  padding: 0.55rem 1.75rem;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: nowrap;
+}
+/* Logo left (header-sized), nav beside it, button pinned to the right edge. */
+.mas-app .mas-topnav .mas-brand { display: inline-flex; align-items: center; flex: 0 0 auto; }
+.mas-app .mas-topnav .mas-logo { height: 46px; width: auto; }
+.mas-app .mas-topnav-links { margin-left: 0.4rem; flex: 0 1 auto; }
+.mas-app .mas-topnav .mas-login-btn { margin-left: auto; flex: 0 0 auto; white-space: nowrap; }
+
+/* Body shares the same container so its edges line up with the header. */
+.mas-app .mas-site .mas-main { max-width: none; width: 100%; padding: 0; }
+.mas-app .mas-site .mas-page {
+  max-width: var(--mas-container);
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.75rem 1.75rem 3.5rem;
+  box-sizing: border-box;
+}
+
+/* Prose keeps a comfortable reading measure (stretching paragraphs to 1200px
+   reads badly); the WIDTH is used by structure — card grids, sections. */
+.mas-app .mas-site .mas-page-head { max-width: 820px; }
+.mas-app .mas-site .mas-lede { max-width: 70ch; }
+
+/* Card collections fill the width as a responsive grid instead of a lonely
+   left column. */
+.mas-app .mas-site .mas-admin-list {
   display: grid;
-  gap: 0.5rem;
-  margin-top: 0.6rem;
-  max-width: 28rem;
-}
-
-/* ---- Authenticated "Tools" nav dropdown ------------------------------------ */
-/* CSS-only disclosure (uses the native <details> element). Imported by App so
-   it applies to the top bar, which sits inside .mas-app. */
-
-.mas-app .mas-tools {
-  position: relative;
-}
-.mas-app .mas-tools > summary {
-  cursor: pointer;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
   list-style: none;
-  user-select: none;
-  font: inherit;        /* root cause: summary was using the browser default font */
-  font-weight: 600;     /* match the weight of the sibling nav links */
-  color: inherit;       /* white, from the nav */
-}
-.mas-app .mas-tools > summary::-webkit-details-marker {
-  display: none;
-}
-.mas-app .mas-tools > summary::after {
-  content: ' ▾';
-  font-size: 0.8em;
-}
-.mas-app .mas-tools-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 0.4rem);
-  z-index: 50;
-  display: grid;
-  gap: 0.1rem;
-  min-width: 13rem;
-  padding: 0.4rem;
-  background: var(--surface, #ffffff);
-  border: 1px solid var(--border, #e3e7ee);
-  border-radius: 10px;
-  box-shadow: 0 10px 28px rgba(11, 31, 58, 0.12);
-}
-.mas-app .mas-nav-auth .mas-tools-menu a {
-  padding: 0.45rem 0.6rem;
-  border-radius: 6px;
-  white-space: nowrap;
-  text-decoration: none;
-  font-weight: 500;
-  color: #0b1f3a !important;   /* win over the white nav-link colour, regardless of source order */
-  opacity: 1 !important;        /* in case the nav links are semi-transparent white */
-}
-.mas-app .mas-nav-auth .mas-tools-menu a:hover,
-.mas-app .mas-nav-auth .mas-tools-menu a.is-active {
-  background: #eef2f8 !important;
-  color: #0b1f3a !important;
-}
-
-/* ---- Logo in header + auth screens ----------------------------------------- */
-
-.mas-app .mas-brand {
-  background: transparent;
+  margin: 1rem 0 0;
   padding: 0;
-  line-height: 0;          /* removes the inline-image gap under the logo */
 }
-.mas-app .mas-brand img {
-  height: 42px;
-  width: auto;
-  display: block;
+.mas-app .mas-site .mas-admin-row { margin: 0; }
+
+@media (max-width: 720px) {
+  .mas-app .mas-topnav-inner { flex-wrap: wrap; gap: 0.75rem 1rem; padding: 0.5rem 1rem; }
+  .mas-app .mas-topnav .mas-logo { height: 38px; }
+  .mas-app .mas-topnav-links { order: 3; width: 100%; margin-left: 0; }
+  .mas-app .mas-site .mas-page { padding: 1.75rem 1rem 2.5rem; }
 }
 
-/* Centre a logo above the sign-in / claim headings */
-.mas-app .mas-auth-logo {
-  display: block;
-  width: 200px;
-  max-width: 70%;
-  height: auto;
-  margin: 0 auto 1.25rem;
+/* =====================================================================
+   FIXED SHRINK-ON-SCROLL HEADER  (flicker-proof)
+   The header is taken OUT of the document flow (position: fixed), and the
+   content reserves a CONSTANT top offset equal to the compact height. Because
+   the header's height change no longer moves any page content, the scroll
+   position can't be nudged back across the trigger — the oscillation that
+   caused the "spaz" is structurally impossible. The expanded header is only
+   ~28px taller and overlaps into the page's own top padding (invisible).
+   ===================================================================== */
+.mas-app .mas-topnav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: #fff;
+  transition: box-shadow .25s ease;
+}
+/* Content clears the fixed header with a CONSTANT offset. Scoped to
+   `.mas-site .mas-main` (specificity 0,3,0) so it beats the alignment rule
+   `.mas-site .mas-main { padding: 0 }` above — a bare `.mas-main` selector lost
+   the cascade, leaving zero offset and the fixed header overlapping the page.
+   The value clears the EXPANDED (top-of-page) header height (~93px) plus a
+   small breathing gap, AND the constant ~34px utility strip stacked above it;
+   it stays constant as the header shrinks on scroll. */
+.mas-app .mas-site .mas-main { padding-top: 134px; }
+
+.mas-app .mas-topnav-inner { min-height: 64px; }
+/* Expanded (at top): taller, larger logo */
+.mas-app .mas-topnav-inner { padding: 0.9rem 1.75rem; transition: padding .22s ease; will-change: padding; }
+.mas-app .mas-topnav .mas-logo { height: 64px; transition: height .22s ease; will-change: height; }
+
+/* Compact (scrolled): the reserved size */
+.mas-app .mas-topnav.is-scrolled { box-shadow: 0 4px 16px rgba(10, 31, 68, .08); }
+.mas-app .mas-topnav.is-scrolled .mas-topnav-inner { padding: 0.55rem 1.75rem; }
+.mas-app .mas-topnav.is-scrolled .mas-logo { height: 46px; }
+
+@media (max-width: 720px) {
+  /* The nav links wrap to their own full-width row here, so the expanded
+     header is taller than on desktop; reserve enough to clear it plus the
+     utility strip above. */
+  .mas-app .mas-site .mas-main { padding-top: 150px; }
+  .mas-app .mas-topnav-inner { padding: 0.6rem 1rem; min-height: 54px; }
+  .mas-app .mas-topnav .mas-logo { height: 48px; }
+  .mas-app .mas-topnav.is-scrolled .mas-topnav-inner { padding: 0.45rem 1rem; }
+  .mas-app .mas-topnav.is-scrolled .mas-logo { height: 38px; }
 }
 
-/* ---- Light header theme ---------------------------------------------------- */
-/* Flip the top bar from navy to white so the full-colour logo reads, and
-   restyle the nav/controls to navy. Overrides the original navy-bar rules in
-   public.css / auth.css (admin.css is imported last). */
+/* =====================================================================
+   TOP UTILITY BAR
+   A slim, full-bleed navy strip pinned ABOVE the main header, inside the same
+   fixed stack. It holds a single "Contact us" link for now; the left side is
+   deliberately left open so social-media links can be added later (a flex row
+   with the link pushed to the right via margin-left:auto). Its height is
+   CONSTANT — it does NOT shrink on scroll — so the `.mas-main` top offset
+   simply adds this strip's height on top of the header's reserved offset, and
+   no page content is hidden under the header.
+   ===================================================================== */
+.mas-app .mas-utilitybar { background: var(--mas-navy); color: #fff; }
+.mas-app .mas-utilitybar-inner {
+  max-width: var(--mas-container);
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 0.3rem 1.75rem;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+/* "Contact us" sits on the right; the open space on the left is reserved for
+   future social-media links (add them before this link). */
+/* Compact rounded-square button (small radius, not a pill) that sits subtly on
+   the navy strip: a faint translucent fill + hairline border for contrast,
+   filling to brand teal on hover. */
+.mas-app .mas-utilitybar-link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  padding: 0.2rem 0.7rem;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.mas-app .mas-utilitybar-link:hover {
+  color: #fff;
+  background: var(--mas-teal);
+  border-color: var(--mas-teal);
+  text-decoration: none;
+}
+.mas-app .mas-utilitybar-link:focus-visible { outline: 2px solid var(--mas-teal); outline-offset: 2px; }
 
-.mas-app .mas-topbar {
-  background: #ffffff !important;
-  border-bottom: 1px solid #e6e9f0;
-  box-shadow: 0 1px 3px rgba(21, 32, 67, 0.06);
+@media (max-width: 860px) {
+  /* Keep the strip minimal so it doesn't crowd the compact mobile header. */
+  .mas-app .mas-utilitybar-inner { padding: 0.25rem 1rem; min-height: 30px; gap: 0.75rem; }
+  .mas-app .mas-utilitybar-link { font-size: 0.74rem; padding: 0.18rem 0.6rem; }
 }
 
-/* Top-level nav links + the Tools control → navy on white */
-.mas-app .mas-nav-auth a,
-.mas-app .mas-nav-auth .mas-tools > summary {
-  color: #1E2752 !important;
+/* =====================================================================
+   PORTAL DENSITY PASS — utilitarian, space-efficient back-office layout.
+   Scoped to .mas-shell-main so the public marketing site is untouched.
+   ===================================================================== */
+
+/* Tighter page rhythm */
+.mas-app .mas-shell-main .mas-page { padding: 1.25rem 1.75rem 2.5rem; }
+.mas-app .mas-shell-main .mas-page-head { margin-bottom: 1.1rem; }
+.mas-app .mas-shell-main .mas-page-head h1 { font-size: 1.45rem; line-height: 1.2; }
+.mas-app .mas-shell-main .mas-page-head .mas-lede,
+.mas-app .mas-shell-main .mas-lede { font-size: 0.9rem; max-width: 74ch; }
+.mas-app .mas-shell-main .mas-section-head { margin-top: 1.6rem; }
+.mas-app .mas-shell-main .mas-section-head h2 { font-size: 1.05rem; }
+
+/* Denser cards */
+.mas-app .mas-shell-main .mas-form { padding: 1.1rem 1.25rem; border-radius: 10px; }
+.mas-app .mas-shell-main .mas-form-cardhead { padding-bottom: 0.8rem; margin-bottom: 1rem; }
+.mas-app .mas-shell-main .mas-form-cardhead h2 { font-size: 1.05rem; }
+
+/* Tighter admin lists (single column, compact rows) */
+.mas-app .mas-shell-main .mas-admin-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.75rem 0 0; padding: 0; }
+.mas-app .mas-shell-main .mas-admin-row { padding: 0.7rem 0.95rem; align-items: center; }
+.mas-app .mas-shell-main .mas-admin-name { font-size: 0.95rem; }
+
+/* ---- Compact dashboard ---- */
+.mas-app .mas-dash-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;
+}
+.mas-app .mas-dash-head h1 { font-size: 1.45rem; margin: 0; }
+.mas-app .mas-dash-date { color: var(--mas-muted); font-size: 0.82rem; }
+
+.mas-app .mas-statbar {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.7rem; margin-bottom: 1.6rem;
+}
+.mas-app .mas-statpill {
+  display: flex; align-items: center; gap: 0.65rem;
+  background: #fff; border: 1px solid var(--mas-line); border-radius: 10px; padding: 0.65rem 0.85rem;
+}
+.mas-app .mas-statpill-ic { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; flex: 0 0 auto; }
+.mas-app .mas-statpill-ic svg { width: 17px; height: 17px; }
+.mas-app .mas-statpill-text { display: flex; flex-direction: column; line-height: 1.15; }
+.mas-app .mas-statpill-n { font-size: 1.15rem; font-weight: 700; color: var(--mas-navy); }
+.mas-app .mas-statpill-l { font-size: 0.76rem; color: var(--mas-muted); }
+
+/* ---- Attention cards (role-aware; sit above the tile grid) ---- */
+.mas-app .mas-attngrid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.7rem;
+}
+.mas-app .mas-attncard {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.95rem 1.1rem; border-radius: 12px; text-decoration: none;
+  background: linear-gradient(135deg, #1E2752 0%, #0a1f44 100%);
+  color: #fff; border: 1px solid #1E2752;
+  box-shadow: 0 6px 18px rgba(10, 31, 68, .18);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-attncard:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(10, 31, 68, .26); }
+.mas-app .mas-attncard-ic {
+  width: 38px; height: 38px; border-radius: 10px; flex: 0 0 auto;
+  display: grid; place-items: center;
+  background: rgba(249, 198, 16, .18); color: #F9C610;
+}
+.mas-app .mas-attncard-ic svg { width: 20px; height: 20px; }
+.mas-app .mas-attncard-t { flex: 1 1 auto; font-size: 0.98rem; font-weight: 700; line-height: 1.2; }
+.mas-app .mas-attncard-go { flex: 0 0 auto; color: rgba(255, 255, 255, .8); display: grid; place-items: center; }
+.mas-app .mas-attncard-go svg { width: 18px; height: 18px; }
+
+.mas-app .mas-dash-section { margin-bottom: 1.4rem; }
+.mas-app .mas-dash-section-label {
+  font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--mas-muted); font-weight: 700; margin: 0 0 0.6rem;
+}
+.mas-app .mas-tilegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 0.6rem; }
+.mas-app .mas-tile {
+  display: flex; align-items: center; gap: 0.65rem;
+  padding: 0.7rem 0.85rem; background: #fff; border: 1px solid var(--mas-line);
+  border-radius: 10px; text-decoration: none; color: var(--mas-ink);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.mas-app .mas-tile:hover { border-color: var(--brand); box-shadow: 0 4px 14px rgba(10, 31, 68, .07); transform: translateY(-1px); }
+.mas-app .mas-tile-ic { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; flex: 0 0 auto; }
+.mas-app .mas-tile-ic svg { width: 16px; height: 16px; }
+.mas-app .mas-tile-t { font-size: 0.88rem; font-weight: 600; line-height: 1.2; }
+
+/* =====================================================================
+   PUBLIC SITE — BADGE VISUAL IDENTITY
+   Per-level palette (sampled from the syllabus), teal brand hero, and the
+   Starfish -> Dolphin badge pathway. Public only (.mas-site / .mas-home).
+   ===================================================================== */
+.mas-app {
+  --mas-teal: #09B3CA;
+  --mas-teal-deep: #0894b0;
+  --lvl-1: #FF7042;  --lvl-2: #26A59A;  --lvl-3: #00ACC1;  --lvl-4: #E43834;
+  --lvl-5: #66BA69;  --lvl-6: #1D87E4;  --lvl-7: #5D34B1;
 }
 
-/* Hover / active → brand red accent */
-.mas-app .mas-nav-auth > a:hover,
-.mas-app .mas-nav-auth > a.is-active {
-  color: #C62026 !important;
+/* ---- Hero (teal block, bold heading; echoes the syllabus cover) ---- */
+.mas-app .mas-home .mas-home-hero {
+  background:
+    radial-gradient(120% 140% at 85% 10%, rgba(255,255,255,.18), transparent 55%),
+    linear-gradient(135deg, var(--mas-teal) 0%, var(--mas-teal-deep) 100%);
+  border-radius: 20px;
+  padding: clamp(2.25rem, 5vw, 3.5rem);
+  margin-bottom: 2.75rem;
+  color: #fff;
+  overflow: hidden;
+}
+.mas-app .mas-home-hero-inner { max-width: 640px; }
+.mas-app .mas-eyebrow-pill {
+  display: inline-block; text-transform: uppercase; letter-spacing: 0.14em;
+  font-size: 0.7rem; font-weight: 800; color: #fff;
+  background: rgba(255,255,255,.18); padding: 0.4rem 0.85rem; border-radius: 999px; margin: 0 0 1.1rem;
+}
+.mas-app .mas-home-title {
+  color: #fff; font-size: clamp(2.4rem, 5.5vw, 3.8rem); line-height: 0.98; margin: 0;
+}
+.mas-app .mas-home-sub {
+  color: rgba(255,255,255,.92); font-size: 1.05rem; line-height: 1.5;
+  max-width: 46ch; margin: 1rem 0 0; text-transform: none;
+}
+.mas-app .mas-home-cta { display: flex; gap: 0.75rem; margin-top: 1.6rem; flex-wrap: wrap; }
+.mas-app .mas-btn-solid {
+  background: #fff; color: var(--mas-teal-deep); font-weight: 800;
+  padding: 0.7rem 1.3rem; border-radius: 10px; text-decoration: none;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-btn-solid:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0,0,0,.18); }
+.mas-app .mas-btn-outline-light {
+  border: 2px solid rgba(255,255,255,.65); color: #fff; font-weight: 800;
+  padding: 0.62rem 1.3rem; border-radius: 10px; text-decoration: none; transition: background .15s ease;
+}
+.mas-app .mas-btn-outline-light:hover { background: rgba(255,255,255,.14); }
+
+/* ---- Level pathway ---- */
+.mas-app .mas-levels { margin-bottom: 2.75rem; }
+.mas-app .mas-levels-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 1.1rem;
+}
+.mas-app .mas-levels-head h2 { color: var(--mas-navy); font-size: 1.5rem; }
+.mas-app .mas-levels-arrow {
+  color: var(--mas-teal); font-weight: 800; font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.mas-app .mas-levelstrip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.75rem; }
+.mas-app .mas-levelcard {
+  background: #fff; border: 1px solid var(--mas-line); border-top: 3px solid var(--lvl);
+  border-radius: 14px; padding: 1.1rem 0.8rem 1rem; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+  transition: transform .15s ease, box-shadow .15s ease;
+  text-decoration: none; color: inherit; cursor: pointer;
+}
+.mas-app .mas-levelcard:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(10,31,68,.10); }
+.mas-app .mas-levelcard:focus-visible { outline: 3px solid var(--lvl); outline-offset: 2px; }
+.mas-app .mas-levelcard-badge {
+  width: 92px; height: 92px; display: grid; place-items: center; margin-bottom: 0.2rem;
+  filter: drop-shadow(0 4px 8px rgba(10,31,68,.12));
+}
+.mas-app .mas-levelcard-badge img { width: 100%; height: 100%; object-fit: contain; }
+.mas-app .mas-levelcard-no {
+  font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 800; color: var(--lvl);
+}
+.mas-app .mas-levelcard-name { color: var(--mas-navy); font-size: 1.05rem; }
+.mas-app .mas-levelcard-blurb { font-size: 0.74rem; line-height: 1.4; color: var(--mas-muted); text-transform: none; }
+
+@media (max-width: 1024px) {
+  .mas-app .mas-levelstrip { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
+@media (max-width: 480px) {
+  .mas-app .mas-levelstrip { grid-template-columns: repeat(2, 1fr); }
+  .mas-app .mas-levelcard-badge { width: 76px; height: 76px; }
 }
 
-/* Sign out → outlined navy button on light, fills navy on hover */
-.mas-app .mas-signout {
-  background: transparent !important;
-  color: #1E2752 !important;
-  border: 1px solid #1E2752 !important;
+/* ---- Home teaser sections ---- */
+.mas-app .mas-home-teasers {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 1.1rem; margin-top: 2.75rem;
 }
-.mas-app .mas-signout:hover {
-  background: #1E2752 !important;
-  color: #ffffff !important;
+.mas-app .mas-teaser {
+  background: #fff; border: 1px solid var(--mas-line); border-radius: var(--r);
+  box-shadow: var(--sh-sm); padding: 1.9rem;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.6rem;
+}
+.mas-app .mas-teaser h2 { color: var(--mas-navy); font-size: 1.4rem; margin: 0; }
+.mas-app .mas-teaser p {
+  color: var(--mas-muted); text-transform: none; margin: 0;
+  line-height: 1.6; max-width: 48ch;
+}
+.mas-app .mas-teaser .mas-btn-solid-navy { margin-top: 0.5rem; }
+
+.mas-app .mas-home-verify-note {
+  text-align: center; margin: 1.6rem 0 0.5rem;
+  font-size: 0.86rem; color: var(--mas-muted); text-transform: none;
+}
+.mas-app .mas-home-verify-note a {
+  color: var(--mas-teal-deep); text-decoration: underline; font-weight: 700;
 }
 
-/* ---- Top-align portal content vertically -----------------------------------
-   The content column was centering its page vertically (big empty space above).
-   Pin the page to the top with a little breathing room. Covers both a flex
-   column that justifies-center and a page centered by auto margins. Uses
-   !important so it wins over theme.css, which loads last. */
-.mas-app .mas-shell-main,
-.mas-app .mas-shell-main .mas-main {
-  justify-content: flex-start !important;
-  align-items: stretch !important;
+@media (max-width: 720px) {
+  .mas-app .mas-home-teasers { grid-template-columns: 1fr; }
 }
-.mas-app .mas-shell-main .mas-main > .mas-page,
-.mas-app .mas-page {
-  margin-top: 0 !important;
-  margin-bottom: auto !important;   /* if vertically centered by auto margins, pin to top */
-  padding-top: 1.5rem;              /* a bit of top margin */
+
+/* =====================================================================
+   HERO TEXTURE  (subtle waves + halftone) and FAQ accordion
+   ===================================================================== */
+.mas-app .mas-home .mas-home-hero { position: relative; }
+.mas-app .mas-home-hero-inner { position: relative; z-index: 2; }
+.mas-app .mas-hero-halftone {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.22) 1.4px, transparent 1.6px);
+  background-size: 15px 15px;
+  -webkit-mask-image: radial-gradient(120% 110% at 100% 0%, #000 0%, transparent 58%);
+          mask-image: radial-gradient(120% 110% at 100% 0%, #000 0%, transparent 58%);
+  opacity: 0.55;
 }
+.mas-app .mas-hero-waves {
+  position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 58%;
+  z-index: 1; pointer-events: none;
+}
+
+/* ---- FAQ ---- */
+.mas-app .mas-faq-search { margin: 0 0 1.5rem; }
+.mas-app .mas-faq-search-input {
+  width: 100%; box-sizing: border-box; font-family: inherit; font-size: 1rem;
+  color: var(--mas-navy); background: #fff; border: 1px solid var(--mas-line);
+  border-radius: 999px; padding: 0.8rem 1.25rem;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-faq-search-input::placeholder { color: var(--mas-muted); }
+.mas-app .mas-faq-search-input:focus {
+  outline: none; border-color: var(--mas-teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--mas-teal) 18%, #fff);
+}
+.mas-app .mas-faq-search-count {
+  margin: 0.7rem 0 0; padding-left: 0.4rem; color: var(--mas-muted);
+  font-weight: 700; font-size: 0.9rem; text-transform: none;
+}
+.mas-app .mas-faq-tag {
+  display: inline-block; margin-right: 0.6rem; padding: 0.12rem 0.55rem;
+  border-radius: 999px; background: color-mix(in srgb, var(--lvl) 12%, #fff);
+  color: var(--lvl); font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.03em; vertical-align: middle;
+}
+.mas-app .mas-faq-results { --lvl: var(--mas-teal); margin-bottom: 2.25rem; }
+
+.mas-app .mas-faq-jump { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 2rem; }
+.mas-app .mas-faq-chip {
+  --lvl: var(--mas-teal);
+  display: inline-block; text-decoration: none; font-weight: 700; font-size: 0.82rem;
+  color: var(--mas-navy); background: #fff; border: 1px solid var(--mas-line);
+  border-bottom: 2px solid var(--lvl); border-radius: 999px; padding: 0.45rem 0.9rem;
+  transition: background .15s ease, transform .15s ease;
+}
+.mas-app .mas-faq-chip:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--lvl) 8%, #fff); }
+
+.mas-app .mas-faq-cat { --lvl: var(--mas-teal); margin-bottom: 2.25rem; scroll-margin-top: 90px; }
+.mas-app .mas-faq-cat-head { border-left: 4px solid var(--lvl); padding-left: 0.9rem; margin-bottom: 1rem; }
+.mas-app .mas-faq-cat-head h2 { color: var(--mas-navy); font-size: 1.45rem; }
+.mas-app .mas-faq-cat-head p { color: var(--mas-muted); margin: 0.3rem 0 0; text-transform: none; font-size: 0.95rem; }
+
+.mas-app .mas-faq-list { display: flex; flex-direction: column; gap: 0.55rem; }
+.mas-app .mas-faq-item {
+  background: #fff; border: 1px solid var(--mas-line); border-radius: 12px; overflow: hidden;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-faq-item.is-open { border-color: var(--lvl); box-shadow: 0 8px 22px rgba(10,31,68,.07); }
+.mas-app .mas-faq-q {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  background: none; border: 0; cursor: pointer; text-align: left;
+  padding: 1rem 1.15rem; font-family: inherit; font-weight: 700; font-size: 0.98rem;
+  color: var(--mas-navy); text-transform: none;
+}
+.mas-app .mas-faq-mark {
+  flex: 0 0 auto; width: 26px; height: 26px; display: grid; place-items: center;
+  border-radius: 50%; background: color-mix(in srgb, var(--lvl) 12%, #fff); color: var(--lvl);
+  font-weight: 800; font-size: 1.1rem; line-height: 1;
+}
+.mas-app .mas-faq-a { padding: 0 1.15rem 1.1rem; }
+.mas-app .mas-faq-a p { margin: 0; color: var(--mas-muted); line-height: 1.6; text-transform: none; font-size: 0.95rem; }
+
+.mas-app .mas-faq-foot {
+  margin-top: 1rem; padding: 1.25rem 1.4rem; background: #fff;
+  border: 1px solid var(--mas-line); border-radius: 12px; text-align: center;
+}
+.mas-app .mas-faq-foot p { margin: 0; color: var(--mas-muted); text-transform: none; }
+
+/* Contact form embedded beneath the FAQ accordion (shares the /contact form). */
+.mas-app .mas-faq-contact {
+  margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--mas-line);
+}
+.mas-app .mas-faq-contact-head { margin-bottom: 1.25rem; }
+.mas-app .mas-faq-contact-head h2 { margin: 0 0 0.5rem; }
+.mas-app .mas-faq-contact-head p { margin: 0; }
+
+/* =====================================================================
+   GUIDES — index cards + guide detail
+   ===================================================================== */
+.mas-app .mas-guidegrid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1rem; margin-top: 0.5rem;
+}
+.mas-app .mas-guidecard {
+  --lvl: var(--mas-teal);
+  display: flex; flex-direction: column; gap: 0.5rem;
+  background: #fff; border: 1px solid var(--mas-line); border-top: 3px solid var(--lvl);
+  border-radius: 14px; padding: 1.25rem 1.2rem; text-decoration: none; color: var(--mas-ink);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-guidecard:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(10,31,68,.10); }
+.mas-app .mas-guidecard-aud {
+  align-self: flex-start; font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase;
+  font-weight: 800; color: var(--lvl); background: color-mix(in srgb, var(--lvl) 12%, #fff);
+  padding: 0.25rem 0.6rem; border-radius: 999px;
+}
+.mas-app .mas-guidecard h2 { color: var(--mas-navy); font-size: 1.15rem; }
+.mas-app .mas-guidecard p { color: var(--mas-muted); font-size: 0.9rem; line-height: 1.5; text-transform: none; margin: 0; flex: 1; }
+.mas-app .mas-guidecard-go { color: var(--lvl); font-weight: 800; font-size: 0.85rem; }
+
+/* ---- guide detail ---- */
+.mas-app .mas-guide { max-width: 820px; }
+.mas-app .mas-guide-back { display: inline-block; margin-bottom: 1rem; color: var(--mas-muted); text-decoration: none; font-weight: 700; font-size: 0.85rem; }
+.mas-app .mas-guide-back:hover { color: var(--lvl); }
+.mas-app .mas-guide-head { border-left: 4px solid var(--lvl); padding-left: 1rem; }
+.mas-app .mas-guide-section { margin-bottom: 1.6rem; }
+.mas-app .mas-guide-section h2 { color: var(--mas-navy); font-size: 1.2rem; margin-bottom: 0.5rem; }
+.mas-app .mas-guide-section p { color: var(--mas-ink); line-height: 1.65; text-transform: none; margin: 0 0 0.6rem; }
+.mas-app .mas-guide-steps, .mas-app .mas-guide-points { margin: 0.4rem 0 0; padding-left: 0; list-style: none; }
+.mas-app .mas-guide-steps { counter-reset: step; }
+.mas-app .mas-guide-steps li {
+  position: relative; padding: 0 0 0.7rem 2.4rem; counter-increment: step; line-height: 1.6; color: var(--mas-ink); text-transform: none;
+}
+.mas-app .mas-guide-steps li::before {
+  content: counter(step); position: absolute; left: 0; top: 0;
+  width: 1.7rem; height: 1.7rem; display: grid; place-items: center;
+  background: var(--lvl); color: #fff; border-radius: 50%; font-weight: 800; font-size: 0.8rem;
+}
+.mas-app .mas-guide-points li {
+  position: relative; padding: 0 0 0.5rem 1.4rem; line-height: 1.6; color: var(--mas-ink); text-transform: none;
+}
+.mas-app .mas-guide-points li::before {
+  content: ""; position: absolute; left: 0; top: 0.55rem; width: 7px; height: 7px; border-radius: 50%; background: var(--lvl);
+}
+.mas-app .mas-guide-note {
+  background: color-mix(in srgb, var(--lvl) 8%, #fff); border-left: 3px solid var(--lvl);
+  border-radius: 8px; padding: 0.8rem 1rem; color: var(--mas-ink) !important; font-size: 0.92rem; margin-top: 0.6rem !important;
+}
+.mas-app .mas-guide-foot {
+  display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--mas-line);
+}
+
+/* =====================================================================
+   INSTRUCTORS — directory + pathway CTAs
+   ===================================================================== */
+.mas-app .mas-inst-cta { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.75rem; }
+.mas-app .mas-inst-cta-card {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  background: #fff; border: 1px solid var(--mas-line); border-left: 3px solid var(--mas-teal);
+  border-radius: 12px; padding: 1.1rem 1.2rem; text-decoration: none; color: var(--mas-ink);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-inst-cta-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(10,31,68,.08); }
+.mas-app .mas-inst-cta-aud { font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 800; color: var(--mas-muted); }
+.mas-app .mas-inst-cta-card strong { color: var(--mas-navy); font-size: 1.1rem; font-family: 'Barlow Condensed','Nunito Sans',sans-serif; text-transform: uppercase; letter-spacing: .015em; }
+.mas-app .mas-inst-cta-go { color: var(--mas-teal); font-weight: 800; font-size: 0.85rem; }
+
+.mas-app .mas-dir-filter { max-width: 280px; margin-bottom: 1.25rem; }
+
+.mas-app .mas-inst-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.85rem; }
+.mas-app .mas-inst-card {
+  display: flex; align-items: center; gap: 0.85rem;
+  background: #fff; border: 1px solid var(--mas-line); border-radius: 12px; padding: 0.9rem 1rem;
+}
+.mas-app .mas-inst-avatar {
+  flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 800; font-size: 1.1rem;
+  color: #fff; background: linear-gradient(135deg, var(--mas-teal), var(--mas-teal-deep));
+}
+.mas-app .mas-inst-body h3 { color: var(--mas-navy); font-size: 1rem; margin: 0; }
+.mas-app .mas-inst-meta { color: var(--mas-muted); font-size: 0.85rem; margin: 0.15rem 0 0; text-transform: none; }
+.mas-app .mas-inst-note { margin-top: 1.5rem; color: var(--mas-muted); font-size: 0.88rem; text-transform: none; }
+
+/* =====================================================================
+   NAV DROPDOWNS  (Find a centre ▾, Guides ▾) — CSS-only hover/focus
+   ===================================================================== */
+.mas-app .mas-navitem.mas-has-menu { position: relative; display: inline-flex; align-items: center; }
+
+/* caret on dropdown parents */
+.mas-app .mas-menu-top { display: inline-flex; align-items: center; gap: 0.28rem; }
+.mas-app .mas-menu-top::after {
+  content: ""; width: 0; height: 0;
+  border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-top: 5px solid currentColor; opacity: 0.55; transition: transform .15s ease;
+}
+.mas-app .mas-navitem.mas-has-menu:hover .mas-menu-top::after,
+.mas-app .mas-navitem.mas-has-menu:focus-within .mas-menu-top::after { transform: rotate(180deg); }
+
+.mas-app .mas-submenu {
+  position: absolute; top: calc(100% + 8px); left: 0; min-width: 210px;
+  background: #fff; border: 1px solid var(--mas-line); border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(10, 31, 68, 0.14); padding: 0.4rem;
+  display: flex; flex-direction: column; gap: 0.05rem;
+  opacity: 0; visibility: hidden; transform: translateY(6px);
+  transition: opacity .16s ease, transform .16s ease, visibility .16s; z-index: 300;
+}
+/* hover bridge so the gap doesn't drop the menu */
+.mas-app .mas-navitem.mas-has-menu::before {
+  content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 10px;
+}
+.mas-app .mas-navitem.mas-has-menu:hover .mas-submenu,
+.mas-app .mas-navitem.mas-has-menu:focus-within .mas-submenu {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+.mas-app .mas-submenu-wide { min-width: 250px; }
+.mas-app .mas-submenu a {
+  display: block; padding: 0.5rem 0.7rem; border-radius: 8px; white-space: nowrap;
+  color: var(--mas-ink); text-decoration: none; font-size: 0.9rem; font-weight: 600;
+  border-bottom: 0;
+}
+.mas-app .mas-submenu a:hover,
+.mas-app .mas-submenu a.is-active {
+  background: color-mix(in srgb, var(--mas-teal) 10%, #fff); color: var(--mas-teal-deep);
+}
+.mas-app .mas-submenu a.is-active::after { content: none; }  /* cancel public underline marker */
+.mas-app .mas-submenu-head {
+  font-weight: 800 !important; color: var(--mas-navy) !important;
+  border-bottom: 1px solid var(--mas-line) !important; border-radius: 8px 8px 0 0 !important; margin-bottom: 0.2rem;
+}
+
+/* =====================================================================
+   MOBILE NAV — hamburger toggle + collapsible menu panel  (≤860px)
+   On tablet width and down the inline nav is replaced by a hamburger button
+   that reveals a dropdown panel. The dropdown sections expand on TAP (not
+   hover, which touch devices can't do). The header stays a compact single row
+   when closed; because it is position:fixed the open panel overlays the page
+   rather than pushing it, so the constant `.mas-main` offset only needs to
+   clear the COLLAPSED bar. Desktop (>860px) is untouched.
+   ===================================================================== */
+
+/* Affordances hidden on desktop; the hover dropdowns above stay in charge. */
+.mas-app .mas-nav-toggle { display: none; }
+.mas-app .mas-submenu-toggle { display: none; }
+.mas-app .mas-navitem-top { display: inline-flex; align-items: center; }
+
+/* Hamburger icon (animates to an X when open) */
+.mas-app .mas-burger {
+  display: inline-flex; flex-direction: column; justify-content: center;
+  gap: 5px; width: 24px; height: 18px;
+}
+.mas-app .mas-burger > span {
+  display: block; height: 2px; width: 100%; border-radius: 2px;
+  background: var(--mas-navy); transition: transform .2s ease, opacity .2s ease;
+}
+.mas-app .mas-burger.is-open > span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.mas-app .mas-burger.is-open > span:nth-child(2) { opacity: 0; }
+.mas-app .mas-burger.is-open > span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* Per-section caret button (shown only inside the mobile panel) */
+.mas-app .mas-submenu-caret {
+  width: 0; height: 0;
+  border-left: 5px solid transparent; border-right: 5px solid transparent;
+  border-top: 6px solid currentColor; opacity: 0.55; transition: transform .18s ease;
+}
+.mas-app .mas-has-menu.is-open .mas-submenu-toggle .mas-submenu-caret { transform: rotate(180deg); }
+
+@media (max-width: 860px) {
+  /* --- Compact single-row header: logo · Portal login · hamburger --- */
+  .mas-app .mas-topnav-inner {
+    position: relative;
+    flex-wrap: nowrap;
+    gap: 0.6rem;
+    padding: 0.5rem 1rem;
+    min-height: 56px;
+  }
+  .mas-app .mas-topnav.is-scrolled .mas-topnav-inner { padding: 0.4rem 1rem; }
+  .mas-app .mas-topnav .mas-logo { height: 44px; }
+  .mas-app .mas-topnav.is-scrolled .mas-logo { height: 38px; }
+
+  /* The open panel overlays the page (fixed header can't push content), so the
+     constant offset only needs to clear the collapsed bar plus the slim
+     (~30px) utility strip stacked above it. */
+  .mas-app .mas-site .mas-main { padding-top: 104px; }
+
+  /* Hamburger appears; keep the login button beside it on the right. */
+  .mas-app .mas-nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; padding: 0; flex: 0 0 auto;
+    background: transparent; border: 1px solid var(--mas-line); border-radius: 10px;
+    color: var(--mas-navy); cursor: pointer;
+  }
+  .mas-app .mas-nav-toggle:hover { background: var(--mas-paper); }
+  .mas-app .mas-nav-toggle:focus-visible { outline: 2px solid var(--mas-teal); outline-offset: 2px; }
+  .mas-app .mas-topnav .mas-login-btn { margin-left: auto; }
+
+  /* Nav collapses into a dropdown panel anchored under the bar. */
+  .mas-app .mas-topnav-links {
+    display: none;
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    z-index: 250;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    order: 0;
+    width: auto;
+    margin: 0;
+    padding: 0.25rem 1rem 1rem;
+    background: #fff;
+    border-top: 1px solid var(--mas-line);
+    box-shadow: 0 18px 30px rgba(10, 31, 68, 0.14);
+    max-height: calc(100vh - 56px);
+    overflow-y: auto;
+  }
+  .mas-app .mas-topnav-links.is-open { display: flex; }
+
+  /* Plain links and dropdown parents stack as full-width rows. */
+  .mas-app .mas-topnav-links > a,
+  .mas-app .mas-navitem-top .mas-menu-top {
+    display: block; width: 100%;
+    padding: 0.85rem 0.4rem;
+    font-size: 1.05rem;
+  }
+  .mas-app .mas-topnav-links > a { border-bottom: 1px solid var(--mas-line); }
+  .mas-app .mas-topnav-links > a.is-active::after { content: none; } /* drop desktop underline */
+
+  /* Dropdown groups: link + caret toggle on one row, submenu below. */
+  .mas-app .mas-navitem.mas-has-menu { display: block; width: 100%; }
+  .mas-app .mas-navitem-top {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--mas-line);
+  }
+  .mas-app .mas-navitem-top .mas-menu-top { flex: 1 1 auto; }
+  .mas-app .mas-menu-top::after { display: none; } /* hide desktop hover caret */
+  .mas-app .mas-submenu-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 48px; align-self: stretch; padding: 0; flex: 0 0 auto;
+    background: transparent; border: 0; color: var(--mas-navy); cursor: pointer;
+  }
+  .mas-app .mas-submenu-toggle:focus-visible { outline: 2px solid var(--mas-teal); outline-offset: -2px; }
+
+  /* Submenu becomes an inline, indented list revealed on tap (not hover). */
+  .mas-app .mas-submenu {
+    position: static; display: none;
+    opacity: 1; visibility: visible; transform: none;
+    min-width: 0; margin: 0; padding: 0.1rem 0 0.5rem 0.8rem;
+    background: transparent; border: 0; border-radius: 0; box-shadow: none;
+  }
+  .mas-app .mas-navitem.mas-has-menu.is-open .mas-submenu { display: flex; }
+  .mas-app .mas-submenu a { white-space: normal; }
+}
+
+/* =====================================================================
+   THE PROGRAMME — colour-blocked per-level sections
+   ===================================================================== */
+.mas-app .mas-prog-levels { margin-bottom: 0.5rem; }
+/* Keep anchored sections clear of the fixed header when scrolled into view. */
+.mas-app .mas-prog-level { scroll-margin-top: 80px; }
+.mas-app .mas-prog-level {
+  --lvl: var(--mas-teal);
+  display: grid; grid-template-columns: 200px 1fr;
+  background: #fff; border: 1px solid var(--mas-line); border-radius: 16px; overflow: hidden; margin-bottom: 1.1rem;
+}
+.mas-app .mas-prog-level-side {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--lvl) 16%, #fff), color-mix(in srgb, var(--lvl) 5%, #fff));
+  border-right: 3px solid var(--lvl);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.55rem; padding: 1.5rem;
+}
+.mas-app .mas-prog-level-side img { width: 112px; height: 112px; object-fit: contain; filter: drop-shadow(0 5px 12px rgba(10,31,68,.16)); }
+.mas-app .mas-prog-level-no { font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; color: var(--lvl); }
+.mas-app .mas-prog-level-body { padding: 1.4rem 1.6rem; }
+.mas-app .mas-prog-level-body h2 { color: var(--lvl); font-size: 1.5rem; }
+.mas-app .mas-prog-outcome { color: var(--mas-ink); line-height: 1.55; margin: 0.4rem 0 1.1rem; text-transform: none; }
+.mas-app .mas-prog-assessed-label { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 800; color: var(--mas-muted); margin: 0 0 0.55rem; }
+.mas-app .mas-prog-criteria { columns: 2; column-gap: 1.5rem; list-style: none; padding: 0; margin: 0; }
+.mas-app .mas-prog-criteria li {
+  position: relative; padding: 0 0 0.42rem 1.35rem; break-inside: avoid;
+  font-size: 0.88rem; color: var(--mas-ink); text-transform: none; line-height: 1.4;
+}
+.mas-app .mas-prog-criteria li::before {
+  content: ""; position: absolute; left: 0; top: 0.42rem; width: 8px; height: 8px; background: var(--lvl); transform: rotate(45deg);
+}
+@media (max-width: 720px) {
+  .mas-app .mas-prog-level { grid-template-columns: 1fr; }
+  .mas-app .mas-prog-level-side { flex-direction: row; justify-content: flex-start; gap: 1rem; border-right: 0; border-bottom: 3px solid var(--lvl); padding: 1rem 1.2rem; }
+  .mas-app .mas-prog-level-side img { width: 70px; height: 70px; }
+  .mas-app .mas-prog-criteria { columns: 1; }
+}
+
+.mas-app .mas-prog-info { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; }
+.mas-app .mas-prog-info-card { background: #fff; border: 1px solid var(--mas-line); border-radius: 14px; padding: 1.4rem 1.5rem; }
+.mas-app .mas-prog-info-card h2 { color: var(--mas-navy); font-size: 1.2rem; margin-bottom: 0.5rem; }
+.mas-app .mas-prog-info-card p { color: var(--mas-muted); line-height: 1.6; text-transform: none; margin: 0 0 0.6rem; }
+@media (max-width: 720px) { .mas-app .mas-prog-info { grid-template-columns: 1fr; } }
+
+.mas-app .mas-prog-cta, .mas-app .mas-centre-cta { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.75rem; }
+
+/* shared navy buttons (programme + directory) */
+.mas-app .mas-btn-solid-navy {
+  background: var(--mas-navy); color: #fff; font-weight: 800; padding: 0.7rem 1.3rem; border-radius: 10px;
+  text-decoration: none; transition: transform .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-btn-solid-navy:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(10,31,68,.2); }
+.mas-app .mas-btn-ghost-navy {
+  border: 2px solid var(--mas-navy); color: var(--mas-navy); font-weight: 800; padding: 0.62rem 1.3rem; border-radius: 10px;
+  text-decoration: none; transition: background .15s ease;
+}
+.mas-app .mas-btn-ghost-navy:hover { background: color-mix(in srgb, var(--mas-navy) 8%, #fff); }
+
+/* =====================================================================
+   FIND A CENTRE — partner-centre context (folded in from For Centres)
+   ===================================================================== */
+.mas-app .mas-centre-join { margin-top: 2.75rem; padding-top: 2rem; border-top: 1px solid var(--mas-line); }
+.mas-app .mas-centre-join-head { margin-bottom: 1.25rem; }
+.mas-app .mas-centre-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.mas-app .mas-centre-block {
+  --lvl: var(--mas-teal); background: #fff; border: 1px solid var(--mas-line);
+  border-top: 3px solid var(--lvl); border-radius: 14px; padding: 1.2rem 1.3rem;
+}
+.mas-app .mas-centre-block h3 { color: var(--mas-navy); font-size: 1.05rem; margin-bottom: 0.6rem; }
+.mas-app .mas-centre-block ul, .mas-app .mas-centre-block ol { margin: 0; padding-left: 0; list-style: none; }
+.mas-app .mas-centre-block li { position: relative; padding: 0 0 0.5rem 1.4rem; font-size: 0.9rem; color: var(--mas-ink); text-transform: none; line-height: 1.45; }
+.mas-app .mas-centre-block ul li::before { content: ""; position: absolute; left: 0; top: 0.5rem; width: 7px; height: 7px; border-radius: 50%; background: var(--lvl); }
+.mas-app .mas-centre-block ol { counter-reset: cstep; }
+.mas-app .mas-centre-block ol li { counter-increment: cstep; }
+.mas-app .mas-centre-block ol li::before {
+  content: counter(cstep); position: absolute; left: 0; top: 0; width: 1.25rem; height: 1.25rem;
+  display: grid; place-items: center; background: var(--lvl); color: #fff; border-radius: 50%; font-size: 0.7rem; font-weight: 800;
+}
+.mas-app .mas-centre-note { margin-top: 1.25rem; }
+
+/* =====================================================================
+   SITEWIDE FACELIFT — shared, subtle public-page polish
+   ===================================================================== */
+/* a small teal tick before every public eyebrow — quiet consistency */
+.mas-app .mas-site .mas-eyebrow { display: inline-flex; align-items: center; gap: 0.55rem; }
+.mas-app .mas-site .mas-eyebrow::before {
+  content: ""; width: 1.5rem; height: 3px; border-radius: 2px;
+  background: var(--mas-teal); flex: 0 0 auto;
+}
+
+/* tinted CTA band with a faint halftone — used to close content pages */
+.mas-app .mas-cta-band {
+  position: relative; overflow: hidden; margin-top: 2.5rem;
+  background:
+    radial-gradient(120% 130% at 90% 10%, rgba(255,255,255,0.16), transparent 55%),
+    linear-gradient(135deg, var(--mas-teal) 0%, var(--mas-teal-deep) 100%);
+  border-radius: 18px; padding: 2rem 2.25rem; color: #fff;
+}
+.mas-app .mas-cta-band::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.22) 1.3px, transparent 1.5px);
+  background-size: 15px 15px;
+  -webkit-mask-image: radial-gradient(120% 110% at 100% 0%, #000 0%, transparent 60%);
+          mask-image: radial-gradient(120% 110% at 100% 0%, #000 0%, transparent 60%);
+  opacity: 0.5;
+}
+.mas-app .mas-cta-band > * { position: relative; z-index: 1; }
+.mas-app .mas-cta-band h2 { color: #fff; font-size: 1.5rem; margin: 0 0 0.4rem; }
+.mas-app .mas-cta-band p { color: rgba(255,255,255,0.92); text-transform: none; margin: 0 0 1.2rem; max-width: 52ch; }
+.mas-app .mas-cta-band .mas-cta-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.mas-app .mas-cta-band .mas-btn-solid { background: #fff; color: var(--mas-teal-deep); font-weight: 800; padding: 0.7rem 1.3rem; border-radius: 10px; text-decoration: none; }
+.mas-app .mas-cta-band .mas-btn-outline-light { border: 2px solid rgba(255,255,255,0.65); color: #fff; font-weight: 800; padding: 0.62rem 1.3rem; border-radius: 10px; text-decoration: none; }
+
+/* section header with a small diamond tick (public) */
+.mas-app .mas-site .mas-section-head h2,
+.mas-app .mas-headtick {
+  display: flex; align-items: center; gap: 0.6rem; color: var(--mas-navy);
+}
+.mas-app .mas-site .mas-section-head h2::before,
+.mas-app .mas-headtick::before {
+  content: ""; width: 10px; height: 10px; background: var(--mas-teal); border-radius: 3px; transform: rotate(45deg); flex: 0 0 auto;
+}
+
+/* ---- About: governance role cards + trust trio ---- */
+.mas-app .mas-gov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+.mas-app .mas-gov-card { background: #fff; border: 1px solid var(--mas-line); border-left: 3px solid var(--mas-teal); border-radius: 12px; padding: 1.1rem 1.2rem; }
+.mas-app .mas-gov-card h3 { color: var(--mas-navy); font-size: 1.05rem; margin-bottom: 0.35rem; }
+.mas-app .mas-gov-card p { color: var(--mas-muted); font-size: 0.9rem; line-height: 1.5; text-transform: none; margin: 0; }
+
+.mas-app .mas-trust-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.mas-app .mas-trust-card { --lvl: var(--mas-teal); background: #fff; border: 1px solid var(--mas-line); border-top: 3px solid var(--lvl); border-radius: 14px; padding: 1.2rem 1.3rem; }
+.mas-app .mas-trust-card .mas-trust-ico {
+  width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 0.6rem;
+  background: color-mix(in srgb, var(--lvl) 14%, #fff); color: var(--lvl); font-weight: 800;
+}
+.mas-app .mas-trust-card h3 { color: var(--mas-navy); font-size: 1.05rem; margin-bottom: 0.3rem; }
+.mas-app .mas-trust-card p { color: var(--mas-muted); font-size: 0.9rem; line-height: 1.5; text-transform: none; margin: 0; }
+
+/* ---- Courses: cards with kind accent ---- */
+.mas-app .mas-course-list { display: flex; flex-direction: column; gap: 0.85rem; }
+.mas-app .mas-course-card {
+  --lvl: var(--mas-teal); display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap;
+  background: #fff; border: 1px solid var(--mas-line); border-left: 3px solid var(--lvl); border-radius: 14px; padding: 1.1rem 1.3rem;
+}
+.mas-app .mas-course-body { flex: 1; min-width: 240px; }
+.mas-app .mas-course-card h2 { color: var(--mas-navy); font-size: 1.15rem; margin-bottom: 0.4rem; }
+.mas-app .mas-course-kind {
+  display: inline-block; font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 800;
+  color: var(--lvl); background: color-mix(in srgb, var(--lvl) 12%, #fff); padding: 0.25rem 0.6rem; border-radius: 999px; margin-bottom: 0.5rem;
+}
+.mas-app .mas-course-meta { color: var(--mas-muted); font-size: 0.88rem; text-transform: none; margin: 0.1rem 0 0; }
+.mas-app .mas-course-desc { color: var(--mas-ink); font-size: 0.9rem; line-height: 1.55; text-transform: none; margin: 0.5rem 0 0; }
+.mas-app .mas-course-register {
+  background: var(--lvl); color: #fff; font-weight: 800; padding: 0.6rem 1.15rem; border-radius: 9px; text-decoration: none; white-space: nowrap;
+}
+
+/* ---- Contact: segmented + form panel polish ---- */
+.mas-app .mas-site .mas-contact-card { background: #fff; border: 1px solid var(--mas-line); border-radius: 16px; padding: 1.5rem 1.6rem; margin-top: 1rem; }
+@media (max-width: 600px) { .mas-app .mas-site .mas-contact-card { padding: 1.2rem 1.1rem; } }
+
+/* fallback for pages that no longer import admin.css */
+.mas-app .mas-site .mas-field-note { color: var(--mas-muted); font-size: 0.85rem; text-transform: none; }
+
+/* =====================================================================
+   SITE SEARCH — header entry point + /search results page
+   Navy/teal to match the rest of the public site. The desktop reveal sits
+   in the header bar; on mobile (≤860px) it is hidden and a full-width input
+   appears inside the menu panel instead (see the media block below).
+   ===================================================================== */
+/* The form is the positioning context for the overlay input; only the toggle
+   button occupies layout space, so the header row never changes width. */
+.mas-app .mas-topnav .mas-search { display: inline-flex; align-items: center; flex: 0 0 auto; margin-left: auto; position: relative; }
+.mas-app .mas-topnav .mas-search ~ .mas-login-btn { margin-left: 0.6rem; }
+/* The expanded input floats OVER the header bar (absolutely positioned), anchored
+   just left of the toggle and growing leftward. It is out of flow, so the nav items
+   stay put and never wrap to a second line. */
+.mas-app .mas-search-input {
+  position: absolute; top: 50%; right: calc(40px + 0.45rem); transform: translateY(-50%);
+  width: 0; height: 40px; padding: 0; box-sizing: border-box;
+  border: 1px solid transparent; border-radius: 999px;
+  background: #fff; color: var(--mas-navy);
+  font-family: inherit; font-size: 0.95rem;
+  opacity: 0; pointer-events: none; z-index: 30;
+  box-shadow: 0 8px 24px rgba(10, 31, 68, .14);
+  transition: width .25s ease, padding .25s ease, opacity .2s ease, border-color .15s ease;
+}
+.mas-app .mas-search.is-open .mas-search-input {
+  width: 260px; padding: 0 0.95rem;
+  opacity: 1; pointer-events: auto; border-color: var(--mas-line);
+}
+.mas-app .mas-search-input::placeholder { color: var(--mas-muted); }
+.mas-app .mas-search-input:focus { outline: none; border-color: var(--mas-teal); }
+.mas-app .mas-search-toggle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; padding: 0; flex: 0 0 auto;
+  background: transparent; border: 1px solid var(--mas-line); border-radius: 10px;
+  color: var(--mas-navy); cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.mas-app .mas-search-toggle:hover { background: var(--mas-paper); color: var(--brand); }
+.mas-app .mas-search-toggle:focus-visible { outline: 2px solid var(--mas-teal); outline-offset: 2px; }
+
+/* Mobile-only search box (lives in the menu panel). Hidden on desktop. */
+.mas-app .mas-search-mobile { display: none; }
+
+/* ---- Results page ---- */
+.mas-app .mas-search-results { list-style: none; margin: 1.75rem 0 0; padding: 0; display: grid; gap: 0.9rem; max-width: 760px; }
+.mas-app .mas-search-result { margin: 0; }
+.mas-app .mas-search-result-link {
+  display: block; padding: 1rem 1.2rem;
+  background: var(--mas-card); border: 1px solid var(--mas-line); border-left: 4px solid var(--mas-teal);
+  border-radius: 12px; text-decoration: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.mas-app .mas-search-result-link:hover {
+  border-left-color: var(--mas-teal-deep);
+  box-shadow: 0 6px 18px rgba(10, 31, 68, .08);
+}
+.mas-app .mas-search-result-source {
+  display: block; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--mas-teal-deep); font-weight: 700; margin-bottom: 0.2rem;
+}
+.mas-app .mas-search-result-title {
+  display: block; font-size: 1.15rem; color: var(--mas-navy); font-weight: 700; margin-bottom: 0.3rem;
+}
+.mas-app .mas-search-result-snippet { display: block; color: var(--mas-muted); font-size: 0.95rem; line-height: 1.5; }
+.mas-app .mas-search-empty {
+  margin-top: 1.5rem; padding: 1.4rem 1.5rem; max-width: 600px;
+  background: var(--mas-paper); border: 1px solid var(--mas-line); border-radius: 12px;
+}
+.mas-app .mas-search-empty p { margin: 0 0 0.5rem; }
+.mas-app .mas-search-empty p:last-child { margin-bottom: 0; }
+.mas-app .mas-search-empty a { color: var(--brand); }
+
+@media (max-width: 860px) {
+  /* Hide the desktop reveal; show the full-width search box in the menu panel. */
+  .mas-app .mas-topnav .mas-search { display: none; }
+  .mas-app .mas-search-mobile {
+    display: flex; align-items: center; gap: 0.5rem;
+    width: 100%; padding: 0.75rem 0.4rem; margin: 0;
+    border-bottom: 1px solid var(--mas-line);
+  }
+  .mas-app .mas-search-mobile .mas-search-input {
+    position: static; transform: none; box-shadow: none; z-index: auto;
+    flex: 1 1 auto; width: auto; height: 42px; padding: 0 0.9rem; margin: 0;
+    opacity: 1; pointer-events: auto;
+    border: 1px solid var(--mas-line); border-radius: 10px; background: #fff;
+  }
+  .mas-app .mas-search-mobile-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; flex: 0 0 auto;
+    background: var(--mas-navy); color: #fff; border: 0; border-radius: 10px; cursor: pointer;
+  }
+  .mas-app .mas-search-mobile-btn:focus-visible { outline: 2px solid var(--mas-teal); outline-offset: 2px; }
+}
+
+/* Keep the /search target clear of the fixed header on hash-anchored results. */
+.mas-app .mas-search-results [id] { scroll-margin-top: 80px; }
+
+/* ---------- Admin inline editing (EditableText) ---------- *
+ * Only system admins ever see these affordances; normal visitors get the value
+ * rendered as plain inline text (the component returns a bare string for them).
+ * The wrapper is display:inline so the surrounding element's styles still own
+ * the type — we only add an edit cue, never change the font/size/colour. */
+.mas-app .mas-editable {
+  display: inline;
+  font: inherit; color: inherit; letter-spacing: inherit; line-height: inherit;
+}
+.mas-app .mas-editable-trigger {
+  cursor: text;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 rgba(9, 179, 202, 0.4);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.mas-app .mas-editable-trigger:hover {
+  background: rgba(9, 179, 202, 0.1);
+  box-shadow: inset 0 -2px 0 var(--mas-teal);
+}
+.mas-app .mas-editable-trigger:focus-visible {
+  outline: 2px solid var(--mas-teal); outline-offset: 2px;
+}
+.mas-app .mas-editable-trigger.is-error {
+  box-shadow: inset 0 -2px 0 var(--mas-bad, #C62026);
+}
+.mas-app .mas-editable-field {
+  outline: 2px solid var(--mas-teal); outline-offset: 2px;
+  border-radius: 3px;
+  background: rgba(9, 179, 202, 0.08);
+  cursor: text;
+  white-space: pre-wrap;
+}
+/* Small floating status pill; absolutely positioned so it never disturbs layout. */
+.mas-app .mas-editable-status {
+  position: absolute;
+  margin-left: 0.4rem;
+  transform: translateY(-0.3em);
+  display: inline-block;
+  font-family: 'Nunito Sans', system-ui, sans-serif;
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+  line-height: 1; white-space: nowrap;
+  padding: 0.28em 0.5em; border-radius: 999px;
+  background: var(--mas-navy, #1E2752); color: #fff;
+  box-shadow: 0 2px 6px rgba(10, 31, 68, 0.25);
+}
+.mas-app .mas-editable-status.is-saved { background: var(--mas-good, #2e9e5b); }
+.mas-app .mas-editable-status.is-bad { background: var(--mas-bad, #C62026); }
