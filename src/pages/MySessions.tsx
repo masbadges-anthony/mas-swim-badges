@@ -1,11 +1,12 @@
 // Universal session tracker (#15). Role-scoped via list_session_tracker():
 // governance (chair/sysadmin/finance_officer/chief_examiner/board_member) see ALL
 // sessions; everyone else sees sessions they booked OR are assigned to assess.
-// Each row: six-step checkpoint bar; expand for both-way contacts (booker + examiner)
-// and the cancel action (where the row is yours and cancellable).
+// Each row: six-step checkpoint bar; expand for both-way contacts (booker + examiner),
+// remarks (instructor's + examiner's, when present), and the cancel action.
 //   list   ← list_session_tracker() → session_id, venue, state, scheduled_on, status,
 //            receipt_no, invoice_status, cp_* (6), candidate_count, booker_* (3),
-//            examiner_* (3), is_mine_booked, is_mine_assigned
+//            examiner_* (3), is_mine_booked, is_mine_assigned, instructor_remarks,
+//            examiner_remarks
 //   cancel ← cancel_session(_session_id) → { session_id, status, within_72h, refund_due }
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -35,6 +36,8 @@ interface TrackerRow {
   examiner_email: string | null;
   is_mine_booked: boolean;
   is_mine_assigned: boolean;
+  instructor_remarks: string | null;
+  examiner_remarks: string | null;
 }
 interface CancelResult {
   session_id: string;
@@ -326,6 +329,16 @@ export default function MySessions() {
                               ) : (
                                 <p className="mas-status">—</p>
                               )}
+                              {row.instructor_remarks && (
+                                <>
+                                  <h3 className="mas-detail-heading" style={{ marginTop: '0.75rem' }}>
+                                    Instructor’s notes
+                                  </h3>
+                                  <p className="mas-status" style={{ whiteSpace: 'pre-wrap' }}>
+                                    {row.instructor_remarks}
+                                  </p>
+                                </>
+                              )}
                             </div>
 
                             <div>
@@ -338,6 +351,16 @@ export default function MySessions() {
                                 </ul>
                               ) : (
                                 <p className="mas-status">Awaiting examiner pickup.</p>
+                              )}
+                              {row.examiner_remarks && (
+                                <>
+                                  <h3 className="mas-detail-heading" style={{ marginTop: '0.75rem' }}>
+                                    Examiner’s notes
+                                  </h3>
+                                  <p className="mas-status" style={{ whiteSpace: 'pre-wrap' }}>
+                                    {row.examiner_remarks}
+                                  </p>
+                                </>
                               )}
                             </div>
 
