@@ -62,8 +62,8 @@ export default function SetPassword() {
   }
 
   return (
-    <main className="mas-app mas-auth">
-      <div className="mas-auth-card" style={{ maxWidth: '30rem' }}>
+    <main className="mas-app mas-auth" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: '2rem 1rem' }}>
+      <div className="mas-auth-card" style={{ maxWidth: '30rem', width: '100%' }}>
         <img src="/mas-logo.png" alt="MAS Badges" className="mas-auth-logo" />
         <h1 className="mas-auth-title">Welcome, {displayName}</h1>
         <p className="mas-auth-lede">
