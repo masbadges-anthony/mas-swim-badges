@@ -203,7 +203,7 @@ export default function SwimmerRegistry() {
             <thead>
               <tr>
                 <th>Swimmer</th>
-                <th>D.O.B / Age</th>
+                <th>Age / D.O.B.</th>
                 <th>Instructor / Centre</th>
                 <th>State</th>
                 <th>Highest</th>
@@ -224,17 +224,17 @@ export default function SwimmerRegistry() {
                     <tr className={isOpen ? 'is-open' : undefined}>
                       <td>
                         <span className="mas-cell-stack">
-                          <span>{r.swimmer_id ?? '—'}</span>
-                          <span className="mas-cell-sub">
+                          <span>
                             {r.full_name}
                             {r.status === 'anonymized' && ' · anonymized'}
                           </span>
+                          <span className="mas-cell-sub">{r.swimmer_id ?? '—'}</span>
                         </span>
                       </td>
                       <td>
                         <span className="mas-cell-stack">
-                          <span>{fmtDate(r.date_of_birth)}</span>
-                          <span className="mas-cell-sub">{age !== null ? `${age} yrs` : '—'}</span>
+                          <span>{age !== null ? `${age} yrs` : '—'}</span>
+                          <span className="mas-cell-sub">{fmtDate(r.date_of_birth)}</span>
                         </span>
                       </td>
                       <td>
