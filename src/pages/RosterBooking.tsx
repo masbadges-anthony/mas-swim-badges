@@ -9,6 +9,10 @@ import '../styles/admin.css';
 // Officer records payment. Existing swimmers are added by pasting Swimmer IDs; new
 // candidates are added as rows that mint a Swimmer ID on submit. The roster locks at
 // create (no edit after) — by design.
+//
+// Optional instructor remarks (<=200 chars) are captured at create and passed through
+// to the RPC. They are visible to the picking-up examiner and to governance, never
+// to parents/candidates.
 
 const LEVELS: { value: string; label: string }[] = [
   { value: 'starfish', label: 'Starfish' },
@@ -19,6 +23,8 @@ const LEVELS: { value: string; label: string }[] = [
   { value: 'swordfish', label: 'Swordfish' },
   { value: 'dolphin', label: 'Dolphin' },
 ];
+
+const REMARKS_MAX = 200;
 
 interface CentreOption { id: string; name: string; state: string }
 interface InstructorOption { profile_id: string; full_name: string | null; email: string | null }
@@ -107,6 +113,7 @@ export default function RosterBooking() {
   const [venue, setVenue] = useState('');
   const minDate = useMemo(() => minDateLocal(), []);
   const [scheduledOn, setScheduledOn] = useState(minDate);
+  const [instructorRemarks, setInstructorRemarks] = useState('');
 
   // Roster working set
   const [rawIds, setRawIds] = useState('');
@@ -217,7 +224,9 @@ export default function RosterBooking() {
   }, [existing, validNew, feeMap]);
 
   const dateTooSoon = !!scheduledOn && scheduledOn < minDate;
-  const canSubmit = !!scheduledOn && !dateTooSoon && !!bookerId && rosterCount > 0 && !busy;
+  const remarksTooLong = instructorRemarks.length > REMARKS_MAX;
+  const canSubmit =
+    !!scheduledOn && !dateTooSoon && !!bookerId && rosterCount > 0 && !busy && !remarksTooLong;
 
   // Clicking "Create session" opens the confirm dialog; the RPC only fires on Proceed.
   function requestSubmit() {
@@ -257,6 +266,8 @@ export default function RosterBooking() {
       })),
     ];
 
+    const trimmedRemarks = instructorRemarks.trim();
+
     const { data, error: rErr } = await supabase.rpc('create_session_with_roster', {
       _candidates: candidates,
       _scheduled_on: scheduledOn,
@@ -264,6 +275,7 @@ export default function RosterBooking() {
       _venue: venue.trim() || null,
       _partner_center_id: centreId || null,
       _requested_by: isGovernance ? (onBehalfId || null) : null,
+      _instructor_remarks: trimmedRemarks || null,
     });
 
     setBusy(false);
@@ -274,6 +286,7 @@ export default function RosterBooking() {
       setExisting([]);
       setNewRows([]);
       setNotFound([]);
+      setInstructorRemarks('');
     }
   }
 
@@ -347,6 +360,27 @@ export default function RosterBooking() {
           {dateTooSoon && (
             <p className="mas-status mas-status-bad">
               The assessment date must be at least {MIN_LEAD_DAYS} days from today.
+            </p>
+          )}
+        </div>
+
+        <div className="mas-field">
+          <label htmlFor="remarks" className="mas-field-label">Notes for the examiner (optional)</label>
+          <textarea
+            id="remarks"
+            className="mas-input"
+            rows={3}
+            maxLength={REMARKS_MAX}
+            value={instructorRemarks}
+            onChange={(e) => setInstructorRemarks(e.target.value)}
+            placeholder="e.g. Pool access via side gate; roster includes two candidates re-attempting Guppy."
+          />
+          <p className="mas-field-note">
+            Visible to the picking-up examiner and to governance — not to parents. {instructorRemarks.length}/{REMARKS_MAX}
+          </p>
+          {remarksTooLong && (
+            <p className="mas-status mas-status-bad">
+              Notes must be {REMARKS_MAX} characters or fewer.
             </p>
           )}
         </div>
