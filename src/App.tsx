@@ -596,6 +596,8 @@ function AppLayout() {
           margin-left: 0 !important;
           margin-right: 0 !important;
         }
+        .mas-tight { font-size: 0.78rem; }
+        .mas-tight thead th { font-size: 0.72rem; }
       `}</style>
       <Sidebar
         open={sidebarOpen}
