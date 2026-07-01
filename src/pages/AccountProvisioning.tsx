@@ -51,13 +51,14 @@ function todayISO(): string {
 }
 
 const CSS = `
-.mas-page.mas-page-wide { max-width: none; width: 100%; }
+.mas-page.mas-page-wide { max-width: none !important; width: auto !important; margin-left: 0 !important; margin-right: 0 !important; }
 /* Break out of any ancestor max-width constraint on the shell */
 :where(main, [class*="shell"], [class*="layout"], [class*="content"]):has(.mas-page-wide) {
   max-width: none !important;
 }
 .mas-tight th, .mas-tight td { padding: 0.35rem 0.6rem; white-space: nowrap; vertical-align: middle; }
 .mas-tight tbody tr { line-height: 1.3; }
+.mas-tight td.mas-roles-cell { white-space: normal; }
 .mas-tight .mas-link { color: var(--mas-navy, #1E2752); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
 .mas-tight .mas-link:hover { text-decoration: none; }
 .mas-addrow td { background:#f5f8fc; }
@@ -400,7 +401,7 @@ export default function AccountProvisioning() {
                     ? <>{a.full_name} <span className="mas-cell-sub" style={{ fontWeight: 400 }}>· {a.email}</span></>
                     : <>{a.email} <span className="mas-cell-sub" style={{ fontWeight: 400 }}>· (no name)</span></>}
                 </td>
-                <td>{a.roles ? a.roles.split(', ').map(pretty).join(', ') : <span className="mas-cell-sub">no membership</span>}</td>
+                <td className="mas-roles-cell">{a.roles ? a.roles.split(', ').map(pretty).join(', ') : <span className="mas-cell-sub">no membership</span>}</td>
                 <td title={`Last sign-in: ${fmt(a.last_sign_in_at)}`}>{fmt(a.created_at)}</td>
                 <td>
                   {a.status === 'active' ? 'Active'
