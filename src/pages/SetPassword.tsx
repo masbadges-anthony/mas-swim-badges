@@ -1,13 +1,14 @@
-// #18 — Set password: landing page for admin-invited users after they click
-// their invitation email link.
+// #18 — Set password: landing page for admin-invited users (email invite) and
+// for users who arrived via the "preset password + must_change_password" flag
+// set by AccountProvisioning create/set_password (#22).
 //
-// Flow: sysadmin creates account via AccountProvisioning → Edge Function calls
-// inviteUserByEmail → invitee gets email → clicks link → Supabase confirms email
-// and creates session → lands on /auth/callback → AuthCallback detects the
-// `invited_role` metadata marker → routes here → they set a password → land on
-// /dashboard.
+// On successful save this page updates the password AND clears the
+// must_change_password metadata flag, so the AppLayout route guard stops
+// redirecting them here and they can use the app normally.
 //
-// Requires a live session (they arrive already signed-in via the invite token).
+// Requires a live session (email-invited users arrive already signed-in via the
+// invite token; preset-password users arrive signed-in from the login page but
+// blocked by the AppLayout guard).
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -36,12 +37,23 @@ export default function SetPassword() {
     user?.email ||
     'there';
 
+  const mustChange = user?.user_metadata?.must_change_password === true;
+
   const canSave = password.length >= 8 && password === confirm && !busy;
 
   async function save() {
     if (!canSave) return;
     setBusy(true); setError(null);
-    const { error } = await supabase.auth.updateUser({ password });
+    // Merge with existing metadata and clear the must_change_password flag so
+    // the AppLayout guard stops redirecting.
+    const merged = {
+      ...(user?.user_metadata ?? {}),
+      must_change_password: false,
+    };
+    const { error } = await supabase.auth.updateUser({
+      password,
+      data: merged,
+    });
     setBusy(false);
     if (error) { setError(error.message); return; }
     setDone(true);
@@ -55,8 +67,9 @@ export default function SetPassword() {
         <img src="/mas-logo.png" alt="MAS Badges" className="mas-auth-logo" />
         <h1 className="mas-auth-title">Welcome, {displayName}</h1>
         <p className="mas-auth-lede">
-          Your account has been created by MAS Badges. Set a password to finish
-          signing in — you’ll use this to log in next time.
+          {mustChange
+            ? 'For security, please set a new password before continuing. You’ll use this to log in next time.'
+            : 'Your account has been created by MAS Badges. Set a password to finish signing in — you’ll use this to log in next time.'}
         </p>
 
         {done ? (
