@@ -1,4 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
+// #16 — Accounts / Examiner payouts, dense-table conversion.
+//
+// Scope narrowed in this rebuild: this screen is now the single legitimate home
+// for the examiner-payout action (money out from MAS to examiners). Everything
+// else the old page did — building invoices, recording invoice payments, issuing
+// certificates, closing sessions — has moved to the surfaces that own those flows
+// (BillingPayments for money-in, auto-issue + auto-close for lifecycle). Keeping
+// them here would risk double-invoicing and conflict with auto-close.
+//
+// Wire (unchanged where used):
+//   list  ← list_sessions_overview() → session_id, status, venue, scheduled_on,
+//           state, examiner_name, invoice_paid, payout_recorded, …
+//   expected ← expected_examiner_payout(_session_id) → number
+//   pay   ← record_examiner_payout(_session_id, _amount, _reference)
+//
+// House law: dense table · Awaiting payout / Paid / Archived tabs · expand-row
+// for the payout form (record_examiner_payout takes real inputs — a modal
+// would be worse; inline expansion mirrors StoreAdmin/MyInvoices).
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
 
@@ -17,29 +35,10 @@ interface SessionOverview {
   invoice_paid: boolean;
   payout_recorded: boolean;
 }
-interface Invoice {
-  id: string;
-  status: string;
-  subtotal: number;
-  total: number;
-  currency: string;
-  receipt_no: string | null;
-  paid_at: string | null;
-}
-interface InvoiceItem {
-  id: string;
-  item_type: string;
-  description: string | null;
-  level: string | null;
-  quantity: number;
-  unit_amount: number;
-  amount: number;
-}
-
 type Load = 'loading' | 'ready' | 'error';
-type Filter = 'active' | 'closed' | 'archived';
+type Tab = 'awaiting' | 'paid' | 'archived';
 
-const ACTIVE = ['requested', 'examiner_invited', 'scheduled', 'completed'];
+const TERMINAL = new Set(['completed', 'closed', 'archived']);
 
 function money(n: number | string | null | undefined): string {
   return `RM ${Number(n ?? 0).toFixed(2)}`;
@@ -48,385 +47,299 @@ function prettyDate(s: string | null): string {
   if (!s) return '—';
   const d = new Date(s.length <= 10 ? s + 'T00:00:00' : s);
   if (Number.isNaN(d.getTime())) return s;
-  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 function pretty(s: string | null): string {
   if (!s) return '';
   return s.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
+// Payout status is derived from three signals: whether a payout has been
+// recorded, whether the invoice is paid (payouts prerequisite on money in),
+// and whether the session is archived.
+type PayoutBucket = 'awaiting' | 'paid' | 'archived' | 'not_ready';
+function payoutBucket(s: SessionOverview): PayoutBucket {
+  if (s.status === 'archived') return 'archived';
+  if (s.payout_recorded) return 'paid';
+  if (s.invoice_paid && TERMINAL.has(s.status)) return 'awaiting';
+  return 'not_ready';
+}
+
+const CSS = `
+.mas-payout-form { display:flex; gap:0.5rem; align-items:end; flex-wrap:wrap; }
+.mas-payout-form label { display:flex; flex-direction:column; font-size:0.8rem; color:var(--mas-muted,#5b6472); }
+.mas-payout-form input {
+  font:inherit; padding:0.35rem 0.5rem; border:1px solid var(--mas-line,#e3e9f3); border-radius:6px;
+}
+`;
+
 export default function Accounts() {
   const [sessions, setSessions] = useState<SessionOverview[]>([]);
   const [load, setLoad] = useState<Load>('loading');
-  const [filter, setFilter] = useState<Filter>('active');
+  const [tab, setTab] = useState<Tab>('awaiting');
+  const [query, setQuery] = useState('');
+  const [expanded, setExpanded] = useState<string | null>(null);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [items, setItems] = useState<InvoiceItem[]>([]);
-  const [expectedPayout, setExpectedPayout] = useState<number | null>(null);
-  const [detailLoad, setDetailLoad] = useState<Load>('ready');
-
-  const [payAmount, setPayAmount] = useState('');
-  const [payMethod, setPayMethod] = useState('bank_transfer');
-  const [payRef, setPayRef] = useState('');
-  const [payoutAmount, setPayoutAmount] = useState('');
-  const [payoutRef, setPayoutRef] = useState('');
-
+  // Per-row payout inputs + state.
+  const [expected, setExpected] = useState<Record<string, number | null>>({});
+  const [amount, setAmount] = useState<Record<string, string>>({});
+  const [reference, setReference] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [rowError, setRowError] = useState<Record<string, string>>({});
+  const [rowOk, setRowOk] = useState<Record<string, string>>({});
 
   const fetchSessions = useCallback(async () => {
     setLoad('loading');
     const { data, error } = await supabase.rpc('list_sessions_overview');
-    if (error) {
-      setLoad('error');
-      return;
-    }
+    if (error) { setLoad('error'); return; }
     setSessions((data ?? []) as SessionOverview[]);
     setLoad('ready');
   }, []);
 
-  useEffect(() => {
-    fetchSessions();
-  }, [fetchSessions]);
+  useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
-  const loadDetail = useCallback(async (sessionId: string) => {
-    setDetailLoad('loading');
-    setInvoice(null);
-    setItems([]);
-    setExpectedPayout(null);
+  const loadExpected = useCallback(async (sessionId: string) => {
+    if (expected[sessionId] != null) return;
+    const { data } = await supabase.rpc('expected_examiner_payout', { _session_id: sessionId });
+    const n = data == null ? null : Number(data);
+    setExpected((m) => ({ ...m, [sessionId]: n }));
+    if (n != null) setAmount((m) => (m[sessionId] ? m : { ...m, [sessionId]: String(n) }));
+  }, [expected]);
 
-    const { data: inv } = await supabase
-      .from('invoices')
-      .select('id, status, subtotal, total, currency, receipt_no, paid_at')
-      .eq('session_id', sessionId)
-      .maybeSingle();
-
-    if (inv) {
-      setInvoice(inv as Invoice);
-      const { data: its } = await supabase
-        .from('invoice_items')
-        .select('id, item_type, description, level, quantity, unit_amount, amount')
-        .eq('invoice_id', (inv as Invoice).id)
-        .order('created_at');
-      setItems((its ?? []) as InvoiceItem[]);
-      setPayAmount(String((inv as Invoice).total ?? ''));
-    }
-
-    const { data: payout } = await supabase.rpc('expected_examiner_payout', {
-      _session_id: sessionId,
+  function toggleExpand(sessionId: string) {
+    setExpanded((cur) => {
+      const next = cur === sessionId ? null : sessionId;
+      if (next) loadExpected(sessionId);
+      return next;
     });
-    if (payout != null) {
-      setExpectedPayout(Number(payout));
-      setPayoutAmount(String(Number(payout)));
-    }
+  }
 
-    setDetailLoad('ready');
-  }, []);
-
-  function select(sessionId: string) {
-    setNotice(null);
-    setError(null);
-    if (selectedId === sessionId) {
-      setSelectedId(null);
+  async function recordPayout(s: SessionOverview) {
+    const amt = Number(amount[s.session_id] ?? '');
+    if (!amt || amt <= 0) {
+      setRowError((m) => ({ ...m, [s.session_id]: 'Enter a positive amount.' }));
       return;
     }
-    setSelectedId(sessionId);
-    loadDetail(sessionId);
-  }
-
-  async function run(action: string, fn: () => Promise<{ error: { message: string } | null }>, ok: string) {
-    setBusy(action);
-    setNotice(null);
-    setError(null);
-    const { error } = await fn();
+    setBusy(s.session_id);
+    setRowError((m) => { const n = { ...m }; delete n[s.session_id]; return n; });
+    setRowOk((m) => { const n = { ...m }; delete n[s.session_id]; return n; });
+    const { error } = await supabase.rpc('record_examiner_payout', {
+      _session_id: s.session_id,
+      _amount: amt,
+      _reference: (reference[s.session_id] ?? '').trim() || null,
+    });
     setBusy(null);
     if (error) {
-      setError(error.message);
-      return false;
+      setRowError((m) => ({ ...m, [s.session_id]: error.message }));
+      return;
     }
-    setNotice(ok);
-    if (selectedId) await loadDetail(selectedId);
-    await fetchSessions();
-    return true;
+    setRowOk((m) => ({ ...m, [s.session_id]: `Payout of ${money(amt)} recorded.` }));
+    fetchSessions();
   }
 
-  const sel = sessions.find((s) => s.session_id === selectedId) ?? null;
+  const counts = useMemo(() => {
+    const c = { awaiting: 0, paid: 0, archived: 0 };
+    for (const s of sessions) {
+      const b = payoutBucket(s);
+      if (b !== 'not_ready') c[b]++;
+    }
+    return c;
+  }, [sessions]);
 
-  const shown = sessions.filter((s) => {
-    if (filter === 'active') return ACTIVE.includes(s.status);
-    return s.status === filter;
-  });
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return sessions
+      .filter((s) => payoutBucket(s) === tab)
+      .filter((s) =>
+        !q ||
+        (s.venue ?? '').toLowerCase().includes(q) ||
+        (s.state ?? '').toLowerCase().includes(q) ||
+        (s.examiner_name ?? '').toLowerCase().includes(q) ||
+        (s.centre_name ?? '').toLowerCase().includes(q));
+  }, [sessions, tab, query]);
 
   return (
     <section className="mas-page">
+      <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Accounts</p>
-        <h1>Assessment billing</h1>
+        <h1>Examiner payouts</h1>
         <p className="mas-lede">
-          Build invoices, record payments, issue certificates on payment, settle
-          examiner payouts, and close out sessions.
+          Record payments out to examiners for completed, invoiced sessions. A payout
+          becomes actionable once the session invoice has been paid. Invoicing and
+          money-in live in <em>Billing · Invoices &amp; Payments</em>; certificate
+          release and session close happen automatically.
         </p>
       </header>
 
-      <div className="mas-admin-toolbar">
+      <div className="mas-admin-toolbar" style={{ gap: '0.6rem', flexWrap: 'wrap' }}>
         <button className="mas-btn-ghost" onClick={fetchSessions} disabled={load === 'loading'}>
           Refresh
         </button>
-        <select
-          className="mas-select"
-          value={filter}
-          onChange={(e) => { setFilter(e.target.value as Filter); setSelectedId(null); }}
-          style={{ maxWidth: '12rem' }}
-        >
-          <option value="active">Active</option>
-          <option value="closed">Closed</option>
-          <option value="archived">Archived</option>
-        </select>
-        {load === 'ready' && <span className="mas-admin-count">{shown.length} shown</span>}
+        <div className="mas-tabs" role="tablist" style={{ display: 'flex', gap: '0.3rem' }}>
+          <button role="tab" aria-selected={tab === 'awaiting'}
+            className={tab === 'awaiting' ? 'mas-btn-primary mas-btn-compact' : 'mas-btn-ghost mas-btn-compact'}
+            onClick={() => { setTab('awaiting'); setExpanded(null); }}>
+            Awaiting payout ({counts.awaiting})
+          </button>
+          <button role="tab" aria-selected={tab === 'paid'}
+            className={tab === 'paid' ? 'mas-btn-primary mas-btn-compact' : 'mas-btn-ghost mas-btn-compact'}
+            onClick={() => { setTab('paid'); setExpanded(null); }}>
+            Paid ({counts.paid})
+          </button>
+          <button role="tab" aria-selected={tab === 'archived'}
+            className={tab === 'archived' ? 'mas-btn-primary mas-btn-compact' : 'mas-btn-ghost mas-btn-compact'}
+            onClick={() => { setTab('archived'); setExpanded(null); }}>
+            Archived ({counts.archived})
+          </button>
+        </div>
+        <input className="mas-input" type="text" value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search venue, state, examiner, centre"
+          style={{ maxWidth: '22rem' }} />
+        {load === 'ready' && <span className="mas-admin-count">{filtered.length} shown</span>}
       </div>
 
       {load === 'loading' && <p className="mas-status">Loading…</p>}
-      {load === 'error' && <p className="mas-status mas-status-bad">Couldn’t load sessions.</p>}
-      {load === 'ready' && shown.length === 0 && <p className="mas-status">No sessions here.</p>}
+      {load === 'error' && <p className="mas-status mas-status-bad">Couldn’t load sessions. Refresh to try again.</p>}
+      {load === 'ready' && filtered.length === 0 && (
+        <p className="mas-status">
+          {tab === 'awaiting' ? 'Nothing awaiting payout right now.'
+            : tab === 'paid' ? 'No payouts recorded yet.'
+            : 'No archived sessions.'}
+        </p>
+      )}
 
-      {load === 'ready' && shown.length > 0 && (
-        <ul className="mas-admin-list">
-          {shown.map((s) => {
-            const open = selectedId === s.session_id;
-            return (
-              <li key={s.session_id} className="mas-admin-row" style={{ flexWrap: 'wrap' }}>
-                <div className="mas-admin-main">
-                  <h2 className="mas-admin-name">
-                    {s.venue || pretty(s.state) || 'Assessment session'}
-                  </h2>
-                  <p className="mas-admin-meta">
-                    <span className="mas-pill">{pretty(s.status)}</span>
-                    <span className="mas-admin-sub">
-                      {prettyDate(s.scheduled_on)}
-                      {s.instructor_name ? ` · ${s.instructor_name}` : ''}
-                      {s.centre_name ? ` · ${s.centre_name}` : ''}
-                      {` · ${Number(s.candidate_count)} candidate${Number(s.candidate_count) === 1 ? '' : 's'}`}
-                      {s.examiner_name ? ` · examiner: ${s.examiner_name}` : ' · examiner: pending'}
-                    </span>
-                  </p>
-                  <p className="mas-admin-meta">
-                    <span className={`mas-outcome ${s.invoice_paid ? 'is-pass' : 'is-refer'}`}>
-                      {s.invoice_status ? `Invoice: ${pretty(s.invoice_status)}` : 'No invoice'}
-                    </span>
-                    <span className={`mas-outcome ${s.payout_recorded ? 'is-pass' : 'is-refer'}`}>
-                      {s.payout_recorded ? 'Payout recorded' : 'Payout pending'}
-                    </span>
-                  </p>
-                </div>
-                <div className="mas-admin-action">
-                  <button className="mas-btn-ghost" onClick={() => select(s.session_id)}>
-                    {open ? 'Close' : 'Manage'}
-                  </button>
-                </div>
-
-                {open && sel && (
-                  <div style={{ flexBasis: '100%', marginTop: '0.75rem' }} className="mas-form">
-                    {notice && <p className="mas-status mas-status-good">{notice}</p>}
-                    {error && <p className="mas-status mas-status-bad">{error}</p>}
-                    {detailLoad === 'loading' && <p className="mas-status">Loading invoice…</p>}
-
-                    {/* Invoice */}
-                    <header className="mas-page-head mas-section-head"><h3>Invoice</h3></header>
-                    {!invoice ? (
-                      <>
-                        <p className="mas-status">No invoice yet.</p>
-                        <div className="mas-form-actions">
-                          <button
-                            className="mas-btn-primary"
-                            disabled={busy === 'build'}
-                            onClick={() =>
-                              run('build',
-                                () => supabase.rpc('build_session_invoice', { _session_id: sel.session_id }).then((r) => ({ error: r.error })),
-                                'Invoice built.')
-                            }
-                          >
-                            {busy === 'build' ? 'Building…' : 'Build invoice'}
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <ul className="mas-admin-list">
-                          {items.map((it) => (
-                            <li key={it.id} className="mas-admin-row">
-                              <div className="mas-admin-main">
-                                <span className="mas-admin-sub">
-                                  {it.description || pretty(it.item_type)}
-                                </span>
-                              </div>
-                              <div className="mas-admin-action">{money(it.amount)}</div>
-                            </li>
-                          ))}
-                        </ul>
-                        <p className="mas-admin-meta">
-                          <span className="mas-pill">{pretty(invoice.status)}</span>
-                          <span className="mas-admin-sub">
-                            Subtotal {money(invoice.subtotal)} · <strong>Total {money(invoice.total)}</strong>
-                            {invoice.receipt_no ? ` · receipt ${invoice.receipt_no}` : ''}
+      {load === 'ready' && filtered.length > 0 && (
+        <div className="mas-table-wrap">
+          <table className="mas-table">
+            <thead>
+              <tr>
+                <th className="mas-table-expandcol" aria-label="Expand" />
+                <th>Session</th>
+                <th>Examiner</th>
+                <th>Scheduled</th>
+                <th>Invoice</th>
+                <th>Payout</th>
+                <th className="mas-table-actioncol">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((s) => {
+                const isOpen = expanded === s.session_id;
+                const canRecord = tab === 'awaiting' && s.invoice_paid && !s.payout_recorded && !!s.examiner_name;
+                return (
+                  <Fragment key={s.session_id}>
+                    <tr className={isOpen ? 'is-open' : undefined}>
+                      <td className="mas-table-expandcol">
+                        <button
+                          type="button"
+                          className="mas-table-expandbtn"
+                          onClick={() => toggleExpand(s.session_id)}
+                          aria-expanded={isOpen}
+                          aria-label={isOpen ? 'Collapse' : 'Expand'}
+                        >
+                          {isOpen ? '▾' : '▸'}
+                        </button>
+                      </td>
+                      <td className="mas-cell-strong">
+                        <span className="mas-cell-stack">
+                          <span>{s.venue || pretty(s.state) || 'Assessment session'}</span>
+                          <span className="mas-cell-sub">
+                            {s.centre_name ? `${s.centre_name} · ` : ''}
+                            {Number(s.candidate_count)} candidate{Number(s.candidate_count) === 1 ? '' : 's'}
                           </span>
-                        </p>
-                        {invoice.status !== 'paid' && (
-                          <div className="mas-form-actions">
-                            <button
-                              className="mas-btn-ghost"
-                              disabled={busy === 'build'}
-                              onClick={() =>
-                                run('build',
-                                  () => supabase.rpc('build_session_invoice', { _session_id: sel.session_id }).then((r) => ({ error: r.error })),
-                                  'Invoice rebuilt.')
-                              }
-                            >
-                              {busy === 'build' ? 'Rebuilding…' : 'Rebuild from roster'}
-                            </button>
+                        </span>
+                      </td>
+                      <td>{s.examiner_name || <span className="mas-cell-sub">unassigned</span>}</td>
+                      <td>{prettyDate(s.scheduled_on)}</td>
+                      <td>
+                        <span className={`mas-outcome ${s.invoice_paid ? 'is-pass' : 'is-refer'}`}>
+                          {s.invoice_status ? pretty(s.invoice_status) : 'None'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`mas-outcome ${s.payout_recorded ? 'is-pass' : 'is-refer'}`}>
+                          {s.payout_recorded ? 'Recorded' : 'Pending'}
+                        </span>
+                      </td>
+                      <td className="mas-table-actioncol">
+                        {canRecord && (
+                          <button className="mas-btn-ghost mas-btn-compact" onClick={() => toggleExpand(s.session_id)}>
+                            {isOpen ? 'Close' : 'Record payout'}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+
+                    {isOpen && (
+                      <tr className="mas-table-detailrow">
+                        <td colSpan={7}>
+                          <div className="mas-table-detail">
+                            <p className="mas-cell-sub" style={{ marginBottom: '0.5rem' }}>
+                              Expected payout: <strong>{expected[s.session_id] == null ? '…' : money(expected[s.session_id])}</strong>
+                              {s.examiner_name ? ` · to ${s.examiner_name}` : ''}
+                              {s.payout_recorded ? ' · already recorded' : ''}
+                            </p>
+
+                            {canRecord ? (
+                              <>
+                                <div className="mas-payout-form">
+                                  <label>Amount (RM)
+                                    <input
+                                      type="number" step="0.01"
+                                      value={amount[s.session_id] ?? ''}
+                                      onChange={(e) => setAmount((m) => ({ ...m, [s.session_id]: e.target.value }))}
+                                      style={{ width: '10rem' }}
+                                    />
+                                  </label>
+                                  <label>Reference
+                                    <input
+                                      type="text"
+                                      value={reference[s.session_id] ?? ''}
+                                      onChange={(e) => setReference((m) => ({ ...m, [s.session_id]: e.target.value }))}
+                                      placeholder="payout proof / receipt"
+                                      style={{ width: '16rem' }}
+                                    />
+                                  </label>
+                                  <button
+                                    className="mas-btn-primary mas-btn-compact"
+                                    onClick={() => recordPayout(s)}
+                                    disabled={busy === s.session_id}
+                                  >
+                                    {busy === s.session_id ? 'Recording…' : 'Record payout'}
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <p className="mas-status">
+                                {s.payout_recorded ? 'Payout already recorded.'
+                                  : !s.examiner_name ? 'No examiner assigned yet.'
+                                  : !s.invoice_paid ? 'Waiting for the session invoice to be paid.'
+                                  : 'Not yet actionable.'}
+                              </p>
+                            )}
+
+                            {rowOk[s.session_id] && (
+                              <p className="mas-status mas-status-good" style={{ marginTop: '0.4rem' }}>
+                                {rowOk[s.session_id]}
+                              </p>
+                            )}
+                            {rowError[s.session_id] && (
+                              <p className="mas-status mas-status-bad" style={{ marginTop: '0.4rem' }}>
+                                {rowError[s.session_id]}
+                              </p>
+                            )}
                           </div>
-                        )}
-                      </>
+                        </td>
+                      </tr>
                     )}
-
-                    {/* Payment */}
-                    {invoice && invoice.status !== 'paid' && (
-                      <>
-                        <header className="mas-page-head mas-section-head"><h3>Record payment</h3></header>
-                        <div className="mas-field">
-                          <label className="mas-field-label">Amount</label>
-                          <input className="mas-input" type="number" step="0.01" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} />
-                        </div>
-                        <div className="mas-field">
-                          <label className="mas-field-label">Method</label>
-                          <input className="mas-input" type="text" value={payMethod} onChange={(e) => setPayMethod(e.target.value)} />
-                        </div>
-                        <div className="mas-field">
-                          <label className="mas-field-label">Reference</label>
-                          <input className="mas-input" type="text" value={payRef} onChange={(e) => setPayRef(e.target.value)} placeholder="proof / receipt reference" />
-                        </div>
-                        <div className="mas-form-actions">
-                          <button
-                            className="mas-btn-primary"
-                            disabled={busy === 'pay' || !payAmount}
-                            onClick={() =>
-                              run('pay',
-                                () => supabase.rpc('record_invoice_payment', {
-                                  _invoice_id: invoice.id,
-                                  _amount: Number(payAmount),
-                                  _method: payMethod || null,
-                                  _reference: payRef || null,
-                                }).then((r) => ({ error: r.error })),
-                                'Payment recorded; invoice marked paid.')
-                            }
-                          >
-                            {busy === 'pay' ? 'Recording…' : 'Record payment'}
-                          </button>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Certificates */}
-                    {invoice && invoice.status === 'paid' && (
-                      <>
-                        <header className="mas-page-head mas-section-head"><h3>Certificates</h3></header>
-                        <div className="mas-form-actions">
-                          <button
-                            className="mas-btn-primary"
-                            disabled={busy === 'issue'}
-                            onClick={() =>
-                              run('issue',
-                                () => supabase.rpc('issue_certificates_for_session', { _session_id: sel.session_id }).then((r) => ({ error: r.error })),
-                                'Certificates issued for all passing candidates.')
-                            }
-                          >
-                            {busy === 'issue' ? 'Issuing…' : 'Issue certificates'}
-                          </button>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Examiner payout */}
-                    <header className="mas-page-head mas-section-head"><h3>Examiner payout</h3></header>
-                    <p className="mas-admin-sub">
-                      Expected: {expectedPayout == null ? '—' : money(expectedPayout)}
-                      {sel.payout_recorded ? ' · recorded' : ''}
-                    </p>
-                    {!sel.payout_recorded && (
-                      <>
-                        <div className="mas-field">
-                          <label className="mas-field-label">Payout amount</label>
-                          <input className="mas-input" type="number" step="0.01" value={payoutAmount} onChange={(e) => setPayoutAmount(e.target.value)} />
-                        </div>
-                        <div className="mas-field">
-                          <label className="mas-field-label">Reference</label>
-                          <input className="mas-input" type="text" value={payoutRef} onChange={(e) => setPayoutRef(e.target.value)} placeholder="payout proof / receipt" />
-                        </div>
-                        <div className="mas-form-actions">
-                          <button
-                            className="mas-btn-primary"
-                            disabled={busy === 'payout' || !payoutAmount || !sel.examiner_name}
-                            onClick={() =>
-                              run('payout',
-                                () => supabase.rpc('record_examiner_payout', {
-                                  _session_id: sel.session_id,
-                                  _amount: Number(payoutAmount),
-                                  _reference: payoutRef || null,
-                                }).then((r) => ({ error: r.error })),
-                                'Examiner payout recorded.')
-                            }
-                          >
-                            {busy === 'payout' ? 'Recording…' : 'Record payout'}
-                          </button>
-                        </div>
-                        {!sel.examiner_name && (
-                          <p className="mas-field-note">No examiner assigned yet — assign one before recording a payout.</p>
-                        )}
-                      </>
-                    )}
-
-                    {/* Close / archive */}
-                    <header className="mas-page-head mas-section-head"><h3>Close out</h3></header>
-                    <div className="mas-form-actions">
-                      {sel.status !== 'closed' && sel.status !== 'archived' && (
-                        <button
-                          className="mas-btn-primary"
-                          disabled={busy === 'close' || !sel.invoice_paid || !sel.payout_recorded}
-                          onClick={() =>
-                            run('close',
-                              () => supabase.rpc('close_session', { _session_id: sel.session_id }).then((r) => ({ error: r.error })),
-                              'Session closed.')
-                          }
-                        >
-                          {busy === 'close' ? 'Closing…' : 'Close session'}
-                        </button>
-                      )}
-                      {sel.status === 'closed' && (
-                        <button
-                          className="mas-btn-ghost"
-                          disabled={busy === 'archive'}
-                          onClick={() =>
-                            run('archive',
-                              () => supabase.rpc('archive_session', { _session_id: sel.session_id }).then((r) => ({ error: r.error })),
-                              'Session archived.')
-                          }
-                        >
-                          {busy === 'archive' ? 'Archiving…' : 'Archive session'}
-                        </button>
-                      )}
-                    </div>
-                    {sel.status !== 'closed' && sel.status !== 'archived' && (!sel.invoice_paid || !sel.payout_recorded) && (
-                      <p className="mas-field-note">
-                        Closing needs both the invoice paid and the examiner payout recorded.
-                      </p>
-                    )}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );
