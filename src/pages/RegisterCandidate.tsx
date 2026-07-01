@@ -22,12 +22,13 @@ interface MyCandidate {
   created_at: string;
   claim_code: string | null;
   swimmer_id: string | null;
+  parent_email: string | null;
 }
 type Load = 'loading' | 'ready' | 'error';
 type Tab = 'active' | 'withdrawn';
 
 const CANDIDATE_COLS =
-  'id, full_name, date_of_birth, partner_center_id, status, created_at, claim_code, swimmer_id';
+  'id, full_name, date_of_birth, partner_center_id, status, created_at, claim_code, swimmer_id, parent_email';
 
 function ageFrom(dob: string): number | null {
   if (!dob) return null;
@@ -50,7 +51,7 @@ function formatDate(d: string | null): string {
 const CSS = `
 .mas-addrow td { background:#f5f8fc; }
 .mas-addrow-fields { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
-.mas-addrow-fields input[type=text], .mas-addrow-fields input[type=date], .mas-addrow-fields select {
+.mas-addrow-fields input[type=text], .mas-addrow-fields input[type=date], .mas-addrow-fields input[type=email], .mas-addrow-fields select {
   font:inherit; padding:0.35rem 0.5rem; border:1px solid var(--mas-line,#e3e9f3); border-radius:6px;
 }
 .mas-addrow-fields input[type=text] { min-width:12rem; }
@@ -63,6 +64,7 @@ export default function RegisterCandidate() {
 
   const [fullName, setFullName] = useState('');
   const [dob, setDob] = useState('');
+  const [parentEmail, setParentEmail] = useState('');
   const [consent, setConsent] = useState(false);
 
   const [centres, setCentres] = useState<CentreOption[]>([]);
@@ -130,6 +132,7 @@ export default function RegisterCandidate() {
       _full_name: fullName.trim(),
       _dob: dob,
       _consent: consent,
+      _parent_email: parentEmail.trim() || null,
     });
     setSubmitting(false);
     if (error) {
@@ -144,6 +147,7 @@ export default function RegisterCandidate() {
     }
     setFullName('');
     setDob('');
+    setParentEmail('');
     setConsent(false);
   }
 
@@ -241,6 +245,12 @@ export default function RegisterCandidate() {
                       max={new Date().toISOString().slice(0, 10)}
                       onChange={(e) => setDob(e.target.value)}
                     />
+                    <input
+                      type="email" value={parentEmail} autoComplete="off"
+                      placeholder="Parent email (optional)"
+                      onChange={(e) => setParentEmail(e.target.value)}
+                      style={{ minWidth: '14rem' }}
+                    />
                     <label className="mas-addrow-consent">
                       <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
                       <span>Parent/guardian consent given</span>
@@ -265,8 +275,13 @@ export default function RegisterCandidate() {
             {filtered.map((c) => (
               <tr key={c.id}>
                 <td className="mas-cell-strong">
-                  {c.full_name}
-                  {c.status === 'anonymized' && <span className="mas-pill" style={{ marginLeft: '0.4rem' }}>anonymized</span>}
+                  <span className="mas-cell-stack">
+                    <span>
+                      {c.full_name}
+                      {c.status === 'anonymized' && <span className="mas-pill" style={{ marginLeft: '0.4rem' }}>anonymized</span>}
+                    </span>
+                    {c.parent_email && <span className="mas-cell-sub">{c.parent_email}</span>}
+                  </span>
                 </td>
                 <td>{formatDate(c.date_of_birth) || '—'}</td>
                 <td>{c.partner_center_id ? (centreName[c.partner_center_id] ?? 'Centre') : 'Independent'}</td>
