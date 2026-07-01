@@ -1,9 +1,6 @@
-// #16 — Certificates registry, dense-table conversion.
-// Reads (unchanged wire): certificates + certificate_revocations directly via RLS.
-// House law: dense table · Valid/Revoked tabs · per-row Revoke (with reason).
-// Revoke is a data-write with real weight, so it uses an inline expanded row
-// (reason + Confirm/Cancel) rather than a modal — the same "reveal on action"
-// pattern as MyInvoices' cancel flow.
+// Certificates registry, dense-table tight-row version.
+// Reads: certificates + certificate_revocations directly via RLS.
+// Valid/Revoked tabs · per-row Revoke (inline expand with reason).
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
@@ -19,6 +16,15 @@ interface Certificate {
 }
 type Load = 'loading' | 'ready' | 'error';
 type Tab = 'valid' | 'revoked';
+
+const CSS = `
+.mas-tight th, .mas-tight td { padding: 0.35rem 0.6rem; white-space: nowrap; vertical-align: middle; }
+.mas-tight tbody tr { line-height: 1.3; }
+.mas-tight .mas-link { color: var(--mas-navy, #1E2752); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
+.mas-tight .mas-link:hover { text-decoration: none; }
+.mas-tight .mas-link + .mas-link { margin-left: 0.6rem; }
+.mas-tight .mas-serial { font-variant-numeric: tabular-nums; font-weight: 600; }
+`;
 
 function prettyLevel(s: string): string {
   return s.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
@@ -102,6 +108,7 @@ export default function Certificates() {
 
   return (
     <section className="mas-page">
+      <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Registry</p>
         <h1>Certificates</h1>
@@ -140,7 +147,7 @@ export default function Certificates() {
 
       {load === 'ready' && filtered.length > 0 && (
         <div className="mas-table-wrap">
-          <table className="mas-table">
+          <table className="mas-table mas-tight">
             <thead>
               <tr>
                 <th>Candidate</th>
@@ -159,24 +166,17 @@ export default function Certificates() {
                   <Fragment key={c.id}>
                     <tr>
                       <td className="mas-cell-strong">{c.candidate_name_snapshot}</td>
-                      <td><span className="mas-pill">{prettyLevel(c.level)}</span></td>
+                      <td>{prettyLevel(c.level)}</td>
                       <td>
-                        <span className="mas-cell-stack">
-                          <Link to={`/certificate/${c.serial}`} className="mas-serial">{c.serial}</Link>
-                          <span className="mas-cell-sub"><Link to={`/verify/${c.serial}`}>verify</Link></span>
-                        </span>
+                        <Link to={`/certificate/${c.serial}`} className="mas-serial">{c.serial}</Link>
+                        {' · '}
+                        <Link to={`/verify/${c.serial}`} className="mas-link">verify</Link>
                       </td>
                       <td>{fmtDate(c.issued_on)}</td>
-                      <td>
-                        <span className={`mas-outcome ${isRevoked ? 'is-refer' : 'is-pass'}`}>
-                          {isRevoked ? 'Revoked' : 'Valid'}
-                        </span>
-                      </td>
+                      <td>{isRevoked ? 'Revoked' : 'Valid'}</td>
                       <td className="mas-table-actioncol">
                         {!isRevoked && !isRevoking && (
-                          <button className="mas-btn-ghost mas-btn-compact" onClick={() => startRevoke(c.id)}>
-                            Revoke
-                          </button>
+                          <button className="mas-link" onClick={() => startRevoke(c.id)}>Revoke</button>
                         )}
                       </td>
                     </tr>
@@ -189,8 +189,7 @@ export default function Certificates() {
                             </p>
                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                               <input
-                                className="mas-input"
-                                type="text"
+                                className="mas-input" type="text"
                                 value={reason}
                                 onChange={(e) => setReason(e.target.value)}
                                 placeholder="Reason (optional)"
