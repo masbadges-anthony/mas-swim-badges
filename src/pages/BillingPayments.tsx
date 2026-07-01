@@ -12,6 +12,8 @@
 //             refund_due (cancelled sessions with an outstanding refund)
 //   payout  ← mark_refund_paid(_invoice_id, _amount, _method, _reference)
 //             → { invoice_id, paid_amount, refunded, fully_refunded }
+//   View   → /billing/invoice/:invoice_id  (printable A5 invoice)
+//   Receipt→ /billing/receipt/:invoice_id  (printable A5 receipt, once paid)
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
@@ -87,6 +89,10 @@ function statusLabel(s: string): string {
   if (s === 'paid') return 'Paid';
   if (s === 'void') return 'Void';
   return s.replace(/_/g, ' ');
+}
+
+function openDoc(kind: 'invoice' | 'receipt', invoiceId: string) {
+  window.open(`/billing/${kind}/${invoiceId}`, '_blank', 'noopener');
 }
 
 export default function BillingPayments() {
@@ -267,7 +273,7 @@ export default function BillingPayments() {
                 <th className="mas-num">Total</th>
                 <th className="mas-num">Paid</th>
                 <th className="mas-num">Outstanding</th>
-                <th className="mas-table-actioncol">Action</th>
+                <th className="mas-table-actioncol">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -315,23 +321,44 @@ export default function BillingPayments() {
                       <td className="mas-num">{money(inv.paid_to_date)}</td>
                       <td className="mas-num">{money(inv.outstanding)}</td>
                       <td className="mas-table-actioncol">
-                        {settleable ? (
-                          <button
-                            type="button"
-                            className="mas-btn-ghost mas-btn-compact"
-                            onClick={() => {
-                              clearRowError(inv.invoice_id);
-                              setExpanded((cur) => (cur === inv.invoice_id ? null : inv.invoice_id));
-                            }}
-                            aria-expanded={isOpen}
-                          >
-                            {isOpen ? 'Close' : 'Record'}
-                          </button>
-                        ) : isUnissuedBonus ? (
-                          <span className="mas-cell-sub" title="Create invoice first in the Pending bonus invoices section">Create invoice first</span>
-                        ) : (
-                          <span className="mas-cell-sub">—</span>
-                        )}
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          {!isUnissuedBonus && (
+                            <button
+                              type="button"
+                              className="mas-btn-ghost mas-btn-compact"
+                              onClick={() => openDoc('invoice', inv.invoice_id)}
+                            >
+                              View
+                            </button>
+                          )}
+                          {paid && (
+                            <button
+                              type="button"
+                              className="mas-btn-ghost mas-btn-compact"
+                              onClick={() => openDoc('receipt', inv.invoice_id)}
+                            >
+                              Receipt
+                            </button>
+                          )}
+                          {settleable && (
+                            <button
+                              type="button"
+                              className="mas-btn-ghost mas-btn-compact"
+                              onClick={() => {
+                                clearRowError(inv.invoice_id);
+                                setExpanded((cur) => (cur === inv.invoice_id ? null : inv.invoice_id));
+                              }}
+                              aria-expanded={isOpen}
+                            >
+                              {isOpen ? 'Close' : 'Record'}
+                            </button>
+                          )}
+                          {isUnissuedBonus && (
+                            <span className="mas-cell-sub" title="Create invoice first in the Pending bonus invoices section">
+                              Create invoice first
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
 
@@ -448,7 +475,7 @@ export default function BillingPayments() {
                   <th className="mas-num">Paid</th>
                   <th className="mas-num">Refunded</th>
                   <th className="mas-num">Refund due</th>
-                  <th className="mas-table-actioncol">Action</th>
+                  <th className="mas-table-actioncol">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -487,16 +514,34 @@ export default function BillingPayments() {
                         <td className="mas-num">{money(r.refunded)}</td>
                         <td className="mas-num">{money(r.refund_due)}</td>
                         <td className="mas-table-actioncol">
-                          <button
-                            type="button"
-                            className="mas-btn-ghost mas-btn-compact"
-                            onClick={() =>
-                              setRefundExpanded((cur) => (cur === r.invoice_id ? null : r.invoice_id))
-                            }
-                            aria-expanded={isOpen}
-                          >
-                            {isOpen ? 'Close' : 'Refund'}
-                          </button>
+                          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              className="mas-btn-ghost mas-btn-compact"
+                              onClick={() => openDoc('invoice', r.invoice_id)}
+                            >
+                              View
+                            </button>
+                            {Number(r.paid_amount) > 0 && (
+                              <button
+                                type="button"
+                                className="mas-btn-ghost mas-btn-compact"
+                                onClick={() => openDoc('receipt', r.invoice_id)}
+                              >
+                                Receipt
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="mas-btn-ghost mas-btn-compact"
+                              onClick={() =>
+                                setRefundExpanded((cur) => (cur === r.invoice_id ? null : r.invoice_id))
+                              }
+                              aria-expanded={isOpen}
+                            >
+                              {isOpen ? 'Close' : 'Refund'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
 
