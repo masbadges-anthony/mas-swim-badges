@@ -464,7 +464,7 @@ function Sidebar({
               {canGrade && <NavLink to="/assessments/grade" className={navClass}><Icon name="check" /><span>Grading</span></NavLink>}
               {canInvitations && <NavLink to="/assessments/invitations" className={navClass}><Icon name="inbox" /><span>Available sessions</span><AttentionDot count={openSessions} variant="count" label="available sessions" /></NavLink>}
               {isGovernance && <NavLink to="/certificates/issue" className={navClass}><Icon name="award" /><span>Issue certificates</span></NavLink>}
-              {canViewCerts && <NavLink to="/certificates" className={navClass}><Icon name="award" /><span>Certificates</span></NavLink>}
+              {canViewCerts && <NavLink to="/certificates" end className={navClass}><Icon name="award" /><span>Certificates</span></NavLink>}
               {canOversight && <NavLink to="/assessments/oversight" className={navClass}><Icon name="eye" /><span>Oversight</span></NavLink>}
               {canExaminerRegistry && <NavLink to="/assessments/examiners" className={navClass}><Icon name="users" /><span>Examiner registry</span></NavLink>}
             </div>
@@ -589,6 +589,10 @@ function AppLayout() {
 
   return (
     <div className="mas-layout">
+      <style>{`
+        .mas-shell-main:has(.mas-page-wide),
+        .mas-main:has(.mas-page-wide) { max-width: none !important; width: auto !important; }
+      `}</style>
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
