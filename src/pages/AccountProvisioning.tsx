@@ -94,6 +94,7 @@ export default function AccountProvisioning() {
   const [state, setState] = useState('');
   const [centreId, setCentreId] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
+  const [password, setPassword] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createOk, setCreateOk] = useState<string | null>(null);
@@ -150,11 +151,13 @@ export default function AccountProvisioning() {
 
   const kind = scopeKind(role);
   const expiryTooEarly = !!expiresAt && expiresAt < minDate;
+  const passwordTooShort = !!password && password.length < 8;
   const canCreate =
     email.includes('@') && !!fullName.trim() && !!role &&
     (kind !== 'state' || !!state) &&
     (kind !== 'centre' || !!centreId) &&
     !expiryTooEarly &&
+    !passwordTooShort &&
     !creating;
 
   async function create() {
@@ -169,6 +172,7 @@ export default function AccountProvisioning() {
         state: kind === 'state' ? state : null,
         centre_id: kind === 'centre' || (kind === 'centre_optional' && centreId) ? centreId || null : null,
         expires_at: expiresAt || null,
+        password: password || null,   // preset mode when non-empty
       },
     });
     setCreating(false);
@@ -177,7 +181,7 @@ export default function AccountProvisioning() {
       setCreateError(error.message || 'Failed to create account.');
       return;
     }
-    const resp = data as { ok?: boolean; error?: string; detail?: string; email?: string } | null;
+    const resp = data as { ok?: boolean; error?: string; detail?: string; email?: string; mode?: string } | null;
     if (!resp?.ok) {
       const msg = resp?.error === 'email_exists'
         ? 'An account already exists for that email. Grant additional roles via Memberships instead.'
@@ -188,9 +192,13 @@ export default function AccountProvisioning() {
       return;
     }
 
-    setCreateOk(`Invitation sent to ${resp.email}. They'll set a password from the email link.`);
+    setCreateOk(
+      resp.mode === 'preset'
+        ? `Account created for ${resp.email}. They'll be forced to change the password at first sign-in.`
+        : `Invitation sent to ${resp.email}. They'll set a password from the email link.`
+    );
     setEmail(''); setFullName(''); setRole('');
-    setState(''); setCentreId(''); setExpiresAt('');
+    setState(''); setCentreId(''); setExpiresAt(''); setPassword('');
     fetchAccounts();
   }
 
@@ -222,6 +230,7 @@ export default function AccountProvisioning() {
     }
     const okMsg = action === 'update_name' ? 'Name updated.'
       : action === 'update_email' ? 'Email updated. Verification email sent to the new address.'
+      : action === 'set_password' ? 'Password set. User must change it at next sign-in.'
       : action === 'reset_password' ? 'Password-reset email sent.'
       : action === 'suspend' ? 'Account suspended.'
       : action === 'reactivate' ? 'Account reactivated.'
@@ -244,6 +253,16 @@ export default function AccountProvisioning() {
     if (ne.trim().toLowerCase() === a.email.toLowerCase()) return;
     if (!window.confirm(`Change ${a.email} to ${ne.trim().toLowerCase()}?\nA verification email will be sent to the new address.`)) return;
     await callAction(a, 'update_email', { new_email: ne.trim().toLowerCase() });
+  }
+  async function onSetPassword(a: Account) {
+    const np = window.prompt(`Set new password for ${a.full_name || a.email}.\n\nMinimum 8 characters. They will be forced to change it at next sign-in.\n\nNew password:`);
+    if (np == null) return;
+    if (np.length < 8) {
+      setRowMsg((m) => ({ ...m, [a.profile_id]: { err: 'Password must be at least 8 characters.' } }));
+      return;
+    }
+    if (!window.confirm(`Set the password for ${a.email}?\nRelay it to them securely; they must change it at next sign-in.`)) return;
+    await callAction(a, 'set_password', { new_password: np });
   }
   async function onResetPassword(a: Account) {
     if (!window.confirm(`Send a password-reset email to ${a.email}?`)) return;
@@ -331,6 +350,9 @@ export default function AccountProvisioning() {
       {expiryTooEarly && (
         <p className="mas-status mas-status-bad">Expiry date can’t be in the past.</p>
       )}
+      {passwordTooShort && (
+        <p className="mas-status mas-status-bad">Password must be at least 8 characters.</p>
+      )}
 
       <div className="mas-table-wrap">
         <table className="mas-table mas-tight">
@@ -374,6 +396,12 @@ export default function AccountProvisioning() {
                       min={minDate}
                       onChange={(e) => setExpiresAt(e.target.value)}
                       title="Expires (optional)" />
+                    <input type="text" value={password}
+                      autoComplete="new-password"
+                      placeholder="Preset password (optional)"
+                      onChange={(e) => setPassword(e.target.value)}
+                      title="Leave empty to send an email invite. Fill to create with this password (user must change at first sign-in)."
+                      style={{ minWidth: '13rem' }} />
                     <button className="mas-btn-primary mas-btn-compact" onClick={create} disabled={!canCreate}>
                       {creating ? 'Creating…' : '+ Create'}
                     </button>
@@ -420,6 +448,16 @@ export default function AccountProvisioning() {
                   )}
                 </td>
                 <td className="mas-table-actioncol">
+                  {a.status === 'suspended' && (
+                    <button
+                      className="mas-link"
+                      onClick={() => onReactivate(a)}
+                      disabled={rowBusy === a.profile_id}
+                      style={{ fontWeight: 700, marginRight: '0.6rem' }}
+                    >
+                      Reactivate
+                    </button>
+                  )}
                   <button
                     data-mas-row-menu-trigger
                     className="mas-link"
@@ -464,6 +502,7 @@ export default function AccountProvisioning() {
           >
             <button className="mas-menu-item" onClick={() => onEditName(target)}>Edit name</button>
             <button className="mas-menu-item" onClick={() => onChangeEmail(target)}>Change email</button>
+            <button className="mas-menu-item" onClick={() => onSetPassword(target)}>Set password</button>
             <button className="mas-menu-item" onClick={() => onResetPassword(target)}>Send reset password</button>
             {target.status === 'suspended' ? (
               <button className="mas-menu-item" onClick={() => onReactivate(target)}>Reactivate</button>
