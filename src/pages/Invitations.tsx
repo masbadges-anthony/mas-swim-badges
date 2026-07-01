@@ -2,7 +2,12 @@
 // they browse the open (paid) sessions in their state and pick one up. Wired against:
 //   list ← list_open_sessions()  (paid sessions in the examiner's state, widened to all
 //          states once open_to_all flips 7 days after payment, COI-excluded)
-//   pick up ← claim_session(_session_id)  (assigns the caller and schedules the session)
+//   pick up ← claim_session(_session_id, _examiner_remarks)
+//     (assigns the caller, schedules the session, and records optional remarks)
+//
+// Pickup is a two-step: clicking "Pick up" expands an inline confirm row with an
+// optional remarks textarea (<=200 chars, visible to instructor+governance only,
+// never to parents). "Confirm pickup" fires the RPC.
 //
 // FIREWALL: no fee amount is returned and none is shown — billable status is implicit,
 // since only paid sessions ever appear in the pool.
@@ -27,6 +32,8 @@ interface OpenSession {
 
 type Load = 'loading' | 'ready' | 'error';
 
+const REMARKS_MAX = 200;
+
 function prettyDate(s: string | null): string {
   if (!s) return 'Date to be confirmed';
   const d = new Date(s + 'T00:00:00');
@@ -45,6 +52,8 @@ export default function Invitations() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [remarks, setRemarks] = useState<Record<string, string>>({});
 
   const fetchPool = useCallback(async () => {
     setLoad('loading');
@@ -61,16 +70,43 @@ export default function Invitations() {
     fetchPool();
   }, [fetchPool]);
 
-  async function pickUp(r: OpenSession) {
-    setBusyId(r.session_id);
+  function openPickup(sessionId: string) {
     setNotice(null);
+    setRowError((m) => {
+      const n = { ...m };
+      delete n[sessionId];
+      return n;
+    });
+    setExpandedId(sessionId);
+  }
+
+  function cancelPickup(sessionId: string) {
+    if (busyId === sessionId) return;
+    setExpandedId((cur) => (cur === sessionId ? null : cur));
+  }
+
+  function setRemark(sessionId: string, value: string) {
+    setRemarks((m) => ({ ...m, [sessionId]: value }));
+  }
+
+  async function confirmPickup(r: OpenSession) {
+    const raw = (remarks[r.session_id] ?? '').trim();
+    if (raw.length > REMARKS_MAX) {
+      setRowError((m) => ({ ...m, [r.session_id]: `Notes must be ${REMARKS_MAX} characters or fewer.` }));
+      return;
+    }
+
+    setBusyId(r.session_id);
     setRowError((m) => {
       const n = { ...m };
       delete n[r.session_id];
       return n;
     });
 
-    const { error } = await supabase.rpc('claim_session', { _session_id: r.session_id });
+    const { error } = await supabase.rpc('claim_session', {
+      _session_id: r.session_id,
+      _examiner_remarks: raw || null,
+    });
 
     setBusyId(null);
 
@@ -82,6 +118,12 @@ export default function Invitations() {
 
     // On success the session leaves the pool; drop it locally and confirm.
     setRows((list) => list.filter((x) => x.session_id !== r.session_id));
+    setRemarks((m) => {
+      const n = { ...m };
+      delete n[r.session_id];
+      return n;
+    });
+    setExpandedId(null);
     setNotice('Assigned — open Grading to assess.');
   }
 
@@ -132,6 +174,9 @@ export default function Invitations() {
               {rows.map((r) => {
                 const count = Number(r.candidate_count);
                 const hasBooker = r.booker_name || r.booker_phone || r.booker_email || r.centre_name;
+                const isExpanded = expandedId === r.session_id;
+                const isBusy = busyId === r.session_id;
+                const remarkVal = remarks[r.session_id] ?? '';
                 return (
                   <Fragment key={r.session_id}>
                     <tr>
@@ -161,15 +206,58 @@ export default function Invitations() {
                         )}
                       </td>
                       <td className="mas-table-actioncol">
-                        <button
-                          className="mas-btn-primary mas-btn-compact"
-                          onClick={() => pickUp(r)}
-                          disabled={busyId === r.session_id}
-                        >
-                          {busyId === r.session_id ? 'Working…' : 'Pick up'}
-                        </button>
+                        {isExpanded ? (
+                          <span className="mas-cell-sub">Confirming below…</span>
+                        ) : (
+                          <button
+                            className="mas-btn-primary mas-btn-compact"
+                            onClick={() => openPickup(r.session_id)}
+                          >
+                            Pick up
+                          </button>
+                        )}
                       </td>
                     </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={7}>
+                          <div style={{ display: 'grid', gap: '0.5rem', padding: '0.5rem 0' }}>
+                            <label htmlFor={`remarks-${r.session_id}`} className="mas-field-label">
+                              Notes for the instructor (optional)
+                            </label>
+                            <textarea
+                              id={`remarks-${r.session_id}`}
+                              className="mas-input"
+                              rows={3}
+                              maxLength={REMARKS_MAX}
+                              value={remarkVal}
+                              onChange={(e) => setRemark(r.session_id, e.target.value)}
+                              placeholder="e.g. Will arrive 15 minutes early; please have the roster printed."
+                              disabled={isBusy}
+                            />
+                            <p className="mas-field-note">
+                              Visible to the booking instructor and to governance — not to parents. {remarkVal.length}/{REMARKS_MAX}
+                            </p>
+                            <div className="mas-form-actions" style={{ justifyContent: 'flex-end', gap: '0.5rem' }}>
+                              <button
+                                className="mas-btn-ghost mas-btn-compact"
+                                onClick={() => cancelPickup(r.session_id)}
+                                disabled={isBusy}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                className="mas-btn-primary mas-btn-compact"
+                                onClick={() => confirmPickup(r)}
+                                disabled={isBusy}
+                              >
+                                {isBusy ? 'Working…' : 'Confirm pickup'}
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                     {rowError[r.session_id] && (
                       <tr className="mas-table-errorrow">
                         <td colSpan={7}>
