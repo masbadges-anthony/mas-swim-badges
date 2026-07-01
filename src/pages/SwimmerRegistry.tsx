@@ -91,6 +91,22 @@ export default function SwimmerRegistry() {
   const [certs, setCerts] = useState<Record<string, SwimmerCert[]>>({});
   const [certLoad, setCertLoad] = useState<Record<string, Load>>({});
 
+  type SortKey =
+    | 'swimmer' | 'age' | 'instructor' | 'state'
+    | 'highest' | 'last_assessed' | 'claim' | 'parent' | 'certs';
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  function toggleSort(k: SortKey) {
+    if (sortKey !== k) { setSortKey(k); setSortDir('asc'); return; }
+    if (sortDir === 'asc') { setSortDir('desc'); return; }
+    setSortKey(null);   // third click clears sort
+  }
+  function sortArrow(k: SortKey): string {
+    if (sortKey !== k) return '';
+    return sortDir === 'asc' ? ' ▲' : ' ▼';
+  }
+
   // Accordion behaviour: clicking outside any swimmer row (or its expanded
   // detail row) collapses the currently-open one. Uses mousedown on document.
   useEffect(() => {
@@ -148,14 +164,45 @@ export default function SwimmerRegistry() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return rows
+    const list = rows
       .filter((r) => (tab === 'active' ? r.status === 'active' : r.status === 'withdrawn' || r.status === 'anonymized'))
       .filter((r) =>
         !q ||
         r.full_name.toLowerCase().includes(q) ||
         (r.swimmer_id ?? '').toLowerCase().includes(q) ||
         (r.claim_code ?? '').toLowerCase().includes(q));
-  }, [rows, tab, query]);
+
+    if (!sortKey) return list;
+
+    const cmpStr = (a: string | null | undefined, b: string | null | undefined) => {
+      const sa = (a ?? '').toString(); const sb = (b ?? '').toString();
+      return sa.localeCompare(sb, 'en', { sensitivity: 'base' });
+    };
+    const cmpDate = (a: string | null, b: string | null) => {
+      const ta = a ? new Date(a.length <= 10 ? a + 'T00:00:00' : a).getTime() : NaN;
+      const tb = b ? new Date(b.length <= 10 ? b + 'T00:00:00' : b).getTime() : NaN;
+      if (Number.isNaN(ta) && Number.isNaN(tb)) return 0;
+      if (Number.isNaN(ta)) return 1;   // nulls last
+      if (Number.isNaN(tb)) return -1;
+      return ta - tb;
+    };
+    const cmpNum = (a: number, b: number) => a - b;
+
+    const sorted = [...list].sort((a, b) => {
+      switch (sortKey) {
+        case 'swimmer':      return cmpStr(a.full_name, b.full_name);
+        case 'age':          return cmpDate(a.date_of_birth, b.date_of_birth);   // older DOB = older age
+        case 'instructor':   return cmpStr(a.instructor_name, b.instructor_name);
+        case 'state':        return cmpStr(a.state || stateFromCentre(a.centre_name), b.state || stateFromCentre(b.centre_name));
+        case 'highest':      return cmpStr(a.highest_level, b.highest_level);
+        case 'last_assessed':return cmpDate(a.last_assessment, b.last_assessment);
+        case 'claim':        return cmpStr(a.claim_status, b.claim_status);
+        case 'parent':       return cmpStr(a.parent_name, b.parent_name);
+        case 'certs':        return cmpNum(Number(a.cert_count ?? 0), Number(b.cert_count ?? 0));
+      }
+    });
+    return sortDir === 'desc' ? sorted.reverse() : sorted;
+  }, [rows, tab, query, sortKey, sortDir]);
 
   return (
     <section className="mas-page mas-page-wide mas-swimmer-page">
@@ -202,15 +249,15 @@ export default function SwimmerRegistry() {
           <table className="mas-table">
             <thead>
               <tr>
-                <th>Swimmer</th>
-                <th>Age / D.O.B.</th>
-                <th>Instructor / Centre</th>
-                <th>State</th>
-                <th>Highest</th>
-                <th>Last assessed</th>
-                <th>Claim</th>
-                <th>Parent contact</th>
-                <th className="mas-table-actioncol">Certificates</th>
+                <th onClick={() => toggleSort('swimmer')} style={{ cursor: 'pointer' }}>Swimmer{sortArrow('swimmer')}</th>
+                <th onClick={() => toggleSort('age')} style={{ cursor: 'pointer' }}>Age / D.O.B.{sortArrow('age')}</th>
+                <th onClick={() => toggleSort('instructor')} style={{ cursor: 'pointer' }}>Instructor / Centre{sortArrow('instructor')}</th>
+                <th onClick={() => toggleSort('state')} style={{ cursor: 'pointer' }}>State{sortArrow('state')}</th>
+                <th onClick={() => toggleSort('highest')} style={{ cursor: 'pointer' }}>Highest{sortArrow('highest')}</th>
+                <th onClick={() => toggleSort('last_assessed')} style={{ cursor: 'pointer' }}>Last assessed{sortArrow('last_assessed')}</th>
+                <th onClick={() => toggleSort('claim')} style={{ cursor: 'pointer' }}>Claim{sortArrow('claim')}</th>
+                <th onClick={() => toggleSort('parent')} style={{ cursor: 'pointer' }}>Parent contact{sortArrow('parent')}</th>
+                <th onClick={() => toggleSort('certs')} style={{ cursor: 'pointer' }} className="mas-table-actioncol">Certificates{sortArrow('certs')}</th>
               </tr>
             </thead>
             <tbody>
