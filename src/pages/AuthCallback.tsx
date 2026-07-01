@@ -28,12 +28,24 @@ export default function AuthCallback() {
   useEffect(() => {
     if (!session || !user) return;
 
-    // Pull the pending claim code from either source.
-    const metaCode = ((user.user_metadata ?? {}) as Record<string, unknown>).pending_claim_code;
+    // Branch 1: admin-invited staff. user_metadata carries an invited_role marker
+    // set by the admin-create-user Edge Function. Route them to set a password.
+    const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+    const invitedRole = typeof meta.invited_role === 'string' ? meta.invited_role : null;
+
+    // Branch 2: parent claim — pending code in metadata OR localStorage.
+    const metaCode = meta.pending_claim_code;
     const localCode = (() => { try { return localStorage.getItem('mas_pending_claim_code'); } catch (_e) { return null; } })();
     const code = (typeof metaCode === 'string' ? metaCode : null) || localCode || null;
 
     (async () => {
+      if (invitedRole) {
+        setPhase('done');
+        setMessage('Redirecting to set your password…');
+        nav('/set-password', { replace: true });
+        return;
+      }
+
       if (!code) {
         // No pending claim — probably a regular sign-in return. Send to dashboard.
         setPhase('done');
