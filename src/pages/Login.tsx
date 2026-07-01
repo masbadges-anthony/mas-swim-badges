@@ -95,6 +95,11 @@ export default function Login() {
           <button type="submit" className="mas-btn-primary mas-auth-submit" disabled={busy}>
             {busy ? <span className="mas-spinner is-sm" /> : <>Sign in <Icon name="arrowRight" /></>}
           </button>
+
+          <p className="mas-auth-lede" style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.9rem' }}>
+            Parent claiming your child's badges?{' '}
+            <Link to="/claim-signup" className="is-accent">Claim with your slip</Link>
+          </p>
         </form>
 
         <div style={{ height: '1.5rem' }} />
