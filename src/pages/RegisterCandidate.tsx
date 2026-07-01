@@ -3,15 +3,16 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import '../styles/admin.css';
 
-// Recognised centre option for the optional affiliation dropdown (read from the
-// public directory view, which already lists only recognised centres).
+// #16 reference screen — the dense-table + inline-add + Active/Archived-tabs pattern.
+// Candidates use the existing candidate_status enum: 'active' vs 'withdrawn' (the
+// archive concept). 'anonymized' records are retention-managed and shown read-only.
+// Reads candidates directly via RLS; withdraw/restore via set_candidate_status().
+
 interface CentreOption {
   id: string;
   name: string;
   state: string;
 }
-
-// Local shape for the "candidates you've registered" read-back list.
 interface MyCandidate {
   id: string;
   full_name: string;
@@ -20,9 +21,13 @@ interface MyCandidate {
   status: string;
   created_at: string;
   claim_code: string | null;
+  swimmer_id: string | null;
 }
-
 type Load = 'loading' | 'ready' | 'error';
+type Tab = 'active' | 'withdrawn';
+
+const CANDIDATE_COLS =
+  'id, full_name, date_of_birth, partner_center_id, status, created_at, claim_code, swimmer_id';
 
 function ageFrom(dob: string): number | null {
   if (!dob) return null;
@@ -34,22 +39,26 @@ function ageFrom(dob: string): number | null {
   if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
   return age;
 }
-
 function formatDate(d: string | null): string {
   if (!d) return '';
   const date = new Date(d);
   return Number.isNaN(date.getTime())
     ? ''
-    : date.toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      });
+    : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+const CSS = `
+.mas-addrow td { background:#f5f8fc; }
+.mas-addrow-fields { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
+.mas-addrow-fields input[type=text], .mas-addrow-fields input[type=date], .mas-addrow-fields select {
+  font:inherit; padding:0.35rem 0.5rem; border:1px solid var(--mas-line,#e3e9f3); border-radius:6px;
+}
+.mas-addrow-fields input[type=text] { min-width:12rem; }
+.mas-addrow-consent { display:flex; align-items:center; gap:0.35rem; font-size:0.85rem; }
+`;
 
 export default function RegisterCandidate() {
   const { session } = useAuth();
-  // profiles.id == auth.uid() == session.user.id (profiles is 1:1 with auth.users).
   const profileId = session?.user?.id ?? null;
 
   const [fullName, setFullName] = useState('');
@@ -65,6 +74,9 @@ export default function RegisterCandidate() {
 
   const [mine, setMine] = useState<MyCandidate[]>([]);
   const [load, setLoad] = useState<Load>('loading');
+  const [tab, setTab] = useState<Tab>('active');
+  const [busy, setBusy] = useState<string | null>(null);
+  const [rowError, setRowError] = useState<Record<string, string>>({});
 
   const centreName = useMemo(() => {
     const map: Record<string, string> = {};
@@ -72,7 +84,6 @@ export default function RegisterCandidate() {
     return map;
   }, [centres]);
 
-  // Recognised centres for the optional affiliation dropdown.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -82,9 +93,7 @@ export default function RegisterCandidate() {
         .order('name');
       if (!cancelled) setCentres((data ?? []) as CentreOption[]);
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   const fetchMine = useCallback(async () => {
@@ -92,10 +101,9 @@ export default function RegisterCandidate() {
     setLoad('loading');
     const { data, error } = await supabase
       .from('candidates')
-      .select('id, full_name, date_of_birth, partner_center_id, status, created_at, claim_code')
+      .select(CANDIDATE_COLS)
       .eq('registered_by_profile_id', profileId)
       .order('created_at', { ascending: false });
-
     if (error) {
       setLoad('error');
       return;
@@ -117,182 +125,192 @@ export default function RegisterCandidate() {
     setSubmitting(true);
     setFormError(null);
     setJustAdded(null);
-
     const { data, error } = await supabase
       .from('candidates')
       .insert({
         full_name: fullName.trim(),
         date_of_birth: dob,
         partner_center_id: centreId || null,
-        registered_by_profile_id: profileId, // self-stamp — required by RLS
+        registered_by_profile_id: profileId,
         parental_consent: true,
         consent_recorded_at: new Date().toISOString(),
         consent_recorded_by: profileId,
-        // status defaults to 'active' in the DB
       })
-      .select('id, full_name, date_of_birth, partner_center_id, status, created_at, claim_code')
+      .select(CANDIDATE_COLS)
       .single();
-
     setSubmitting(false);
-
     if (error) {
       setFormError(error.message);
       return;
     }
-
     setMine((list) => [data as MyCandidate, ...list]);
     setJustAdded((data as MyCandidate).full_name);
     setLastCode((data as MyCandidate).claim_code);
-    // Reset the identity fields; keep the centre selected for quick batch entry.
     setFullName('');
     setDob('');
     setConsent(false);
   }
 
+  async function setStatus(c: MyCandidate, status: 'active' | 'withdrawn') {
+    setBusy(c.id);
+    setRowError((m) => { const n = { ...m }; delete n[c.id]; return n; });
+    const { error } = await supabase.rpc('set_candidate_status', {
+      _candidate_id: c.id,
+      _status: status,
+    });
+    setBusy(null);
+    if (error) {
+      setRowError((m) => ({ ...m, [c.id]: error.message }));
+      return;
+    }
+    setMine((list) => list.map((x) => (x.id === c.id ? { ...x, status } : x)));
+  }
+
+  const counts = useMemo(() => ({
+    active: mine.filter((c) => c.status === 'active').length,
+    withdrawn: mine.filter((c) => c.status === 'withdrawn' || c.status === 'anonymized').length,
+  }), [mine]);
+
+  const filtered = useMemo(
+    () => mine.filter((c) =>
+      tab === 'active' ? c.status === 'active' : c.status === 'withdrawn' || c.status === 'anonymized'),
+    [mine, tab],
+  );
+
   return (
     <section className="mas-page">
+      <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Instructor</p>
         <h1>Register a candidate</h1>
         <p className="mas-lede">
-          Create a record for a child (typically aged 5–12) you are preparing for
-          assessment. Only the minimum identifying details are stored.
+          Create a record for a child (typically aged 5–12) you are preparing for assessment.
+          Add one in the top row. Only the minimum identifying details are stored.
         </p>
       </header>
 
-      <div className="mas-form">
-        <div className="mas-field">
-          <label htmlFor="full_name" className="mas-field-label">
-            Child’s full name
-          </label>
-          <input
-            id="full_name"
-            className="mas-input"
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            autoComplete="off"
-            placeholder="e.g. Aisha binti Rahman"
-          />
-        </div>
-
-        <div className="mas-field">
-          <label htmlFor="dob" className="mas-field-label">
-            Date of birth
-          </label>
-          <input
-            id="dob"
-            className="mas-input"
-            type="date"
-            value={dob}
-            max={new Date().toISOString().slice(0, 10)}
-            onChange={(e) => setDob(e.target.value)}
-          />
-          {age !== null && (age < 5 || age > 12) && (
-            <p className="mas-field-note">
-              That’s {age} years old — outside the usual 5–12 range. You can still
-              register; eligibility is checked at assessment.
-            </p>
-          )}
-        </div>
-
-        <div className="mas-field">
-          <label htmlFor="centre" className="mas-field-label">
-            Centre (optional)
-          </label>
-          <select
-            id="centre"
-            className="mas-select"
-            value={centreId}
-            onChange={(e) => setCentreId(e.target.value)}
-          >
-            <option value="">Independent — no centre</option>
-            {centres.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} · {c.state}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <label className="mas-checkbox-row">
-          <input
-            type="checkbox"
-            checked={consent}
-            onChange={(e) => setConsent(e.target.checked)}
-          />
-          <span>
-            A parent or guardian has given consent for this child to take part in
-            the Swim Badges programme and for these details to be recorded.
-          </span>
-        </label>
-
-        {formError && (
-          <p className="mas-status mas-status-bad">
-            Couldn’t register this candidate: {formError}
-          </p>
-        )}
-        {justAdded && !formError && (
-          <p className="mas-status mas-status-good" role="status">
-            “{justAdded}” registered.
-            {lastCode && (
-              <>
-                {' '}Give the parent this claim code:{' '}
-                <span className="mas-serial">{lastCode}</span>
-              </>
-            )}
-          </p>
-        )}
-
-        <div className="mas-form-actions">
-          <button
-            className="mas-btn-primary"
-            onClick={submit}
-            disabled={!canSubmit}
-          >
-            {submitting ? 'Registering…' : 'Register candidate'}
+      <div className="mas-admin-toolbar" style={{ gap: '0.6rem', flexWrap: 'wrap' }}>
+        <button className="mas-btn-ghost" onClick={fetchMine} disabled={load === 'loading'}>
+          Refresh
+        </button>
+        <div className="mas-tabs" role="tablist" style={{ display: 'flex', gap: '0.3rem' }}>
+          <button role="tab" aria-selected={tab === 'active'}
+            className={tab === 'active' ? 'mas-btn-primary mas-btn-compact' : 'mas-btn-ghost mas-btn-compact'}
+            onClick={() => setTab('active')}>
+            Active ({counts.active})
+          </button>
+          <button role="tab" aria-selected={tab === 'withdrawn'}
+            className={tab === 'withdrawn' ? 'mas-btn-primary mas-btn-compact' : 'mas-btn-ghost mas-btn-compact'}
+            onClick={() => setTab('withdrawn')}>
+            Withdrawn ({counts.withdrawn})
           </button>
         </div>
       </div>
 
-      <header className="mas-page-head mas-section-head">
-        <h2>Candidates you’ve registered</h2>
-      </header>
+      {justAdded && !formError && (
+        <p className="mas-status mas-status-good" role="status">
+          “{justAdded}” registered.
+          {lastCode && (<>{' '}Give the parent this claim code:{' '}<span className="mas-serial">{lastCode}</span></>)}
+        </p>
+      )}
+      {formError && (
+        <p className="mas-status mas-status-bad">Couldn’t register this candidate: {formError}</p>
+      )}
+
+      <div className="mas-table-wrap">
+        <table className="mas-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Born</th>
+              <th>Centre</th>
+              <th>Swimmer ID</th>
+              <th>Claim code</th>
+              <th className="mas-table-actioncol">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Inline add-row (only on the Active tab) */}
+            {tab === 'active' && (
+              <tr className="mas-addrow">
+                <td colSpan={6}>
+                  <div className="mas-addrow-fields">
+                    <input
+                      type="text" value={fullName} autoComplete="off"
+                      placeholder="Child’s full name"
+                      onChange={(e) => setFullName(e.target.value)}
+                    />
+                    <input
+                      type="date" value={dob}
+                      max={new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => setDob(e.target.value)}
+                    />
+                    <select value={centreId} onChange={(e) => setCentreId(e.target.value)}>
+                      <option value="">Independent — no centre</option>
+                      {centres.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name} · {c.state}</option>
+                      ))}
+                    </select>
+                    <label className="mas-addrow-consent">
+                      <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+                      <span>Parent/guardian consent given</span>
+                    </label>
+                    <button className="mas-btn-primary mas-btn-compact" onClick={submit} disabled={!canSubmit}>
+                      {submitting ? 'Adding…' : '+ Add'}
+                    </button>
+                    {age !== null && (age < 5 || age > 12) && (
+                      <span className="mas-cell-sub">{age} yrs — outside 5–12, still allowed</span>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            )}
+
+            {load === 'ready' && filtered.length === 0 && (
+              <tr><td colSpan={6} className="mas-status">
+                {tab === 'active' ? 'No active candidates yet.' : 'No withdrawn candidates.'}
+              </td></tr>
+            )}
+
+            {filtered.map((c) => (
+              <tr key={c.id}>
+                <td className="mas-cell-strong">
+                  {c.full_name}
+                  {c.status === 'anonymized' && <span className="mas-pill" style={{ marginLeft: '0.4rem' }}>anonymized</span>}
+                </td>
+                <td>
+                  <span className="mas-cell-stack">
+                    <span>{formatDate(c.date_of_birth) || '—'}</span>
+                    {c.date_of_birth && ageFrom(c.date_of_birth) !== null && (
+                      <span className="mas-cell-sub">{ageFrom(c.date_of_birth)} yrs</span>
+                    )}
+                  </span>
+                </td>
+                <td>{c.partner_center_id ? (centreName[c.partner_center_id] ?? 'Centre') : 'Independent'}</td>
+                <td className="mas-cell-strong">{c.swimmer_id ?? '—'}</td>
+                <td>{c.claim_code ? <span className="mas-serial">{c.claim_code}</span> : '—'}</td>
+                <td className="mas-table-actioncol">
+                  {c.status === 'anonymized' ? (
+                    <span className="mas-cell-sub">—</span>
+                  ) : c.status === 'withdrawn' ? (
+                    <button className="mas-btn-ghost mas-btn-compact" onClick={() => setStatus(c, 'active')} disabled={busy === c.id}>
+                      {busy === c.id ? '…' : 'Restore'}
+                    </button>
+                  ) : (
+                    <button className="mas-btn-ghost mas-btn-compact" onClick={() => setStatus(c, 'withdrawn')} disabled={busy === c.id}>
+                      {busy === c.id ? '…' : 'Withdraw'}
+                    </button>
+                  )}
+                  {rowError[c.id] && <span className="mas-status mas-status-bad">{rowError[c.id]}</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {load === 'loading' && <p className="mas-status">Loading…</p>}
-      {load === 'error' && (
-        <p className="mas-status mas-status-bad">Couldn’t load your candidates.</p>
-      )}
-      {load === 'ready' && mine.length === 0 && (
-        <p className="mas-status">You haven’t registered any candidates yet.</p>
-      )}
-      {load === 'ready' && mine.length > 0 && (
-        <ul className="mas-admin-list">
-          {mine.map((c) => (
-            <li key={c.id} className="mas-admin-row">
-              <div className="mas-admin-main">
-                <h3 className="mas-admin-name">{c.full_name}</h3>
-                <p className="mas-admin-meta">
-                  {c.status !== 'active' && (
-                    <span className="mas-pill">{c.status}</span>
-                  )}
-                  <span className="mas-admin-sub">
-                    Born {formatDate(c.date_of_birth)}
-                    {c.partner_center_id
-                      ? ` · ${centreName[c.partner_center_id] ?? 'Centre'}`
-                      : ' · Independent'}
-                  </span>
-                </p>
-                {c.claim_code && (
-                  <p className="mas-admin-line">
-                    Claim code: <span className="mas-serial">{c.claim_code}</span>
-                  </p>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      {load === 'error' && <p className="mas-status mas-status-bad">Couldn’t load your candidates.</p>}
     </section>
   );
 }
