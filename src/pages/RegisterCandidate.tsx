@@ -63,7 +63,6 @@ export default function RegisterCandidate() {
 
   const [fullName, setFullName] = useState('');
   const [dob, setDob] = useState('');
-  const [centreId, setCentreId] = useState('');
   const [consent, setConsent] = useState(false);
 
   const [centres, setCentres] = useState<CentreOption[]>([]);
@@ -125,27 +124,24 @@ export default function RegisterCandidate() {
     setSubmitting(true);
     setFormError(null);
     setJustAdded(null);
-    const { data, error } = await supabase
-      .from('candidates')
-      .insert({
-        full_name: fullName.trim(),
-        date_of_birth: dob,
-        partner_center_id: centreId || null,
-        registered_by_profile_id: profileId,
-        parental_consent: true,
-        consent_recorded_at: new Date().toISOString(),
-        consent_recorded_by: profileId,
-      })
-      .select(CANDIDATE_COLS)
-      .single();
+    // Instructor + centre are locked together server-side: the registrant is
+    // auto-tagged and the centre is derived from their own membership.
+    const { data, error } = await supabase.rpc('register_candidate', {
+      _full_name: fullName.trim(),
+      _dob: dob,
+      _consent: consent,
+    });
     setSubmitting(false);
     if (error) {
       setFormError(error.message);
       return;
     }
-    setMine((list) => [data as MyCandidate, ...list]);
-    setJustAdded((data as MyCandidate).full_name);
-    setLastCode((data as MyCandidate).claim_code);
+    const row = (Array.isArray(data) ? data[0] : data) as MyCandidate | null;
+    if (row) {
+      setMine((list) => [row, ...list]);
+      setJustAdded(row.full_name);
+      setLastCode(row.claim_code);
+    }
     setFullName('');
     setDob('');
     setConsent(false);
@@ -222,7 +218,7 @@ export default function RegisterCandidate() {
           <thead>
             <tr>
               <th>Name</th>
-              <th>Born</th>
+              <th>Date of birth</th>
               <th>Centre</th>
               <th>Swimmer ID</th>
               <th>Claim code</th>
@@ -245,12 +241,6 @@ export default function RegisterCandidate() {
                       max={new Date().toISOString().slice(0, 10)}
                       onChange={(e) => setDob(e.target.value)}
                     />
-                    <select value={centreId} onChange={(e) => setCentreId(e.target.value)}>
-                      <option value="">Independent — no centre</option>
-                      {centres.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name} · {c.state}</option>
-                      ))}
-                    </select>
                     <label className="mas-addrow-consent">
                       <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
                       <span>Parent/guardian consent given</span>
@@ -278,14 +268,7 @@ export default function RegisterCandidate() {
                   {c.full_name}
                   {c.status === 'anonymized' && <span className="mas-pill" style={{ marginLeft: '0.4rem' }}>anonymized</span>}
                 </td>
-                <td>
-                  <span className="mas-cell-stack">
-                    <span>{formatDate(c.date_of_birth) || '—'}</span>
-                    {c.date_of_birth && ageFrom(c.date_of_birth) !== null && (
-                      <span className="mas-cell-sub">{ageFrom(c.date_of_birth)} yrs</span>
-                    )}
-                  </span>
-                </td>
+                <td>{formatDate(c.date_of_birth) || '—'}</td>
                 <td>{c.partner_center_id ? (centreName[c.partner_center_id] ?? 'Centre') : 'Independent'}</td>
                 <td className="mas-cell-strong">{c.swimmer_id ?? '—'}</td>
                 <td>{c.claim_code ? <span className="mas-serial">{c.claim_code}</span> : '—'}</td>
