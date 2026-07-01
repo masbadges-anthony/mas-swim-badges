@@ -91,6 +91,22 @@ export default function SwimmerRegistry() {
   const [certs, setCerts] = useState<Record<string, SwimmerCert[]>>({});
   const [certLoad, setCertLoad] = useState<Record<string, Load>>({});
 
+  // Accordion behaviour: clicking outside any swimmer row (or its expanded
+  // detail row) collapses the currently-open one. Uses mousedown on document.
+  useEffect(() => {
+    if (!expanded) return;
+    function onDocDown(e: MouseEvent) {
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      // Any click landing inside a table row keeps the expansion state as-is;
+      // React's row-level click handler already handles toggle/switch.
+      if (t.closest('tr')) return;
+      setExpanded(null);
+    }
+    document.addEventListener('mousedown', onDocDown);
+    return () => document.removeEventListener('mousedown', onDocDown);
+  }, [expanded]);
+
   const fetchRegistry = useCallback(async () => {
     setLoad('loading');
     const { data, error } = await supabase.rpc('list_swimmer_registry');
