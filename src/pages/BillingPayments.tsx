@@ -273,7 +273,8 @@ export default function BillingPayments() {
             <tbody>
               {rows.map((inv) => {
                 const paid = inv.status === 'paid';
-                const settleable = inv.status !== 'paid' && inv.status !== 'void';
+                const isUnissuedBonus = inv.stage === 'bonus_reconcile' && inv.status === 'pro_forma';
+                const settleable = inv.status !== 'paid' && inv.status !== 'void' && !isUnissuedBonus;
                 const summary = settled[inv.invoice_id];
                 const f = form(inv.invoice_id);
                 const isOpen = expanded === inv.invoice_id;
@@ -326,6 +327,8 @@ export default function BillingPayments() {
                           >
                             {isOpen ? 'Close' : 'Record'}
                           </button>
+                        ) : isUnissuedBonus ? (
+                          <span className="mas-cell-sub" title="Create invoice first in the Pending bonus invoices section">Create invoice first</span>
                         ) : (
                           <span className="mas-cell-sub">—</span>
                         )}
