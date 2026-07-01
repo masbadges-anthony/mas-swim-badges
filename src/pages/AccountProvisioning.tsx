@@ -234,9 +234,9 @@ export default function AccountProvisioning() {
       })
       .filter((a) =>
         !q ||
-        a.email.toLowerCase().includes(q) ||
+        (a.email ?? '').toLowerCase().includes(q) ||
         (a.full_name ?? '').toLowerCase().includes(q) ||
-        a.roles.toLowerCase().includes(q));
+        (a.roles ?? '').toLowerCase().includes(q));
   }, [accounts, tab, query]);
 
   return (
