@@ -406,7 +406,7 @@ function Sidebar({
     canRegister || canSchedule || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canOversight || canMySessions;
   const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore || canBilling;
   const adminGroup =
-    canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries;
+    canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries || canProvisionAccounts;
 
   const primaryRole = memberships[0]?.role;
   const roleLabel = primaryRole ? (ROLE_LABELS[primaryRole] ?? primaryRole) : 'Member';
@@ -515,7 +515,6 @@ function Sidebar({
           <details className="mas-navgroup" open>
             <summary>Billing</summary>
             <div className="mas-navgroup-items">
-              {canProvisionAccounts && <NavLink to="/admin/staff" className={navClass}><Icon name="people" /><span>Staff accounts</span></NavLink>}
               {canAccounts && <NavLink to="/admin/accounts" className={navClass}><Icon name="card" /><span>Examiner payouts</span></NavLink>}
               {canCentreBilling && <NavLink to="/admin/centre-billing" className={navClass}><Icon name="building" /><span>Centre billing</span></NavLink>}
               {canManageStore && <NavLink to="/admin/store" className={navClass}><Icon name="inbox" /><span>Store orders</span></NavLink>}
@@ -529,6 +528,7 @@ function Sidebar({
           <details className="mas-navgroup" open>
             <summary>Administration</summary>
             <div className="mas-navgroup-items">
+              {canProvisionAccounts && <NavLink to="/admin/staff" className={navClass}><Icon name="people" /><span>Staff accounts</span></NavLink>}
               {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span><AttentionDot count={unhandledEnquiries} label="unhandled enquiries" /></NavLink>}
               {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span><AttentionDot count={unhandledPartnerApps} label="new applications" /></NavLink>}
               {canRoleRegistry && <NavLink to="/admin/role-registry" className={navClass}><Icon name="settings" /><span>Roles &amp; policies</span></NavLink>}
