@@ -361,7 +361,7 @@ function Sidebar({
   const canGrade = hasRole('examiner') || isGovernance;
   const canViewCerts = hasRole('examiner') || isGovernance;
   const canInvitations = hasRole('examiner');
-  const canAccounts = hasRole('system_admin');
+  const canAccounts = hasRole('system_admin') || hasRole('finance_officer');
   const canMyInvoices = hasRole('instructor') || hasRole('partner_center_admin');
   // The universal session tracker (#15): instructors and master trainers (booked),
   // examiners (assigned), and governance + billing roles (all sessions).
@@ -510,7 +510,7 @@ function Sidebar({
           <details className="mas-navgroup" open>
             <summary>Billing</summary>
             <div className="mas-navgroup-items">
-              {canAccounts && <NavLink to="/admin/accounts" className={navClass}><Icon name="card" /><span>Accounts</span></NavLink>}
+              {canAccounts && <NavLink to="/admin/accounts" className={navClass}><Icon name="card" /><span>Examiner payouts</span></NavLink>}
               {canCentreBilling && <NavLink to="/admin/centre-billing" className={navClass}><Icon name="building" /><span>Centre billing</span></NavLink>}
               {canManageStore && <NavLink to="/admin/store" className={navClass}><Icon name="inbox" /><span>Store orders</span></NavLink>}
               {canBilling && <NavLink to="/billing/payments" className={navClass}><Icon name="card" /><span>Invoices &amp; Payments</span><AttentionDot count={outstandingInvoices} variant="count" label="outstanding invoices" /></NavLink>}
@@ -574,7 +574,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/assessments/examiners': 'Examiner registry',
   '/certificates/issue': 'Issue certificates',
   '/certificates': 'Certificates',
-  '/admin/accounts': 'Accounts',
+  '/admin/accounts': 'Examiner payouts',
   '/admin/centre-billing': 'Centre billing',
   '/billing/payments': 'Invoices & Payments',
   '/store': 'Store',
@@ -722,7 +722,7 @@ export default function App() {
               <Route path="/assessments/examiners" element={<RequireRole roles={['chief_examiner']}><ExaminerRegistry /></RequireRole>} />
               <Route path="/certificates/issue" element={<RequireRole roles={['chairperson', 'board_member', 'chief_examiner']}><CertificateIssuance /></RequireRole>} />
               <Route path="/certificates" element={<RequireRole roles={['examiner', 'chief_examiner', 'chairperson', 'board_member']}><Certificates /></RequireRole>} />
-              <Route path="/admin/accounts" element={<RequireRole roles={['system_admin']}><Accounts /></RequireRole>} />
+              <Route path="/admin/accounts" element={<RequireRole roles={['system_admin', 'finance_officer']}><Accounts /></RequireRole>} />
               <Route path="/admin/centre-billing" element={<RequireRole roles={['chairperson', 'board_member', 'system_admin']}><CentreBilling /></RequireRole>} />
               <Route path="/billing/payments" element={<RequireRole roles={['finance_officer', 'system_admin', 'chairperson']}><BillingPayments /></RequireRole>} />
               <Route path="/store" element={<RequireRole roles={['instructor', 'partner_center_admin']}><Store /></RequireRole>} />
