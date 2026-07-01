@@ -2,19 +2,25 @@
 // Gated (chair/sysadmin/finance_officer) at the DB layer; route + nav mirror it.
 //   list ← list_swimmer_registry()
 //   certs (expand) ← list_swimmer_certificates(_candidate_id)
-//   withdraw/restore ← set_candidate_status(_candidate_id, _status)  (#16)
+//
+// UI: two-line stacked rows, no withdraw action (registry is read-only surface;
+// withdrawal happens elsewhere in Candidate management). Font size shrunk 2px
+// vs other admin tables — this page has 9 columns of dense data.
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
 
-// This registry is wide (10 columns) — let it use more width than the default
-// 1100px page cap, keep the swimmer cell on one line, and scroll horizontally
-// on narrow screens rather than crushing columns.
 const CSS = `
-.mas-swimmer-page { max-width: 1500px !important; }
-.mas-swimmer-table { min-width: 1180px; }
-.mas-swimmer-table td, .mas-swimmer-table th { white-space: nowrap; }
-.mas-swimmer-table .mas-cell-wrap { white-space: normal; }
+.mas-page.mas-page-wide { max-width: none !important; width: auto !important; margin-left: 0 !important; margin-right: 0 !important; }
+.mas-swimmer-page .mas-table { font-size: 0.72rem; }
+.mas-swimmer-page .mas-table thead th { font-size: 0.66rem; }
+.mas-swimmer-page .mas-table td,
+.mas-swimmer-page .mas-table th { padding: 0.4rem 0.55rem; vertical-align: middle; }
+.mas-swimmer-page .mas-cell-stack { display: flex; flex-direction: column; line-height: 1.25; }
+.mas-swimmer-page .mas-cell-stack > span:first-child { font-weight: 600; }
+.mas-swimmer-page .mas-cell-sub { color: var(--mas-muted, #5b6472); font-size: 0.92em; }
+.mas-swimmer-page .mas-link { color: var(--mas-navy, #1E2752); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
+.mas-swimmer-page .mas-link:hover { text-decoration: none; }
 `;
 
 interface SwimmerRow {
@@ -27,6 +33,7 @@ interface SwimmerRow {
   claim_status: string;
   instructor_name: string | null;
   centre_name: string | null;
+  state?: string | null;
   parent_name: string | null;
   parent_phone: string | null;
   highest_level: string | null;
@@ -64,6 +71,16 @@ function ageFrom(dob: string | null): number | null {
   if (m < 0 || (m === 0 && now.getDate() < d.getDate())) a--;
   return a;
 }
+// Extract state parenthetical from a centre name like "Test Centre Alpha (Selangor)".
+function stateFromCentre(centre: string | null): string {
+  if (!centre) return '';
+  const m = centre.match(/\(([^)]+)\)\s*$/);
+  return m ? m[1] : '';
+}
+function centreNoState(centre: string | null): string {
+  if (!centre) return '';
+  return centre.replace(/\s*\([^)]+\)\s*$/, '').trim();
+}
 
 export default function SwimmerRegistry() {
   const [rows, setRows] = useState<SwimmerRow[]>([]);
@@ -73,8 +90,6 @@ export default function SwimmerRegistry() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [certs, setCerts] = useState<Record<string, SwimmerCert[]>>({});
   const [certLoad, setCertLoad] = useState<Record<string, Load>>({});
-  const [busy, setBusy] = useState<string | null>(null);
-  const [rowError, setRowError] = useState<Record<string, string>>({});
 
   const fetchRegistry = useCallback(async () => {
     setLoad('loading');
@@ -110,21 +125,6 @@ export default function SwimmerRegistry() {
     });
   }
 
-  async function setStatus(row: SwimmerRow, status: 'active' | 'withdrawn') {
-    setBusy(row.candidate_id);
-    setRowError((m) => { const n = { ...m }; delete n[row.candidate_id]; return n; });
-    const { error } = await supabase.rpc('set_candidate_status', {
-      _candidate_id: row.candidate_id,
-      _status: status,
-    });
-    setBusy(null);
-    if (error) {
-      setRowError((m) => ({ ...m, [row.candidate_id]: error.message }));
-      return;
-    }
-    setRows((list) => list.map((x) => (x.candidate_id === row.candidate_id ? { ...x, status } : x)));
-  }
-
   const counts = useMemo(() => ({
     active: rows.filter((r) => r.status === 'active').length,
     withdrawn: rows.filter((r) => r.status === 'withdrawn' || r.status === 'anonymized').length,
@@ -142,7 +142,7 @@ export default function SwimmerRegistry() {
   }, [rows, tab, query]);
 
   return (
-    <section className="mas-page mas-swimmer-page">
+    <section className="mas-page mas-page-wide mas-swimmer-page">
       <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Registry</p>
@@ -183,93 +183,86 @@ export default function SwimmerRegistry() {
 
       {load === 'ready' && filtered.length > 0 && (
         <div className="mas-table-wrap">
-          <table className="mas-table mas-swimmer-table">
+          <table className="mas-table">
             <thead>
               <tr>
                 <th>Swimmer</th>
-                <th>Instructor</th>
-                <th>Centre</th>
+                <th>D.O.B / Age</th>
+                <th>Instructor / Centre</th>
+                <th>State</th>
                 <th>Highest</th>
                 <th>Last assessed</th>
-                <th>Active</th>
                 <th>Claim</th>
                 <th>Parent contact</th>
-                <th>Certificates</th>
-                <th className="mas-table-actioncol">Action</th>
+                <th className="mas-table-actioncol">Certificates</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((r) => {
                 const isOpen = expanded === r.candidate_id;
                 const age = ageFrom(r.date_of_birth);
+                const stateVal = r.state || stateFromCentre(r.centre_name);
+                const centreClean = r.state ? (r.centre_name || '—') : (centreNoState(r.centre_name) || r.centre_name || '—');
                 return (
                   <Fragment key={r.candidate_id}>
                     <tr className={isOpen ? 'is-open' : undefined}>
-                      <td className="mas-cell-strong">
+                      <td>
                         <span className="mas-cell-stack">
-                          <span>
-                            {r.full_name}
-                            {r.status === 'anonymized' && <span className="mas-pill" style={{ marginLeft: '0.4rem' }}>anonymized</span>}
-                          </span>
+                          <span>{r.swimmer_id ?? '—'}</span>
                           <span className="mas-cell-sub">
-                            {fmtDate(r.date_of_birth)}{age !== null ? ` · ${age} yrs` : ''} · {r.swimmer_id ?? '—'}
+                            {r.full_name}
+                            {r.status === 'anonymized' && ' · anonymized'}
                           </span>
                         </span>
                       </td>
-                      <td>{r.instructor_name || '—'}</td>
-                      <td className="mas-cell-wrap">{r.centre_name || 'Independent'}</td>
+                      <td>
+                        <span className="mas-cell-stack">
+                          <span>{fmtDate(r.date_of_birth)}</span>
+                          <span className="mas-cell-sub">{age !== null ? `${age} yrs` : '—'}</span>
+                        </span>
+                      </td>
+                      <td>
+                        <span className="mas-cell-stack">
+                          <span>{r.instructor_name || '—'}</span>
+                          <span className="mas-cell-sub">{centreClean || 'Independent'}</span>
+                        </span>
+                      </td>
+                      <td>{stateVal || '—'}</td>
                       <td>
                         {r.highest_level ? (
                           <span className="mas-cell-stack">
-                            <span className="mas-pill">{pretty(r.highest_level)}</span>
+                            <span>{pretty(r.highest_level)}</span>
                             <span className="mas-cell-sub">{fmtDate(r.highest_level_on)}</span>
                           </span>
                         ) : '—'}
                       </td>
                       <td>{fmtDate(r.last_assessment)}</td>
-                      <td>{r.has_active_session ? <span className="mas-outcome is-pass">Yes</span> : '—'}</td>
                       <td>
                         <span className="mas-cell-stack">
-                          <span className={r.claim_status === 'claimed' ? 'mas-outcome is-pass' : 'mas-outcome is-refer'}>
-                            {pretty(r.claim_status)}
-                          </span>
+                          <span>{pretty(r.claim_status)}</span>
                           {r.claim_status !== 'claimed' && r.claim_code && (
                             <span className="mas-cell-sub mas-serial">{r.claim_code}</span>
                           )}
                         </span>
                       </td>
                       <td>
-                        {r.parent_name ? (
+                        {r.parent_name || r.parent_phone ? (
                           <span className="mas-cell-stack">
-                            <span>{r.parent_name}</span>
+                            <span>{r.parent_name || '—'}</span>
                             {r.parent_phone && <span className="mas-cell-sub"><a href={`tel:${r.parent_phone}`}>{r.parent_phone}</a></span>}
                           </span>
                         ) : '—'}
                       </td>
-                      <td>
-                        <button className="mas-btn-ghost mas-btn-compact" onClick={() => toggleExpand(r.candidate_id)} aria-expanded={isOpen}>
+                      <td className="mas-table-actioncol">
+                        <button className="mas-link" onClick={() => toggleExpand(r.candidate_id)} aria-expanded={isOpen}>
                           {isOpen ? 'Hide' : `View (${r.cert_count})`}
                         </button>
-                      </td>
-                      <td className="mas-table-actioncol">
-                        {r.status === 'anonymized' ? (
-                          <span className="mas-cell-sub">—</span>
-                        ) : r.status === 'withdrawn' ? (
-                          <button className="mas-btn-ghost mas-btn-compact" onClick={() => setStatus(r, 'active')} disabled={busy === r.candidate_id}>
-                            {busy === r.candidate_id ? '…' : 'Restore'}
-                          </button>
-                        ) : (
-                          <button className="mas-btn-ghost mas-btn-compact" onClick={() => setStatus(r, 'withdrawn')} disabled={busy === r.candidate_id}>
-                            {busy === r.candidate_id ? '…' : 'Withdraw'}
-                          </button>
-                        )}
-                        {rowError[r.candidate_id] && <span className="mas-status mas-status-bad">{rowError[r.candidate_id]}</span>}
                       </td>
                     </tr>
 
                     {isOpen && (
                       <tr className="mas-table-detailrow">
-                        <td colSpan={10}>
+                        <td colSpan={9}>
                           <div className="mas-table-detail">
                             <h3 className="mas-detail-heading">Certificates ({r.cert_count})</h3>
                             {certLoad[r.candidate_id] === 'loading' && <p className="mas-status">Loading…</p>}
@@ -290,7 +283,7 @@ export default function SwimmerRegistry() {
                                       <td>{fmtDate(ct.issued_on)}</td>
                                       <td>{ct.centre_name || '—'}</td>
                                       <td className="mas-table-actioncol">
-                                        <a className="mas-btn-ghost mas-btn-compact" href={`/certificate/${ct.serial}`} target="_blank" rel="noopener noreferrer">
+                                        <a className="mas-link" href={`/certificate/${ct.serial}`} target="_blank" rel="noopener noreferrer">
                                           View / print
                                         </a>
                                       </td>
