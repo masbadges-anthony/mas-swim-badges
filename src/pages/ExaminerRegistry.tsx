@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+// #16 — Examiner registry, dense-table conversion.
+//   list   ← list_examiner_invitations(_include_revoked)
+//   invite ← onboard_examiner(_email, _state)          → returns new examiner UID
+//   revoke ← revoke_examiner_invitation(_id)
+// House law: dense table · Active/Revoked tabs · inline-add row (email · state · +Invite).
+// Tabs replace the old "Show revoked" toggle — fetches with _include_revoked=true so
+// both sets are in memory and switching is instant.
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
 
@@ -14,137 +21,209 @@ interface Invite {
   accepted_person: string | null;
 }
 
+type Load = 'loading' | 'ready' | 'error';
+type Tab = 'active' | 'revoked';
+
 const STAT: Record<string, { label: string; cls: string }> = {
-  pending:  { label: 'Awaiting registration', cls: 'is-warning' },
-  accepted: { label: 'Registered', cls: 'is-success' },
+  pending:  { label: 'Awaiting registration', cls: 'is-refer' },
+  accepted: { label: 'Registered', cls: 'is-pass' },
   revoked:  { label: 'Revoked', cls: '' },
 };
 
 function fmt(iso: string | null): string {
-  if (!iso) return '';
+  if (!iso) return '—';
   try { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
   catch { return iso; }
 }
+
+const CSS = `
+.mas-addrow td { background:#f5f8fc; }
+.mas-addrow-fields { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
+.mas-addrow-fields input[type=email], .mas-addrow-fields select {
+  font:inherit; padding:0.35rem 0.5rem; border:1px solid var(--mas-line,#e3e9f3); border-radius:6px;
+}
+.mas-addrow-fields input[type=email] { min-width:16rem; }
+`;
 
 export default function ExaminerRegistry() {
   const [states, setStates] = useState<string[]>([]);
   const [email, setEmail] = useState('');
   const [state, setState] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const [lastUid, setLastUid] = useState<string | null>(null);
 
   const [rows, setRows] = useState<Invite[]>([]);
-  const [showRevoked, setShowRevoked] = useState(false);
+  const [load, setLoad] = useState<Load>('loading');
+  const [tab, setTab] = useState<Tab>('active');
+  const [busyRow, setBusyRow] = useState<string | null>(null);
+  const [rowError, setRowError] = useState<Record<string, string>>({});
 
-  const load = useCallback(async () => {
-    const { data } = await supabase.rpc('list_examiner_invitations', { _include_revoked: showRevoked });
+  const loadRows = useCallback(async () => {
+    setLoad('loading');
+    // fetch WITH revoked so tabs switch without a refetch
+    const { data, error } = await supabase.rpc('list_examiner_invitations', { _include_revoked: true });
+    if (error) { setLoad('error'); return; }
     setRows((data ?? []) as Invite[]);
-  }, [showRevoked]);
+    setLoad('ready');
+  }, []);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.rpc('list_states');
       setStates(((data ?? []) as StateRow[]).map((x) => x.state));
     })();
-    load();
-  }, [load]);
+    loadRows();
+  }, [loadRows]);
 
   const canInvite = email.includes('@') && !!state && !busy;
 
   async function invite() {
     if (!canInvite) return;
-    setBusy(true); setError(null); setLastUid(null);
+    setBusy(true); setInviteError(null); setLastUid(null);
     const { data, error } = await supabase.rpc('onboard_examiner', { _email: email, _state: state });
     setBusy(false);
-    if (error) { setError(error.message); return; }
+    if (error) { setInviteError(error.message); return; }
     setLastUid(data as string);
     setEmail(''); setState('');
-    load();
+    loadRows();
   }
 
   async function revoke(id: string) {
-    await supabase.rpc('revoke_examiner_invitation', { _id: id });
-    load();
+    setBusyRow(id);
+    setRowError((m) => { const n = { ...m }; delete n[id]; return n; });
+    const { error } = await supabase.rpc('revoke_examiner_invitation', { _id: id });
+    setBusyRow(null);
+    if (error) {
+      setRowError((m) => ({ ...m, [id]: error.message }));
+      return;
+    }
+    loadRows();
   }
+
+  const counts = useMemo(() => ({
+    active: rows.filter((r) => r.status !== 'revoked').length,
+    revoked: rows.filter((r) => r.status === 'revoked').length,
+  }), [rows]);
+
+  const filtered = useMemo(
+    () => rows.filter((r) => (tab === 'active' ? r.status !== 'revoked' : r.status === 'revoked')),
+    [rows, tab],
+  );
 
   return (
     <section className="mas-page">
+      <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Chief Examiner</p>
         <h1>Examiner registry</h1>
         <p className="mas-lede">
-          Examiners are appointed internally. Invite an approved examiner by email
-          and a unique examiner UID is generated. The examiner role is granted
-          automatically when they register with that email.
+          Examiners are appointed internally. Invite one in the top row — their unique
+          examiner UID is generated on invitation; the examiner role activates when they
+          register with the invited email.
         </p>
       </header>
 
-      {lastUid && (
-        <div className="mas-alert is-success">
-          <div className="mas-alert-body">
-            <p className="mas-alert-title">Invitation created · UID <span className="mas-mono">{lastUid}</span></p>
-            <p className="mas-alert-text">Ask the examiner to register using the invited email; their role activates on first login.</p>
-          </div>
-        </div>
-      )}
-      {error && (
-        <div className="mas-alert is-danger">
-          <div className="mas-alert-body"><p className="mas-alert-text">{error}</p></div>
-        </div>
-      )}
-
-      <div className="mas-form">
-        <div className="mas-form-cardhead">
-          <div><p className="mas-eyebrow">Invite</p><h2>New examiner</h2></div>
-        </div>
-        <div className="mas-form-grid">
-          <div className="mas-field">
-            <label htmlFor="email" className="mas-field-label">Examiner email <span className="mas-req">*</span></label>
-            <input id="email" type="email" className="mas-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="examiner@example.com" />
-          </div>
-          <div className="mas-field">
-            <label htmlFor="state" className="mas-field-label">State coverage <span className="mas-req">*</span></label>
-            <select id="state" className="mas-select" value={state} onChange={(e) => setState(e.target.value)}>
-              <option value="">Select a state…</option>
-              {states.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-        </div>
-        <div className="mas-form-actions" style={{ marginTop: '1rem' }}>
-          <button className="mas-btn-primary" onClick={invite} disabled={!canInvite}>
-            {busy ? 'Inviting…' : 'Invite examiner'}
-          </button>
+      <div className="mas-admin-toolbar" style={{ gap: '0.6rem', flexWrap: 'wrap' }}>
+        <button className="mas-btn-ghost" onClick={loadRows} disabled={load === 'loading'}>
+          Refresh
+        </button>
+        <div className="mas-tabs" role="tablist" style={{ display: 'flex', gap: '0.3rem' }}>
+          <button role="tab" aria-selected={tab === 'active'}
+            className={tab === 'active' ? 'mas-btn-primary mas-btn-compact' : 'mas-btn-ghost mas-btn-compact'}
+            onClick={() => setTab('active')}>Active ({counts.active})</button>
+          <button role="tab" aria-selected={tab === 'revoked'}
+            className={tab === 'revoked' ? 'mas-btn-primary mas-btn-compact' : 'mas-btn-ghost mas-btn-compact'}
+            onClick={() => setTab('revoked')}>Revoked ({counts.revoked})</button>
         </div>
       </div>
 
-      <header className="mas-page-head mas-section-head mas-section-rowhead">
-        <h2>Registry</h2>
-        <button className="mas-btn-ghost" onClick={() => setShowRevoked((v) => !v)}>
-          {showRevoked ? 'Hide revoked' : 'Show revoked'}
-        </button>
-      </header>
-
-      {rows.length === 0 && <p className="mas-status">No examiner invitations yet.</p>}
-      {rows.length > 0 && (
-        <ul className="mas-admin-list">
-          {rows.map((r) => (
-            <li key={r.id} className="mas-admin-row">
-              <div className="mas-admin-main">
-                <h3 className="mas-admin-name"><span className="mas-mono">{r.examiner_uid}</span> · {r.accepted_person ?? r.email}</h3>
-                <p className="mas-admin-meta">
-                  <span className="mas-pill">{r.state}</span>
-                  <span className={`mas-badge ${STAT[r.status]?.cls ?? ''}`}>{STAT[r.status]?.label ?? r.status}</span>
-                  <span className="mas-field-opt">invited {fmt(r.invited_at)}</span>
-                </p>
-              </div>
-              {r.status === 'pending' && (
-                <button className="mas-btn-ghost" onClick={() => revoke(r.id)}>Revoke</button>
-              )}
-            </li>
-          ))}
-        </ul>
+      {lastUid && (
+        <p className="mas-status mas-status-good" role="status">
+          Invitation created · UID <span className="mas-serial">{lastUid}</span>. Ask the
+          examiner to register with the invited email; their role activates on first login.
+        </p>
       )}
+      {inviteError && (
+        <p className="mas-status mas-status-bad">Couldn’t create invitation: {inviteError}</p>
+      )}
+
+      <div className="mas-table-wrap">
+        <table className="mas-table">
+          <thead>
+            <tr>
+              <th>Examiner UID</th>
+              <th>Email / Person</th>
+              <th>State</th>
+              <th>Status</th>
+              <th>Invited</th>
+              <th className="mas-table-actioncol">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Inline add-row (only on the Active tab) */}
+            {tab === 'active' && (
+              <tr className="mas-addrow">
+                <td colSpan={6}>
+                  <div className="mas-addrow-fields">
+                    <input
+                      type="email" value={email} autoComplete="off"
+                      placeholder="Examiner email"
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <select value={state} onChange={(e) => setState(e.target.value)}>
+                      <option value="">Select a state…</option>
+                      {states.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <button className="mas-btn-primary mas-btn-compact" onClick={invite} disabled={!canInvite}>
+                      {busy ? 'Inviting…' : '+ Invite'}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            )}
+
+            {load === 'loading' && (
+              <tr><td colSpan={6} className="mas-status">Loading…</td></tr>
+            )}
+            {load === 'error' && (
+              <tr><td colSpan={6} className="mas-status mas-status-bad">Couldn’t load invitations. Refresh to try again.</td></tr>
+            )}
+            {load === 'ready' && filtered.length === 0 && (
+              <tr><td colSpan={6} className="mas-status">
+                {tab === 'active' ? 'No active examiners yet.' : 'No revoked invitations.'}
+              </td></tr>
+            )}
+
+            {filtered.map((r) => (
+              <tr key={r.id}>
+                <td className="mas-cell-strong mas-serial">{r.examiner_uid}</td>
+                <td>
+                  <span className="mas-cell-stack">
+                    <span>{r.accepted_person || r.email}</span>
+                    {r.accepted_person && <span className="mas-cell-sub">{r.email}</span>}
+                  </span>
+                </td>
+                <td><span className="mas-pill">{r.state}</span></td>
+                <td>
+                  <span className={`mas-outcome ${STAT[r.status]?.cls ?? ''}`}>
+                    {STAT[r.status]?.label ?? r.status}
+                  </span>
+                </td>
+                <td>{fmt(r.invited_at)}</td>
+                <td className="mas-table-actioncol">
+                  {r.status === 'pending' && (
+                    <button className="mas-btn-ghost mas-btn-compact" onClick={() => revoke(r.id)} disabled={busyRow === r.id}>
+                      {busyRow === r.id ? '…' : 'Revoke'}
+                    </button>
+                  )}
+                  {rowError[r.id] && <span className="mas-status mas-status-bad">{rowError[r.id]}</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
