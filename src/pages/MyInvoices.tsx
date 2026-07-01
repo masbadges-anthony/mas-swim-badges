@@ -1,14 +1,11 @@
-// Instructor's own invoices, as a dense table (house UI law). Doubles as the
-// instructor's booked-session billing view, so "Cancel session" lives here.
+// Instructor's own invoices — tight single-line rows matching BillingPayments.
 //   list   ← list_my_invoices() → invoice_id, session_id, status, total, currency,
 //            receipt_no, paid_at, venue, scheduled_on, created_at, session_status
 //   cancel ← cancel_session(_session_id) → { session_id, status, within_72h, refund_due }
-//   View   → /billing/invoice/:invoice_id  (printable A5 invoice)
-//   Receipt→ /billing/receipt/:invoice_id  (printable A5 receipt, once paid)
-//
-// Cancel is only offered when the session is still cancellable: session_status is
-// not one of {completed, closed, cancelled, archived}. The backend also enforces
-// this; the button just shouldn't be visible when the action wouldn't succeed.
+//   View   → /billing/invoice/:invoice_id
+//   Receipt→ /billing/receipt/:invoice_id  (once paid)
+// Cancel only offered when session_status is not terminal (completed/closed/
+// cancelled/archived).
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
@@ -35,9 +32,15 @@ interface CancelResult {
 type Load = 'loading' | 'ready' | 'error';
 type Tab = 'all' | 'outstanding' | 'paid';
 
-// Session statuses where the session is finished (or already cancelled) and
-// Cancel would either fail or be nonsensical.
 const TERMINAL_SESSION = new Set(['completed', 'closed', 'cancelled', 'archived']);
+
+const CSS = `
+.mas-tight th, .mas-tight td { padding: 0.35rem 0.6rem; white-space: nowrap; vertical-align: middle; }
+.mas-tight tbody tr { line-height: 1.3; }
+.mas-tight .mas-link { color: var(--mas-navy, #1E2752); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
+.mas-tight .mas-link:hover { text-decoration: none; }
+.mas-tight .mas-link + .mas-link { margin-left: 0.6rem; }
+`;
 
 function money(n: number | string | null | undefined): string {
   return `RM ${Number(n ?? 0).toFixed(2)}`;
@@ -55,6 +58,9 @@ function statusLabel(s: string): string {
   if (s === 'void') return 'Void';
   return s;
 }
+function openDoc(kind: 'invoice' | 'receipt', invoiceId: string) {
+  window.open(`/billing/${kind}/${invoiceId}`, '_blank', 'noopener');
+}
 
 export default function MyInvoices() {
   const [rows, setRows] = useState<MyInvoice[]>([]);
@@ -69,25 +75,16 @@ export default function MyInvoices() {
   const fetchInvoices = useCallback(async () => {
     setLoad('loading');
     const { data, error } = await supabase.rpc('list_my_invoices');
-    if (error) {
-      setLoad('error');
-      return;
-    }
+    if (error) { setLoad('error'); return; }
     setRows((data ?? []) as MyInvoice[]);
     setLoad('ready');
   }, []);
 
-  useEffect(() => {
-    fetchInvoices();
-  }, [fetchInvoices]);
+  useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
   async function cancelSession(inv: MyInvoice) {
     setConfirmInv(null);
-    setCancelError((m) => {
-      const n = { ...m };
-      delete n[inv.session_id];
-      return n;
-    });
+    setCancelError((m) => { const n = { ...m }; delete n[inv.session_id]; return n; });
     setCancelBusy(inv.session_id);
     const { data, error } = await supabase.rpc('cancel_session', { _session_id: inv.session_id });
     setCancelBusy(null);
@@ -100,11 +97,6 @@ export default function MyInvoices() {
     await fetchInvoices();
   }
 
-  function openDoc(kind: 'invoice' | 'receipt', invoiceId: string) {
-    window.open(`/billing/${kind}/${invoiceId}`, '_blank', 'noopener');
-  }
-
-  // Show Cancel-session once per session (first invoice row of that session).
   const primaryInvoiceBySession = useMemo(() => {
     const m = new Map<string, string>();
     for (const r of rows) if (!m.has(r.session_id)) m.set(r.session_id, r.invoice_id);
@@ -125,6 +117,7 @@ export default function MyInvoices() {
 
   return (
     <section className="mas-page">
+      <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Billing</p>
         <h1>My invoices</h1>
@@ -162,7 +155,7 @@ export default function MyInvoices() {
 
       {load === 'ready' && filtered.length > 0 && (
         <div className="mas-table-wrap">
-          <table className="mas-table">
+          <table className="mas-table mas-tight">
             <thead>
               <tr>
                 <th>Venue / date</th>
@@ -187,44 +180,35 @@ export default function MyInvoices() {
                   <Fragment key={inv.invoice_id}>
                     <tr>
                       <td className="mas-cell-strong">
-                        <span className="mas-cell-stack">
-                          <span>{inv.venue || 'Assessment session'}</span>
-                          <span className="mas-cell-sub">{prettyDate(inv.scheduled_on)}</span>
-                        </span>
+                        {inv.venue || 'Assessment session'} · {prettyDate(inv.scheduled_on)}
                       </td>
-                      <td>
-                        <span className={`mas-outcome ${paid ? 'is-pass' : 'is-refer'}`}>
-                          {statusLabel(inv.status)}
-                        </span>
-                      </td>
+                      <td>{statusLabel(inv.status)}</td>
                       <td className="mas-num">{money(inv.total)}</td>
                       <td>{inv.receipt_no ?? '—'}</td>
                       <td className="mas-table-actioncol">
-                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <button
+                          type="button" className="mas-link"
+                          onClick={() => openDoc('invoice', inv.invoice_id)}
+                        >
+                          View
+                        </button>
+                        {paid && (
                           <button
-                            className="mas-btn-ghost mas-btn-compact"
-                            onClick={() => openDoc('invoice', inv.invoice_id)}
+                            type="button" className="mas-link"
+                            onClick={() => openDoc('receipt', inv.invoice_id)}
                           >
-                            View
+                            Receipt
                           </button>
-                          {paid && (
-                            <button
-                              className="mas-btn-ghost mas-btn-compact"
-                              onClick={() => openDoc('receipt', inv.invoice_id)}
-                            >
-                              Receipt
-                            </button>
-                          )}
-                          {showCancel && (
-                            <button
-                              className="mas-btn-ghost mas-btn-compact"
-                              onClick={() => setConfirmInv(inv)}
-                              disabled={cancelBusy === inv.session_id}
-                            >
-                              {cancelBusy === inv.session_id ? 'Cancelling…' : 'Cancel'}
-                            </button>
-                          )}
-                        </div>
+                        )}
+                        {showCancel && (
+                          <button
+                            type="button" className="mas-link"
+                            onClick={() => setConfirmInv(inv)}
+                            disabled={cancelBusy === inv.session_id}
+                          >
+                            {cancelBusy === inv.session_id ? 'Cancelling…' : 'Cancel'}
+                          </button>
+                        )}
                       </td>
                     </tr>
                     {(result || cancelError[inv.session_id]) && (
