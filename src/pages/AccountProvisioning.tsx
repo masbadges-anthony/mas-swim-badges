@@ -90,6 +90,7 @@ export default function AccountProvisioning() {
   // Row action state
   const [rowBusy, setRowBusy] = useState<string | null>(null);
   const [rowMenuOpen, setRowMenuOpen] = useState<string | null>(null);
+  const [rowMenuAnchor, setRowMenuAnchor] = useState<{ x: number; y: number } | null>(null);
   const [rowMsg, setRowMsg] = useState<Record<string, { ok?: string; err?: string }>>({});
 
   const fetchAccounts = useCallback(async () => {
@@ -116,6 +117,26 @@ export default function AccountProvisioning() {
     fetchAccounts();
     return () => { cancelled = true; };
   }, [fetchAccounts]);
+
+  // Click-outside-to-close for the row action menu.
+  useEffect(() => {
+    if (!rowMenuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t) { setRowMenuOpen(null); return; }
+      // Don't close if the click was inside the menu itself or on the trigger.
+      if (t.closest('[data-mas-row-menu]')) return;
+      if (t.closest('[data-mas-row-menu-trigger]')) return;
+      setRowMenuOpen(null);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setRowMenuOpen(null); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [rowMenuOpen]);
 
   const kind = scopeKind(role);
   const canCreate =
@@ -172,7 +193,19 @@ export default function AccountProvisioning() {
     });
     setRowBusy(null);
     if (error) {
-      setRowMsg((m) => ({ ...m, [a.profile_id]: { err: error.message } }));
+      // supabase.functions.invoke throws on non-2xx but the friendly detail is on
+      // the response body. Try to fetch it from error.context.body if present.
+      let friendly = error.message;
+      try {
+        // FunctionsHttpError puts the Response on error.context; extract JSON.
+        const ctx = (error as unknown as { context?: Response }).context;
+        if (ctx && typeof ctx.json === 'function') {
+          const body = await ctx.json();
+          if (body?.detail) friendly = body.detail;
+          else if (body?.error) friendly = body.error;
+        }
+      } catch (_e) { /* fall through with generic message */ }
+      setRowMsg((m) => ({ ...m, [a.profile_id]: { err: friendly } }));
       return;
     }
     const resp = data as { ok?: boolean; error?: string; detail?: string } | null;
@@ -387,40 +420,67 @@ export default function AccountProvisioning() {
                   )}
                 </td>
                 <td className="mas-table-actioncol">
-                  <div style={{ position: 'relative', display: 'inline-block' }}>
-                    <button
-                      className="mas-btn-ghost mas-btn-compact"
-                      onClick={() => setRowMenuOpen((cur) => (cur === a.profile_id ? null : a.profile_id))}
-                      disabled={rowBusy === a.profile_id}
-                      aria-haspopup="menu"
-                      aria-expanded={rowMenuOpen === a.profile_id}
-                    >
-                      {rowBusy === a.profile_id ? '…' : '⋯'}
-                    </button>
-                    {rowMenuOpen === a.profile_id && (
-                      <div role="menu" style={{
-                        position: 'absolute', right: 0, top: '110%', zIndex: 20,
-                        background: '#fff', border: '1px solid var(--mas-line, #e3e9f3)',
-                        borderRadius: 8, boxShadow: '0 4px 14px rgba(30,39,82,0.12)',
-                        minWidth: '13rem', padding: '0.3rem 0',
-                      }}>
-                        <button className="mas-menu-item" onClick={() => onChangeEmail(a)}>Change email</button>
-                        <button className="mas-menu-item" onClick={() => onResetPassword(a)}>Send reset password</button>
-                        {a.status === 'suspended' ? (
-                          <button className="mas-menu-item" onClick={() => onReactivate(a)}>Reactivate</button>
-                        ) : (
-                          <button className="mas-menu-item" onClick={() => onSuspend(a)}>Suspend</button>
-                        )}
-                        <button className="mas-menu-item" style={{ color: 'var(--mas-red,#C62026)' }} onClick={() => onDelete(a)}>Delete…</button>
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    data-mas-row-menu-trigger
+                    className="mas-btn-ghost mas-btn-compact"
+                    onClick={(e) => {
+                      if (rowMenuOpen === a.profile_id) {
+                        setRowMenuOpen(null);
+                        return;
+                      }
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      // Anchor the menu just below and left-aligned to the trigger's right edge.
+                      setRowMenuAnchor({
+                        x: rect.right,
+                        y: rect.bottom + 4,
+                      });
+                      setRowMenuOpen(a.profile_id);
+                    }}
+                    disabled={rowBusy === a.profile_id}
+                    aria-haspopup="menu"
+                    aria-expanded={rowMenuOpen === a.profile_id}
+                  >
+                    {rowBusy === a.profile_id ? '…' : '⋯'}
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {rowMenuOpen && rowMenuAnchor && (() => {
+        const target = accounts.find((x) => x.profile_id === rowMenuOpen);
+        if (!target) return null;
+        return (
+          <div
+            data-mas-row-menu
+            role="menu"
+            style={{
+              position: 'fixed',
+              // Right-align the menu to the trigger's right edge; adjust to keep on-screen.
+              left: Math.max(8, Math.min(rowMenuAnchor.x - 208, window.innerWidth - 216)),
+              top: Math.min(rowMenuAnchor.y, window.innerHeight - 200),
+              zIndex: 1000,
+              background: '#fff',
+              border: '1px solid var(--mas-line, #e3e9f3)',
+              borderRadius: 8,
+              boxShadow: '0 6px 20px rgba(30,39,82,0.18)',
+              minWidth: '13rem',
+              padding: '0.3rem 0',
+            }}
+          >
+            <button className="mas-menu-item" onClick={() => onChangeEmail(target)}>Change email</button>
+            <button className="mas-menu-item" onClick={() => onResetPassword(target)}>Send reset password</button>
+            {target.status === 'suspended' ? (
+              <button className="mas-menu-item" onClick={() => onReactivate(target)}>Reactivate</button>
+            ) : (
+              <button className="mas-menu-item" onClick={() => onSuspend(target)}>Suspend</button>
+            )}
+            <button className="mas-menu-item" style={{ color: 'var(--mas-red,#C62026)' }} onClick={() => onDelete(target)}>Delete…</button>
+          </div>
+        );
+      })()}
     </section>
   );
 }
