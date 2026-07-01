@@ -116,15 +116,12 @@ function PublicLayout() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Collapse the mobile menu (and the desktop search reveal) whenever the route
-  // changes (e.g. a link is followed).
   useEffect(() => {
     setMenuOpen(false);
     setOpenSection(null);
     setSearchOpen(false);
   }, [location.pathname]);
 
-  // Focus the desktop search input as soon as it is revealed.
   useEffect(() => {
     if (searchOpen) searchInputRef.current?.focus();
   }, [searchOpen]);
@@ -139,7 +136,6 @@ function PublicLayout() {
     setQuery('');
   };
 
-  // Allow closing the open mobile menu with the Escape key.
   useEffect(() => {
     if (!menuOpen) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
@@ -153,27 +149,18 @@ function PublicLayout() {
   return (
     <div className="mas-site">
       <header className={`mas-topnav${scrolled ? ' is-scrolled' : ''}`}>
-        {/* Slim utility strip above the main header. Part of the fixed stack, so
-            its (constant) height is added to the `.mas-main` top offset in CSS.
-            The left side is intentionally left open for future social links —
-            add them before the "Contact us" link. */}
         <div className="mas-utilitybar">
           <div className="mas-utilitybar-inner">
-            {/* Future: social-media links go here, on the left. */}
             <Link to="/contact" className="mas-utilitybar-link">Contact us</Link>
           </div>
         </div>
         <div className="mas-topnav-inner">
         <Brand />
-        {/* Closes the mobile menu when any link inside is selected (the submenu
-            toggle is a <button>, so tapping it leaves the menu open). */}
         <nav
           id="mas-mobile-nav"
           className={`mas-topnav-links${menuOpen ? ' is-open' : ''}`}
           onClick={(e) => { if ((e.target as HTMLElement).closest('a')) setMenuOpen(false); }}
         >
-          {/* Search lives inside the mobile menu; the desktop reveal sits in the
-              header bar (below). Both share the same query + submit handler. */}
           <form className="mas-search-mobile" role="search" onSubmit={submitSearch}>
             <input
               className="mas-search-input"
@@ -240,15 +227,11 @@ function PublicLayout() {
           <NavLink to="/courses" className={navClass}>Courses</NavLink>
           <NavLink to="/faq" className={navClass}>FAQ</NavLink>
         </nav>
-        {/* Desktop search: an icon button that reveals an inline input. Hidden on
-            mobile, where the search box lives inside the menu panel instead. */}
         <form
           className={`mas-search${searchOpen ? ' is-open' : ''}`}
           role="search"
           onSubmit={submitSearch}
           onBlur={(e) => {
-            // Close when focus leaves the whole control (input + toggle), not when
-            // it merely moves between them.
             if (!e.currentTarget.contains(e.relatedTarget as Node)) setSearchOpen(false);
           }}
         >
@@ -270,11 +253,6 @@ function PublicLayout() {
             aria-label={searchOpen ? 'Close search' : 'Open search'}
             aria-expanded={searchOpen}
             onClick={() => {
-              // Toggle the reveal. When open the icon dismisses it; submitting is
-              // done with Enter from the input, which fires the form's onSubmit.
-              // (This button must NOT be type="submit": as the form's default
-              // submit control it would otherwise intercept the Enter keypress
-              // and cancel navigation via preventDefault.)
               setSearchOpen((o) => !o);
             }}
           >
@@ -354,10 +332,6 @@ function Sidebar({
   const canManageCentres = hasRole('chairperson') || hasRole('board_member');
   const canManageMembers = hasRole('chairperson') || hasRole('board_member');
   const canCentreAdmin = hasRole('partner_center_admin');
-  // Assessments oversight doubles as the payment-recording surface, so the
-  // billing roles (finance_officer, system_admin) can reach it alongside
-  // governance. (system_admin already passes via the has_role wildcard, but it
-  // is listed explicitly to mirror the route guard.)
   const canOversight =
     isGovernance || hasRole('finance_officer') || hasRole('system_admin');
   const canRegister = hasRole('instructor') || isGovernance;
@@ -367,8 +341,6 @@ function Sidebar({
   const canInvitations = hasRole('examiner');
   const canAccounts = hasRole('system_admin') || hasRole('finance_officer');
   const canMyInvoices = hasRole('instructor') || hasRole('partner_center_admin');
-  // The universal session tracker (#15): instructors and master trainers (booked),
-  // examiners (assigned), and governance + billing roles (all sessions).
   const canMySessions =
     hasRole('instructor') || hasRole('master_trainer') || hasRole('examiner') ||
     hasRole('finance_officer') || isGovernance;
@@ -394,9 +366,6 @@ function Sidebar({
   const canBuyStore = hasRole('instructor') || hasRole('partner_center_admin');
   const canManageStore = hasRole('system_admin') || hasRole('chairperson') || hasRole('board_member');
 
-  // Staff/operator roles are not parents in the context of the system, so the
-  // "My child's badges" (claim) link is hidden for them. Pure-parent users —
-  // those holding no portal role at all — keep seeing it.
   const isStaffOperator =
     hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner') ||
     hasRole('instructor') || hasRole('examiner') || hasRole('instructor_trainer') ||
@@ -411,8 +380,6 @@ function Sidebar({
   const primaryRole = memberships[0]?.role;
   const roleLabel = primaryRole ? (ROLE_LABELS[primaryRole] ?? primaryRole) : 'Member';
 
-  // Attention counts for sidebar dots. Re-fetched on every navigation so the
-  // dot clears once an admin acknowledges the new enquiries on the queue page.
   const location = useLocation();
   const [unhandledEnquiries, setUnhandledEnquiries] = useState(0);
   useEffect(() => {
@@ -454,24 +421,17 @@ function Sidebar({
     return () => { active = false; };
   }, [canInvitations, location.pathname]);
 
-  // Surface the total attention count to the shell so the mobile hamburger can
-  // show its own little indicator when something inside the (collapsed) sidebar
-  // needs attention.
   useEffect(() => {
     onAttentionChange?.(unhandledEnquiries + unhandledPartnerApps);
   }, [unhandledEnquiries, unhandledPartnerApps, onAttentionChange]);
 
   return (
     <>
-      {/* Translucent backdrop: only visible (and tappable) on mobile when the
-          drawer is open. Tapping it dismisses the sidebar. */}
       <div
         className={`mas-sidebar-backdrop${open ? ' is-open' : ''}`}
         onClick={onClose}
         aria-hidden="true"
       />
-      {/* Closes the drawer when any nav link inside is tapped (the <summary>
-          group toggles are not anchors, so they keep the drawer open). */}
       <aside
         id="mas-portal-sidebar"
         className={`mas-sidebar${open ? ' is-open' : ''}`}
@@ -605,15 +565,11 @@ function AppLayout() {
   const location = useLocation();
   const title = PAGE_TITLES[location.pathname] ?? 'Portal';
 
-  // Off-canvas sidebar state (mobile only — on desktop the sidebar is always
-  // visible and `sidebarOpen` is inert because the drawer CSS is breakpointed).
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [attentionTotal, setAttentionTotal] = useState(0);
 
-  // Close the drawer whenever the route changes (e.g. a nav link is followed).
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
-  // Escape closes the drawer; lock body scroll while it is open.
   useEffect(() => {
     if (!sidebarOpen) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSidebarOpen(false); };
@@ -745,6 +701,7 @@ export default function App() {
               <Route path="/registry/swimmers" element={<RequireRole roles={['instructor', 'partner_center_admin', 'chairperson', 'system_admin', 'finance_officer']}><SwimmerRegistry /></RequireRole>} />
               <Route path="/admin/audit-log" element={<RequireRole roles={['system_admin', 'chairperson']}><AuditLog /></RequireRole>} />
               <Route path="/admin/memberships" element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>} />
+              <Route path="/admin/staff" element={<RequireRole roles={['system_admin', 'chairperson']}><AccountProvisioning /></RequireRole>} />
             </Route>
 
             <Route path="/login" element={<Login />} />
@@ -753,7 +710,6 @@ export default function App() {
             <Route element={<Protected />}>
               <Route path="/parent" element={<ParentDashboard />} />
               <Route path="/set-password" element={<SetPassword />} />
-              <Route path="/admin/staff" element={<RequireRole roles={['system_admin', 'chairperson']}><AccountProvisioning /></RequireRole>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
