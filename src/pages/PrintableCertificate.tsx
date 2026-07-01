@@ -59,7 +59,7 @@ const SLOT = {
   serial: { xPct: 97.5, yPct: 3.5, align: 'right' as const, size: 9,  weight: 'normal' as const },
   date:   { xPct: 97.5, yPct: 5.5, align: 'right' as const, size: 11, weight: 'normal' as const },
   // student name on the ruled line under "This is to certify that", left-of-centre
-  name:   { xPct: 58.0, yPct: 33.5, align: 'center' as const, size: 28, weight: 'bold' as const },
+  name:   { xPct: 33.0, yPct: 33.5, align: 'left' as const, size: 24, weight: 'bold' as const, maxWidthMm: 140, minSize: 14 },
   // signature lines at bottom — instructor + examiner, above their labels
   inst:   { xPct: 40.0, yPct: 89.0, align: 'left' as const, size: 12, weight: 'bold' as const },
   exam:   { xPct: 56.0, yPct: 89.0, align: 'left' as const, size: 12, weight: 'bold' as const },
@@ -93,10 +93,19 @@ async function generatePdf(doc: CertDoc): Promise<Blob> {
 
   const draw = (
     text: string,
-    slot: { xPct: number; yPct: number; align: 'left' | 'center' | 'right'; size: number; weight: 'normal' | 'bold' },
+    slot: { xPct: number; yPct: number; align: 'left' | 'center' | 'right'; size: number; weight: 'normal' | 'bold'; maxWidthMm?: number; minSize?: number },
   ) => {
     pdf.setFont('helvetica', slot.weight);
-    pdf.setFontSize(slot.size);
+    // Auto-shrink to fit if maxWidthMm is set; step down 1pt at a time to minSize (default 12).
+    let sz = slot.size;
+    const minSz = slot.minSize ?? 12;
+    pdf.setFontSize(sz);
+    if (slot.maxWidthMm != null) {
+      while (sz > minSz && pdf.getTextWidth(text) > slot.maxWidthMm) {
+        sz -= 1;
+        pdf.setFontSize(sz);
+      }
+    }
     pdf.text(text, mmX(slot.xPct), mmY(slot.yPct), { align: slot.align });
   };
 
@@ -135,15 +144,18 @@ const CSS = `
 
 .mas-cert-slot { position:absolute; z-index:1; color:#1E2752; white-space:nowrap; line-height:1; }
 .mas-cert-slot.value-top { font-size:11pt; }
-.mas-cert-slot.name { font-size:28pt; font-weight:700; }
-.mas-cert-slot.signee { font-size:12pt; font-weight:700; }
+.mas-cert-slot.name { font-size:24pt; font-weight:700; max-width:140mm; text-align:left; }
+.mas-cert-slot.name[data-len="long"]  { font-size:20pt; }
+.mas-cert-slot.name[data-len="xlong"] { font-size:17pt; }
+.mas-cert-slot.name[data-len="xxlong"]{ font-size:14pt; }
+.mas-cert-slot.signee { font-size:12pt; font-weight:700; text-align:left; }
 
 /* Coordinates below MUST match SLOT above. Percentages of the page. */
 /* Right-anchored (transform lifts the baseline visually the same as jsPDF's 'right' align) */
 .mas-cert-slot.slot-serial { top: 3.5%;  right: 2.5%; font-size: 9pt; }
 .mas-cert-slot.slot-date   { top: 5.5%;  right: 2.5%; }
 /* Centre-anchored name — sits on the ruled line under "This is to certify that" */
-.mas-cert-slot.slot-name   { top: 33.5%; left: 58.0%; transform: translate(-50%, -50%); }
+.mas-cert-slot.slot-name   { top: 33.5%; left: 33.0%; transform: translateY(-50%); }
 /* Left-anchored signee names above their labels at bottom */
 .mas-cert-slot.slot-inst   { top: 89.0%; left: 40.0%; transform: translateY(-50%); }
 .mas-cert-slot.slot-exam   { top: 89.0%; left: 56.0%; transform: translateY(-50%); }
@@ -222,7 +234,15 @@ export default function PrintableCertificate() {
 
             <div className="mas-cert-slot value-top slot-serial">{doc.serial}</div>
             <div className="mas-cert-slot value-top slot-date">{prettyDate(doc.issued_on)}</div>
-            <div className="mas-cert-slot name slot-name">{doc.candidate_name}</div>
+            <div
+              className="mas-cert-slot name slot-name"
+              data-len={
+                doc.candidate_name.length <= 22 ? undefined
+                : doc.candidate_name.length <= 28 ? 'long'
+                : doc.candidate_name.length <= 34 ? 'xlong'
+                : 'xxlong'
+              }
+            >{doc.candidate_name}</div>
             <div className="mas-cert-slot signee slot-inst">{doc.instructor_name || '—'}</div>
             <div className="mas-cert-slot signee slot-exam">{doc.examiner_name || '—'}</div>
           </div>
