@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BrowserRouter, Routes, Route, Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, NavLink, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth, ROLE_LABELS } from './lib/auth';
 import { ContentOverridesProvider } from './lib/contentOverrides';
 import Protected from './components/Protected';
@@ -564,6 +564,15 @@ function AppLayout() {
   const [attentionTotal, setAttentionTotal] = useState(0);
 
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
+
+  // Force-change password guard (#22 D2). If the signed-in user carries
+  // must_change_password: true in their user_metadata, block the portal and
+  // redirect to /set-password. SetPassword itself lives outside AppLayout, so
+  // it isn't caught by this guard — it can clear the flag and land the user
+  // back on /dashboard.
+  if (user?.user_metadata?.must_change_password === true) {
+    return <Navigate to="/set-password" replace />;
+  }
 
   useEffect(() => {
     if (!sidebarOpen) return;
