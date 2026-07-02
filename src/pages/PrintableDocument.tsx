@@ -63,10 +63,14 @@ const CSS = `
 .mas-doc-total { display:flex; justify-content:flex-end; margin-top:10px; }
 .mas-doc-total table td { padding:3px 7px; }
 .mas-doc-total .grand { font-weight:800; font-size:13px; border-top:2px solid #1E2752; }
-.mas-doc-pay { margin-top:16px; border:1px dashed #b9c4d8; border-radius:6px; padding:9px 11px; background:#f8fafd; }
+.mas-doc-pay { margin-top:14px; border-top:1px solid #e3e9f3; padding-top:8px; }
 .mas-doc-pay h3 { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#5d6b85; margin:0 0 4px; }
-.mas-doc-paytable td { padding:1px 0; vertical-align:top; }
-.mas-doc-paytable .mas-doc-payk { color:#5d6b85; width:34%; padding-right:8px; }
+.mas-doc-pay .mas-doc-payintro { font-size:10px; color:#3a4761; margin:0 0 4px; }
+.mas-doc-paygrid { display:flex; flex-wrap:wrap; gap:2px 18px; font-size:10px; }
+.mas-doc-paygrid span { white-space:nowrap; }
+.mas-doc-paygrid .k { color:#5d6b85; }
+.mas-doc-paygrid .v { color:#0a1f44; font-weight:700; }
+.mas-doc-paynote { font-size:9px; color:#5d6b85; margin-top:4px; line-height:1.4; }
 .mas-doc-foot { margin-top:18px; font-size:9px; color:#5d6b85; text-align:center; border-top:1px solid #e3e9f3; padding-top:8px; }
 .mas-doc-paidstamp { display:inline-block; border:2px solid #1a7f4b; color:#1a7f4b; font-weight:800; text-transform:uppercase; letter-spacing:1px; padding:3px 10px; border-radius:5px; transform:rotate(-4deg); }
 @media print {
@@ -228,32 +232,26 @@ function Invoice({ d, finance }: { d: DocData; finance: FinanceSettings | null }
       <div className="mas-doc-pay">
         <h3>How to pay</h3>
         {finance ? (
-            <>
-              <div style={{ marginBottom: '5px' }}>
-                Please make payment to <strong>{finance.beneficiary_name}</strong> and quote
-                invoice <strong>{invoiceNo}</strong> as your reference.
-              </div>
-              <table className="mas-doc-paytable" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <tbody>
-                  <tr><td className="mas-doc-payk">Beneficiary</td><td>{finance.beneficiary_name}</td></tr>
-                  <tr><td className="mas-doc-payk">Bank</td><td>{finance.bank_name}</td></tr>
-                  {finance.account_myr && <tr><td className="mas-doc-payk">Account (MYR)</td><td>{finance.account_myr}</td></tr>}
-                  {finance.swift_code && <tr><td className="mas-doc-payk">SWIFT</td><td>{finance.swift_code}</td></tr>}
-                  <tr><td className="mas-doc-payk">Reference</td><td><strong>{invoiceNo}</strong></td></tr>
-                </tbody>
-              </table>
-              {finance.pay_note && (
-                <div style={{ marginTop: '5px' }}>{finance.pay_note}</div>
-              )}
+          <>
+            <p className="mas-doc-payintro">
+              Pay to <strong>{finance.beneficiary_name}</strong>, quoting invoice{' '}
+              <strong>{invoiceNo}</strong> as reference.
+            </p>
+            <div className="mas-doc-paygrid">
+              <span><span className="k">Bank </span><span className="v">{finance.bank_name}</span></span>
+              {finance.account_myr && <span><span className="k">A/C </span><span className="v">{finance.account_myr}</span></span>}
+              {finance.swift_code && <span><span className="k">SWIFT </span><span className="v">{finance.swift_code}</span></span>}
+            </div>
+            <p className="mas-doc-paynote">
+              {finance.pay_note}
               {finance.finance_email && (
-              <div style={{ marginTop: '4px' }}>
-                Send proof of payment to <strong>{finance.finance_email}</strong>
-                {finance.finance_pic ? ` (attn: ${finance.finance_pic})` : ''}.
-              </div>
-            )}
+                <> Proof of payment to <strong>{finance.finance_email}</strong>
+                {finance.finance_pic ? ` (attn: ${finance.finance_pic})` : ''}.</>
+              )}
+            </p>
           </>
         ) : (
-          <div>Payment details will be provided by the MAS office.</div>
+          <p className="mas-doc-payintro">Payment details will be provided by the MAS office.</p>
         )}
       </div>
 
