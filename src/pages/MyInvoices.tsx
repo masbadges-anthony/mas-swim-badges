@@ -7,6 +7,7 @@
 // Cancel only offered when session_status is not terminal (completed/closed/
 // cancelled/archived).
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
 
@@ -58,11 +59,9 @@ function statusLabel(s: string): string {
   if (s === 'void') return 'Void';
   return s;
 }
-function openDoc(kind: 'invoice' | 'receipt', invoiceId: string) {
-  window.open(`/billing/${kind}/${invoiceId}`, '_blank', 'noopener');
-}
 
 export default function MyInvoices() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<MyInvoice[]>([]);
   const [load, setLoad] = useState<Load>('loading');
   const [tab, setTab] = useState<Tab>('all');
@@ -188,14 +187,14 @@ export default function MyInvoices() {
                       <td className="mas-table-actioncol">
                         <button
                           type="button" className="mas-link"
-                          onClick={() => openDoc('invoice', inv.invoice_id)}
+                          onClick={() => navigate(`/billing/invoice/${inv.invoice_id}`)}
                         >
                           View
                         </button>
                         {paid && (
                           <button
                             type="button" className="mas-link"
-                            onClick={() => openDoc('receipt', inv.invoice_id)}
+                            onClick={() => navigate(`/billing/receipt/${inv.invoice_id}`)}
                           >
                             Receipt
                           </button>
