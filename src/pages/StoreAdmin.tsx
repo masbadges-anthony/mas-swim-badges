@@ -38,6 +38,13 @@ const ORDER_STATUS_LABEL: Record<string, string> = {
 };
 
 const CSS = `
+.mas-page.mas-page-wide { max-width: none !important; width: auto !important; margin-left: 0 !important; margin-right: 0 !important; }
+.mas-tight th, .mas-tight td { padding: 0.35rem 0.6rem; white-space: nowrap; vertical-align: middle; }
+.mas-tight tbody tr { line-height: 1.3; }
+.mas-tight td.mas-ship-cell { white-space: normal; }
+.mas-tight .mas-link { color: var(--mas-navy, #1E2752); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
+.mas-tight .mas-link:hover { text-decoration: none; }
+.mas-tight .mas-link + .mas-link { margin-left: 0.6rem; }
 .mas-addrow td { background:#f5f8fc; }
 .mas-addrow-fields { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
 .mas-addrow-fields input[type=text], .mas-addrow-fields input[type=number] {
@@ -177,7 +184,7 @@ export default function StoreAdmin() {
   );
 
   return (
-    <section className="mas-page">
+    <section className="mas-page mas-page-wide">
       <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Store · admin</p>
@@ -210,10 +217,9 @@ export default function StoreAdmin() {
 
       {orderLoad === 'ready' && orders.length > 0 && (
         <div className="mas-table-wrap">
-          <table className="mas-table">
+          <table className="mas-table mas-tight">
             <thead>
               <tr>
-                <th className="mas-table-expandcol" aria-label="Expand" />
                 <th>Buyer / centre</th>
                 <th>Status</th>
                 <th className="mas-num">Total</th>
@@ -229,35 +235,20 @@ export default function StoreAdmin() {
                 return (
                   <Fragment key={o.id}>
                     <tr className={isOpen ? 'is-open' : undefined}>
-                      <td className="mas-table-expandcol">
-                        {canExpand && (
-                          <button
-                            type="button"
-                            className="mas-table-expandbtn"
-                            onClick={() => setExpanded((cur) => (cur === o.id ? null : o.id))}
-                            aria-expanded={isOpen}
-                            aria-label={isOpen ? 'Collapse' : 'Expand'}
-                          >
-                            {isOpen ? '▾' : '▸'}
-                          </button>
-                        )}
-                      </td>
                       <td className="mas-cell-strong">
-                        <span className="mas-cell-stack">
-                          <span>{o.buyer || '—'}</span>
-                          {o.centre && <span className="mas-cell-sub">{o.centre}</span>}
-                        </span>
+                        {o.buyer || '—'}
+                        {o.centre && <span className="mas-cell-sub"> · {o.centre}</span>}
                       </td>
-                      <td><span className="mas-pill">{ORDER_STATUS_LABEL[o.status] ?? o.status}</span></td>
+                      <td>{ORDER_STATUS_LABEL[o.status] ?? o.status}</td>
                       <td className="mas-num">{money(o.total_amount)}</td>
                       <td className="mas-num">{money(o.paid_amount)}</td>
                       <td className="mas-table-actioncol">
                         {o.status === 'fulfilled' && o.tracking && (
-                          <span className="mas-cell-sub">{o.tracking}</span>
+                          <span className="mas-cell-sub" style={{ marginRight: '0.6rem' }}>{o.tracking}</span>
                         )}
                         {canExpand && (
                           <button
-                            className="mas-btn-ghost mas-btn-compact"
+                            className="mas-link"
                             onClick={() => setExpanded((cur) => (cur === o.id ? null : o.id))}
                           >
                             {isOpen ? 'Close' : 'Manage'}
@@ -267,7 +258,7 @@ export default function StoreAdmin() {
                     </tr>
                     {isOpen && canExpand && (
                       <tr className="mas-table-detailrow">
-                        <td colSpan={6}>
+                        <td colSpan={5}>
                           <div className="mas-table-detail">
                             {o.shipping_address && (
                               <p className="mas-cell-sub" style={{ marginBottom: '0.5rem' }}>
@@ -354,7 +345,7 @@ export default function StoreAdmin() {
       {addError && <p className="mas-status mas-status-bad">Couldn’t save product: {addError}</p>}
 
       <div className="mas-table-wrap">
-        <table className="mas-table">
+        <table className="mas-table mas-tight">
           <thead>
             <tr>
               <th>Code</th>
@@ -408,13 +399,9 @@ export default function StoreAdmin() {
                 <td className="mas-cell-strong">{p.name}</td>
                 <td>{p.category || '—'}</td>
                 <td className="mas-num">{money(p.unit_price)}</td>
-                <td>
-                  <span className={`mas-outcome ${p.active ? 'is-pass' : 'is-refer'}`}>
-                    {p.active ? 'Active' : 'Hidden'}
-                  </span>
-                </td>
+                <td>{p.active ? 'Active' : 'Hidden'}</td>
                 <td className="mas-table-actioncol">
-                  <button className="mas-btn-ghost mas-btn-compact" onClick={() => toggleProduct(p)} disabled={prodBusy === p.id}>
+                  <button className="mas-link" onClick={() => toggleProduct(p)} disabled={prodBusy === p.id}>
                     {prodBusy === p.id ? '…' : p.active ? 'Hide' : 'Show'}
                   </button>
                 </td>
