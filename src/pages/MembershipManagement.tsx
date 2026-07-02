@@ -50,6 +50,11 @@ function scopeKind(role: string): 'state' | 'centre' | 'centre_optional' | 'none
 }
 
 const CSS = `
+.mas-page.mas-page-wide { max-width: none !important; width: auto !important; margin-left: 0 !important; margin-right: 0 !important; }
+.mas-tight th, .mas-tight td { padding: 0.35rem 0.6rem; white-space: nowrap; vertical-align: middle; }
+.mas-tight tbody tr { line-height: 1.3; }
+.mas-tight .mas-link { color: var(--mas-navy, #1E2752); text-decoration: underline; cursor: pointer; background: none; border: none; padding: 0; font: inherit; }
+.mas-tight .mas-link:hover { text-decoration: none; }
 .mas-grant-panel {
   background:#f5f8fc; border:1px solid var(--mas-line,#e3e9f3); border-radius:10px;
   padding:0.8rem 0.9rem; margin-bottom:1rem;
@@ -203,7 +208,7 @@ export default function MembershipManagement() {
   }, [memberships, tab, query, centreName]);
 
   return (
-    <section className="mas-page">
+    <section className="mas-page mas-page-wide">
       <style>{CSS}</style>
       <header className="mas-page-head">
         <p className="mas-eyebrow">Governance</p>
@@ -297,7 +302,7 @@ export default function MembershipManagement() {
 
       {load === 'ready' && filtered.length > 0 && (
         <div className="mas-table-wrap">
-          <table className="mas-table">
+          <table className="mas-table mas-tight">
             <thead>
               <tr>
                 <th>Person</th>
@@ -315,30 +320,24 @@ export default function MembershipManagement() {
                 return (
                   <tr key={m.membership_id}>
                     <td className="mas-cell-strong">
-                      <span className="mas-cell-stack">
-                        <span>{m.full_name || m.email || m.profile_id}{m.profile_id === me ? ' (you)' : ''}</span>
-                        {m.email && m.full_name && <span className="mas-cell-sub">{m.email}</span>}
-                      </span>
+                      {m.full_name || m.email || m.profile_id}{m.profile_id === me ? ' (you)' : ''}
+                      {m.email && m.full_name && <span className="mas-cell-sub"> · {m.email}</span>}
                     </td>
-                    <td><span className="mas-pill">{pretty(m.role)}</span></td>
+                    <td>{pretty(m.role)}</td>
                     <td>{scopeText(m)}</td>
-                    <td>
-                      <span className={`mas-outcome ${suspended || expired ? 'is-refer' : 'is-pass'}`}>
-                        {expired ? 'Expired' : pretty(m.status)}
-                      </span>
-                    </td>
+                    <td>{expired ? 'Expired' : pretty(m.status)}</td>
                     <td>{fmtDate(m.expires_at)}</td>
                     <td className="mas-table-actioncol">
                       {suspended ? (
-                        <button className="mas-btn-ghost mas-btn-compact" onClick={() => setStatus(m, 'active')} disabled={busyId === m.membership_id}>
+                        <button className="mas-link" onClick={() => setStatus(m, 'active')} disabled={busyId === m.membership_id}>
                           {busyId === m.membership_id ? '…' : 'Reactivate'}
                         </button>
                       ) : (
-                        <button className="mas-btn-ghost mas-btn-compact" onClick={() => setStatus(m, 'suspended')} disabled={busyId === m.membership_id}>
+                        <button className="mas-link" onClick={() => setStatus(m, 'suspended')} disabled={busyId === m.membership_id}>
                           {busyId === m.membership_id ? '…' : 'Suspend'}
                         </button>
                       )}
-                      {rowError[m.membership_id] && <span className="mas-status mas-status-bad">{rowError[m.membership_id]}</span>}
+                      {rowError[m.membership_id] && <span className="mas-status mas-status-bad" style={{ marginLeft: '0.4rem' }}>{rowError[m.membership_id]}</span>}
                     </td>
                   </tr>
                 );
