@@ -225,10 +225,9 @@ function Invoice({ d, finance }: { d: DocData; finance: FinanceSettings | null }
         </table>
       </div>
 
-      {status !== 'paid' && (
-        <div className="mas-doc-pay">
-          <h3>How to pay</h3>
-          {finance ? (
+      <div className="mas-doc-pay">
+        <h3>How to pay</h3>
+        {finance ? (
             <>
               <div style={{ marginBottom: '5px' }}>
                 Please make payment to <strong>{finance.beneficiary_name}</strong> and quote
@@ -247,17 +246,16 @@ function Invoice({ d, finance }: { d: DocData; finance: FinanceSettings | null }
                 <div style={{ marginTop: '5px' }}>{finance.pay_note}</div>
               )}
               {finance.finance_email && (
-                <div style={{ marginTop: '4px' }}>
-                  Send proof of payment to <strong>{finance.finance_email}</strong>
-                  {finance.finance_pic ? ` (attn: ${finance.finance_pic})` : ''}.
-                </div>
-              )}
-            </>
-          ) : (
-            <div>Payment details will be provided by the MAS office.</div>
-          )}
-        </div>
-      )}
+              <div style={{ marginTop: '4px' }}>
+                Send proof of payment to <strong>{finance.finance_email}</strong>
+                {finance.finance_pic ? ` (attn: ${finance.finance_pic})` : ''}.
+              </div>
+            )}
+          </>
+        ) : (
+          <div>Payment details will be provided by the MAS office.</div>
+        )}
+      </div>
 
       <div className="mas-doc-foot">
         MAS Badges · Malaysia Aquatics Learn-to-Swim certification · This is a computer-generated invoice.
