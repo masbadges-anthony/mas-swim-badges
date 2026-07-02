@@ -4,6 +4,7 @@
 //   refunds ← list_refunds_due() · payout ← mark_refund_paid
 //   View → /billing/invoice/:id · Receipt → /billing/receipt/:id (once paid)
 import { Fragment, useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
 
@@ -79,11 +80,12 @@ function methodLabel(m: string | null): string {
   if (m === 'cash') return 'Cash';
   return m;
 }
-function openDoc(kind: 'invoice' | 'receipt', invoiceId: string) {
-  window.open(`/billing/${kind}/${invoiceId}`, '_blank', 'noopener');
+function openDoc(kind: 'invoice' | 'receipt', invoiceId: string, navigate: (to: string) => void) {
+  navigate(`/billing/${kind}/${invoiceId}`);
 }
 
 export default function BillingPayments() {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<BillingInvoice[]>([]);
   const [load, setLoad] = useState<Load>('loading');
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -240,10 +242,10 @@ export default function BillingPayments() {
                       </td>
                       <td className="mas-table-actioncol">
                         {!isUnissuedBonus && (
-                          <button type="button" className="mas-link" onClick={() => openDoc('invoice', inv.invoice_id)}>View</button>
+                          <button type="button" className="mas-link" onClick={() => openDoc('invoice', inv.invoice_id, navigate)}>View</button>
                         )}
                         {paid && (
-                          <button type="button" className="mas-link" onClick={() => openDoc('receipt', inv.invoice_id)}>Receipt</button>
+                          <button type="button" className="mas-link" onClick={() => openDoc('receipt', inv.invoice_id, navigate)}>Receipt</button>
                         )}
                         {settleable && (
                           <button
@@ -369,9 +371,9 @@ export default function BillingPayments() {
                         <td className="mas-num">{money(r.refunded)}</td>
                         <td className="mas-num">{money(r.refund_due)}</td>
                         <td className="mas-table-actioncol">
-                          <button type="button" className="mas-link" onClick={() => openDoc('invoice', r.invoice_id)}>View</button>
+                          <button type="button" className="mas-link" onClick={() => openDoc('invoice', r.invoice_id, navigate)}>View</button>
                           {Number(r.paid_amount) > 0 && (
-                            <button type="button" className="mas-link" onClick={() => openDoc('receipt', r.invoice_id)}>Receipt</button>
+                            <button type="button" className="mas-link" onClick={() => openDoc('receipt', r.invoice_id, navigate)}>Receipt</button>
                           )}
                           <button
                             type="button" className="mas-link"
