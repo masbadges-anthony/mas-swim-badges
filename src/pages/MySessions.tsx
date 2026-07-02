@@ -168,6 +168,21 @@ export default function MySessions() {
     });
   }
 
+  // Accordion: click outside any row (or the confirm modal) collapses the
+  // currently-open row.
+  useEffect(() => {
+    if (!expanded) return;
+    function onDocDown(e: MouseEvent) {
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      if (t.closest('tr')) return;              // click inside a row → row-level handlers decide
+      if (t.closest('.mas-modal-backdrop')) return;  // click on cancel modal
+      setExpanded(null);
+    }
+    document.addEventListener('mousedown', onDocDown);
+    return () => document.removeEventListener('mousedown', onDocDown);
+  }, [expanded]);
+
   const fetchSessions = useCallback(async () => {
     setLoad('loading');
     const { data, error } = await supabase.rpc('list_session_tracker');
@@ -257,10 +272,14 @@ export default function MySessions() {
 
       {load === 'ready' && filtered.length > 0 && (
         <div className="mas-table-wrap">
-          <table className="mas-table">
+          <style>{`
+            .mas-sessions-tracker tbody tr[data-clickable="1"] { cursor: pointer; }
+            .mas-sessions-tracker tbody tr[data-clickable="1"]:hover { background: #f5f8fc; }
+            .mas-sessions-tracker tbody tr.is-open { background: #eef3fb; }
+          `}</style>
+          <table className="mas-table mas-sessions-tracker">
             <thead>
               <tr>
-                <th className="mas-table-expandcol" aria-label="Expand" />
                 <th>Venue</th>
                 <th>Scheduled</th>
                 <th>Status</th>
@@ -286,18 +305,12 @@ export default function MySessions() {
                 ];
                 return (
                   <Fragment key={row.session_id}>
-                    <tr className={isOpen ? 'is-open' : undefined}>
-                      <td className="mas-table-expandcol">
-                        <button
-                          type="button"
-                          className="mas-table-expandbtn"
-                          onClick={() => toggleExpand(row.session_id)}
-                          aria-expanded={isOpen}
-                          aria-label={isOpen ? 'Collapse details' : 'Expand details'}
-                        >
-                          {isOpen ? '▾' : '▸'}
-                        </button>
-                      </td>
+                    <tr
+                      className={isOpen ? 'is-open' : undefined}
+                      data-clickable="1"
+                      onClick={() => toggleExpand(row.session_id)}
+                      aria-expanded={isOpen}
+                    >
                       <td>
                         <span className="mas-cell-stack">
                           <span className="mas-cell-strong">{row.venue || 'Assessment session'}</span>
@@ -315,8 +328,8 @@ export default function MySessions() {
                     </tr>
 
                     {isOpen && (
-                      <tr className="mas-table-detailrow">
-                        <td colSpan={7}>
+                      <tr className="mas-table-detailrow" onClick={(e) => e.stopPropagation()}>
+                        <td colSpan={6}>
                           <div className="mas-table-detail mas-session-detail">
                             <div>
                               <h3 className="mas-detail-heading">Booked by</h3>
