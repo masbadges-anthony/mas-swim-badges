@@ -65,6 +65,8 @@ const CSS = `
 .mas-doc-total .grand { font-weight:800; font-size:13px; border-top:2px solid #1E2752; }
 .mas-doc-pay { margin-top:16px; border:1px dashed #b9c4d8; border-radius:6px; padding:9px 11px; background:#f8fafd; }
 .mas-doc-pay h3 { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#5d6b85; margin:0 0 4px; }
+.mas-doc-paytable td { padding:1px 0; vertical-align:top; }
+.mas-doc-paytable .mas-doc-payk { color:#5d6b85; width:34%; padding-right:8px; }
 .mas-doc-foot { margin-top:18px; font-size:9px; color:#5d6b85; text-align:center; border-top:1px solid #e3e9f3; padding-top:8px; }
 .mas-doc-paidstamp { display:inline-block; border:2px solid #1a7f4b; color:#1a7f4b; font-weight:800; text-transform:uppercase; letter-spacing:1px; padding:3px 10px; border-radius:5px; transform:rotate(-4deg); }
 @media print {
@@ -81,10 +83,23 @@ interface DocData {
   items?: Array<{ description: string | null; level: string | null; candidate_name: string | null; quantity: number; unit_amount: number; amount: number }>;
 }
 
+interface FinanceSettings {
+  beneficiary_name: string | null;
+  bank_name: string | null;
+  bank_address: string | null;
+  account_myr: string | null;
+  account_usd: string | null;
+  swift_code: string | null;
+  finance_email: string | null;
+  finance_pic: string | null;
+  pay_note: string | null;
+}
+
 export default function PrintableDocument({ mode }: { mode: Mode }) {
   const { id } = useParams<{ id: string }>();
   const [doc, setDoc] = useState<DocData | null>(null);
   const [load, setLoad] = useState<Load>('loading');
+  const [finance, setFinance] = useState<FinanceSettings | null>(null);
 
   const fetchDoc = useCallback(async () => {
     if (!id) {
@@ -106,9 +121,18 @@ export default function PrintableDocument({ mode }: { mode: Mode }) {
     setLoad('ready');
   }, [id, mode]);
 
+  // Payment instructions are only needed on invoices.
+  const fetchFinance = useCallback(async () => {
+    if (mode !== 'invoice') return;
+    const { data } = await supabase.rpc('get_finance_settings');
+    const row = (Array.isArray(data) ? data[0] : data) as FinanceSettings | null;
+    if (row) setFinance(row);
+  }, [mode]);
+
   useEffect(() => {
     fetchDoc();
-  }, [fetchDoc]);
+    fetchFinance();
+  }, [fetchDoc, fetchFinance]);
 
   return (
     <section className="mas-page">
@@ -129,7 +153,7 @@ export default function PrintableDocument({ mode }: { mode: Mode }) {
           </p>
         )}
 
-        {load === 'ready' && doc && (mode === 'invoice' ? <Invoice d={doc} /> : <Receipt d={doc} />)}
+        {load === 'ready' && doc && (mode === 'invoice' ? <Invoice d={doc} finance={finance} /> : <Receipt d={doc} />)}
       </div>
     </section>
   );
@@ -150,12 +174,13 @@ function DocHead({ kind, no }: { kind: string; no: string }) {
   );
 }
 
-function Invoice({ d }: { d: DocData }) {
+function Invoice({ d, finance }: { d: DocData; finance: FinanceSettings | null }) {
   const items = d.items ?? [];
   const status = String(d.status ?? '');
+  const invoiceNo = String(d.invoice_no ?? '—');
   return (
     <div className="mas-doc">
-      <DocHead kind="Invoice" no={String(d.invoice_no ?? '—')} />
+      <DocHead kind="Invoice" no={invoiceNo} />
       <div className="mas-doc-meta">
         <div>
           <h3>Billed to</h3>
@@ -200,11 +225,39 @@ function Invoice({ d }: { d: DocData }) {
         </table>
       </div>
 
-      <div className="mas-doc-pay">
-        <h3>Payment instructions</h3>
-        <div>Payment is arranged with the MAS office. Please contact badges.mas@gmail.com to settle this invoice.</div>
-        <div style={{ color: '#9aa6bd', marginTop: '3px' }}>[Bank / payment details to be added]</div>
-      </div>
+      {status !== 'paid' && (
+        <div className="mas-doc-pay">
+          <h3>How to pay</h3>
+          {finance ? (
+            <>
+              <div style={{ marginBottom: '5px' }}>
+                Please make payment to <strong>{finance.beneficiary_name}</strong> and quote
+                invoice <strong>{invoiceNo}</strong> as your reference.
+              </div>
+              <table className="mas-doc-paytable" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr><td className="mas-doc-payk">Beneficiary</td><td>{finance.beneficiary_name}</td></tr>
+                  <tr><td className="mas-doc-payk">Bank</td><td>{finance.bank_name}</td></tr>
+                  {finance.account_myr && <tr><td className="mas-doc-payk">Account (MYR)</td><td>{finance.account_myr}</td></tr>}
+                  {finance.swift_code && <tr><td className="mas-doc-payk">SWIFT</td><td>{finance.swift_code}</td></tr>}
+                  <tr><td className="mas-doc-payk">Reference</td><td><strong>{invoiceNo}</strong></td></tr>
+                </tbody>
+              </table>
+              {finance.pay_note && (
+                <div style={{ marginTop: '5px' }}>{finance.pay_note}</div>
+              )}
+              {finance.finance_email && (
+                <div style={{ marginTop: '4px' }}>
+                  Send proof of payment to <strong>{finance.finance_email}</strong>
+                  {finance.finance_pic ? ` (attn: ${finance.finance_pic})` : ''}.
+                </div>
+              )}
+            </>
+          ) : (
+            <div>Payment details will be provided by the MAS office.</div>
+          )}
+        </div>
+      )}
 
       <div className="mas-doc-foot">
         MAS Badges · Malaysia Aquatics Learn-to-Swim certification · This is a computer-generated invoice.
