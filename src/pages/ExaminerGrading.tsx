@@ -8,6 +8,9 @@ import '../styles/admin.css';
 // FIREWALL: no fee/invoice/payment value anywhere on this screen.
 // LOCK: once a session is submitted (completed/closed/archived/cancelled) it renders
 // view-only — the server refuses writes; the UI hides the controls.
+// WEATHER: "Declare rain-off" calls weather_hold_session() to put a claimed session
+// on hold IN PLACE (same paid invoice carries over — no fee change). A rained-off
+// session (status weather_hold) is view-only here until the instructor sets a new date.
 
 const LEVELS: { value: string; label: string }[] = [
   { value: 'starfish', label: 'Starfish' },
@@ -108,6 +111,9 @@ const TABLE_CSS = `
 .mas-gactions { display: flex; gap: 0.4rem; }
 .mas-gnote { margin-top: 0.5rem; }
 .mas-gnote input { font: inherit; width: 100%; max-width: 26rem; padding: 0.4rem 0.55rem; border: 1px solid var(--border, #e3e7ee); border-radius: 6px; }
+.mas-rainoff-panel { border: 1px solid var(--border, #e3e7ee); border-radius: 10px; padding: 0.75rem; max-width: 34rem; background: #fff; }
+.mas-rainoff-panel textarea { font: inherit; width: 100%; padding: 0.45rem 0.55rem; border: 1px solid var(--border, #e3e7ee); border-radius: 6px; box-sizing: border-box; resize: vertical; }
+.mas-rainoff-check { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; font-size: 0.85rem; }
 @media (max-width: 640px) { .mas-glevel-name { min-width: 7rem; } .mas-gsel { max-width: 7rem; } }
 `;
 
@@ -119,6 +125,11 @@ export default function ExaminerGrading() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [rowError, setRowError] = useState<Record<string, string>>({});
   const [sessionError, setSessionError] = useState<Record<string, string>>({});
+
+  // Rain-off panel state (per session).
+  const [rainOpen, setRainOpen] = useState<Record<string, boolean>>({});
+  const [rainReason, setRainReason] = useState<Record<string, string>>({});
+  const [rainCarry, setRainCarry] = useState<Record<string, boolean>>({});
 
   const fetchRoster = useCallback(async () => {
     setLoad('loading');
@@ -210,6 +221,33 @@ export default function ExaminerGrading() {
     await fetchRoster();
   }
 
+  async function declareRainOff(sessionId: string) {
+    const reason = (rainReason[sessionId] ?? '').trim();
+    if (!reason) {
+      setSessionError((m) => ({ ...m, [sessionId]: 'Add a short reason for the rain-off.' }));
+      return;
+    }
+    const key = `weather:${sessionId}`;
+    setBusyKey(key);
+    setSessionError((m) => {
+      const n = { ...m };
+      delete n[sessionId];
+      return n;
+    });
+    const { error } = await supabase.rpc('weather_hold_session', {
+      _session_id: sessionId,
+      _reason: reason,
+      _examiner_can_carry: rainCarry[sessionId] ?? true,
+    });
+    setBusyKey(null);
+    if (error) {
+      setSessionError((m) => ({ ...m, [sessionId]: error.message }));
+      return;
+    }
+    setRainOpen((m) => ({ ...m, [sessionId]: false }));
+    await fetchRoster();
+  }
+
   return (
     <section className="mas-page">
       <style>{TABLE_CSS}</style>
@@ -219,7 +257,8 @@ export default function ExaminerGrading() {
         <p className="mas-lede">
           Mark attendance and grade each candidate. Open a row to grade the booked level;
           a pass reveals the next level on the pathway. Submit a session when done — once
-          submitted, it locks to view-only.
+          submitted, it locks to view-only. If weather stops play, declare a rain-off and the
+          instructor re-books the same session at no extra charge.
         </p>
       </header>
 
@@ -240,6 +279,8 @@ export default function ExaminerGrading() {
       {load === 'ready' &&
         groups.map(({ row: head, enrolments }) => {
           const locked = LOCKED_STATUSES.includes(head.session_status);
+          const onHold = head.session_status === 'weather_hold';
+          const readOnly = locked || onHold;
           return (
             <div key={head.session_id} className="mas-grade-session">
               <div className="mas-grade-session-head">
@@ -255,6 +296,12 @@ export default function ExaminerGrading() {
                 <p className="mas-status mas-status-good">
                   Results submitted — this session is view-only. Track payment and certificate
                   release from your dashboard.
+                </p>
+              )}
+              {onHold && (
+                <p className="mas-status mas-status-good">
+                  Rained off — awaiting a new date from the instructor. No fee change; the
+                  original booking carries over. It returns here once rescheduled.
                 </p>
               )}
 
@@ -274,14 +321,14 @@ export default function ExaminerGrading() {
                       const isOpen = !!expanded[r.enrolment_id];
                       const chain = gradeableChain(r);
                       const recorded = new Map(r.levels.map((l) => [l.level, l.outcome]));
-                      const shownLevels = locked ? r.levels.map((l) => l.level) : chain;
+                      const shownLevels = readOnly ? r.levels.map((l) => l.level) : chain;
                       return (
                         <Fragment key={r.enrolment_id}>
                           <tr className={`mas-grow${isOpen ? ' is-open' : ''}`}>
                             <td className="mas-gname">{r.candidate_name}</td>
                             <td><span className="mas-gpill">{levelLabel(r.booked_level)}</span></td>
                             <td>
-                              {locked ? (
+                              {readOnly ? (
                                 attendanceLabel(r.attendance)
                               ) : (
                                 <select
@@ -313,7 +360,7 @@ export default function ExaminerGrading() {
                             </td>
                             <td>
                               <button className="mas-gexpand" onClick={() => toggle(r.enrolment_id)}>
-                                {isOpen ? 'Close' : locked ? 'View' : 'Grade'}
+                                {isOpen ? 'Close' : readOnly ? 'View' : 'Grade'}
                               </button>
                             </td>
                           </tr>
@@ -338,7 +385,7 @@ export default function ExaminerGrading() {
                                           {outcome === 'pass' ? 'Passed' : 'Referred'}
                                         </span>
                                       )}
-                                      {!locked && (
+                                      {!readOnly && (
                                         <div className="mas-gactions">
                                           <button
                                             className="mas-btn-primary"
@@ -362,7 +409,7 @@ export default function ExaminerGrading() {
                                   );
                                 })}
 
-                                {!locked && (
+                                {!readOnly && (
                                   <div className="mas-gnote">
                                     <input
                                       type="text"
@@ -389,7 +436,61 @@ export default function ExaminerGrading() {
                 </table>
               </div>
 
-              {!locked && (
+              {!readOnly && (
+                <div className="mas-grade-rainoff" style={{ marginTop: '0.75rem' }}>
+                  {!rainOpen[head.session_id] ? (
+                    <button
+                      className="mas-btn-ghost"
+                      onClick={() => setRainOpen((m) => ({ ...m, [head.session_id]: true }))}
+                    >
+                      Declare rain-off
+                    </button>
+                  ) : (
+                    <div className="mas-rainoff-panel">
+                      <p className="mas-admin-sub" style={{ marginTop: 0 }}>
+                        A rain-off is not marked. The attendance you’ve set stays — except
+                        candidates marked <strong>Present</strong> reset to pending for the new
+                        date. The instructor sets the new date at no extra charge.
+                      </p>
+                      <textarea
+                        value={rainReason[head.session_id] ?? ''}
+                        onChange={(e) =>
+                          setRainReason((m) => ({ ...m, [head.session_id]: e.target.value.slice(0, 200) }))
+                        }
+                        placeholder="Reason (e.g. lightning stand-down, pool closed) — required, max 200 characters"
+                        rows={2}
+                      />
+                      <label className="mas-rainoff-check">
+                        <input
+                          type="checkbox"
+                          checked={rainCarry[head.session_id] ?? true}
+                          onChange={(e) =>
+                            setRainCarry((m) => ({ ...m, [head.session_id]: e.target.checked }))
+                          }
+                        />
+                        I can take the rescheduled session (untick to release it back to the pool)
+                      </label>
+                      <div className="mas-gactions" style={{ marginTop: '0.6rem' }}>
+                        <button
+                          className="mas-btn-primary"
+                          onClick={() => declareRainOff(head.session_id)}
+                          disabled={busyKey === `weather:${head.session_id}`}
+                        >
+                          {busyKey === `weather:${head.session_id}` ? 'Recording…' : 'Confirm rain-off'}
+                        </button>
+                        <button
+                          className="mas-btn-ghost"
+                          onClick={() => setRainOpen((m) => ({ ...m, [head.session_id]: false }))}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!readOnly && (
                 <div className="mas-form-actions mas-grade-submit" style={{ marginTop: '0.75rem' }}>
                   <button
                     className="mas-btn-primary"
