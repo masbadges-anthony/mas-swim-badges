@@ -6,8 +6,12 @@
 //   list   ← list_session_tracker() → session_id, venue, state, scheduled_on, status,
 //            receipt_no, invoice_status, cp_* (6), candidate_count, booker_* (3),
 //            examiner_* (3), is_mine_booked, is_mine_assigned, instructor_remarks,
-//            examiner_remarks
+//            examiner_remarks, rescheduled_from, reschedule_count, weather_reason
 //   cancel ← cancel_session(_session_id) → { session_id, status, within_72h, refund_due }
+// WEATHER: a rained-off session (status weather_hold) shows a "Reschedule (weather)"
+// card in the expanded row. reschedule_weather_session() moves it IN PLACE — same
+// paid invoice, no new charge — exempt from the 30-day floor, keeping or releasing
+// the examiner.
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import CheckpointBar from '../components/CheckpointBar';
@@ -38,6 +42,9 @@ interface TrackerRow {
   is_mine_assigned: boolean;
   instructor_remarks: string | null;
   examiner_remarks: string | null;
+  rescheduled_from: string | null;
+  reschedule_count: number;
+  weather_reason: string | null;
 }
 interface CancelResult {
   session_id: string;
@@ -66,7 +73,7 @@ const TERMINAL = new Set(['completed', 'closed', 'cancelled', 'archived']);
 
 // Which statuses fall under each tab.
 const TAB_MATCH: Record<Tab, (s: string) => boolean> = {
-  active: (s) => ['awaiting_payment', 'open_for_pickup', 'claimed', 'scheduled', 'requested', 'examiner_invited'].includes(s),
+  active: (s) => ['awaiting_payment', 'open_for_pickup', 'claimed', 'scheduled', 'requested', 'examiner_invited', 'weather_hold'].includes(s),
   awaiting_pickup: (s) => s === 'open_for_pickup',
   completed: (s) => s === 'completed',
   closed: (s) => s === 'closed',
@@ -99,6 +106,7 @@ function statusLabel(s: string): string {
   if (s === 'issued') return 'Awaiting payment';
   if (s === 'paid') return 'Paid';
   if (s === 'void') return 'Void';
+  if (s === 'weather_hold') return 'Weather hold';
   return pretty(s);
 }
 
@@ -107,10 +115,18 @@ const AUDIT_LABEL: Record<string, string> = {
   refund_recorded: 'Refund recorded',
   payout_recorded: 'Payout recorded',
   session_reopened: 'Session reopened',
+  weather_hold: 'Rain-off declared',
+  weather_reschedule: 'Rescheduled (weather)',
 };
 function auditSummary(e: AuditEvent): string {
   const d = e.detail ?? {};
   if (e.action === 'session_reopened') return `Reason: ${String(d.reason ?? '—')}`;
+  if (e.action === 'weather_hold') return d.reason ? `Reason: ${String(d.reason)}` : '';
+  if (e.action === 'weather_reschedule') {
+    const from = d.from_date ? prettyDate(String(d.from_date)) : '—';
+    const to = d.to_date ? prettyDate(String(d.to_date)) : '—';
+    return `${from} → ${to}${d.kept_examiner === false ? ' · released to pool' : ''}`;
+  }
   const parts: string[] = [];
   if (d.amount != null) parts.push(`RM ${Number(d.amount).toFixed(2)}`);
   if (d.method) parts.push(String(d.method));
@@ -134,6 +150,14 @@ export default function MySessions() {
   const [cancelBusy, setCancelBusy] = useState<string | null>(null);
   const [cancelResult, setCancelResult] = useState<Record<string, CancelResult>>({});
   const [cancelError, setCancelError] = useState<Record<string, string>>({});
+
+  // Weather reschedule state (per session).
+  const [rsDate, setRsDate] = useState<Record<string, string>>({});
+  const [rsVenue, setRsVenue] = useState<Record<string, string>>({});
+  const [rsKeep, setRsKeep] = useState<Record<string, boolean>>({});
+  const [rsBusy, setRsBusy] = useState<string | null>(null);
+  const [rsError, setRsError] = useState<Record<string, string>>({});
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   // Per-session certificates, fetched lazily on expand.
   const [certs, setCerts] = useState<Record<string, SessionCert[]>>({});
@@ -231,6 +255,32 @@ export default function MySessions() {
     await fetchSessions();
   }
 
+  async function rescheduleSession(row: TrackerRow) {
+    const date = rsDate[row.session_id];
+    if (!date) {
+      setRsError((m) => ({ ...m, [row.session_id]: 'Choose a new date.' }));
+      return;
+    }
+    setRsBusy(row.session_id);
+    setRsError((m) => {
+      const n = { ...m };
+      delete n[row.session_id];
+      return n;
+    });
+    const { error } = await supabase.rpc('reschedule_weather_session', {
+      _session_id: row.session_id,
+      _new_date: date,
+      _keep_examiner: row.cp_examiner ? (rsKeep[row.session_id] ?? true) : false,
+      _new_venue: rsVenue[row.session_id]?.trim() || null,
+    });
+    setRsBusy(null);
+    if (error) {
+      setRsError((m) => ({ ...m, [row.session_id]: error.message }));
+      return;
+    }
+    await fetchSessions();
+  }
+
   return (
     <section className="mas-page">
       <header className="mas-page-head">
@@ -276,6 +326,11 @@ export default function MySessions() {
             .mas-sessions-tracker tbody tr[data-clickable="1"] { cursor: pointer; }
             .mas-sessions-tracker tbody tr[data-clickable="1"]:hover { background: #f5f8fc; }
             .mas-sessions-tracker tbody tr.is-open { background: #eef3fb; }
+            .mas-weather-sub { color: #b4690e; font-weight: 600; }
+            .mas-reschedule-fields { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; align-items: flex-end; }
+            .mas-reschedule-fields label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; }
+            .mas-reschedule-fields input { font: inherit; padding: 0.35rem 0.45rem; border: 1px solid #e3e7ee; border-radius: 6px; }
+            .mas-reschedule-fields input[type="text"] { min-width: 12rem; }
           `}</style>
           <table className="mas-table mas-sessions-tracker">
             <thead>
@@ -295,6 +350,8 @@ export default function MySessions() {
                 const effectiveStatus = result?.status ?? row.status;
                 const canCancel =
                   row.is_mine_booked && !TERMINAL.has(effectiveStatus) && !result;
+                const canReschedule =
+                  row.status === 'weather_hold' && (row.is_mine_booked || isGovernanceView);
                 const steps = [
                   { key: 'created', label: 'Created', done: row.cp_created },
                   { key: 'roster', label: 'Roster confirmed', done: row.cp_roster },
@@ -321,7 +378,14 @@ export default function MySessions() {
                         </span>
                       </td>
                       <td>{prettyDate(row.scheduled_on)}</td>
-                      <td><span className="mas-pill">{statusLabel(effectiveStatus)}</span></td>
+                      <td>
+                        <span className="mas-pill">{statusLabel(effectiveStatus)}</span>
+                        {row.reschedule_count > 0 && (
+                          <span className="mas-cell-sub mas-weather-sub" style={{ display: 'block' }}>
+                            ↻ Rescheduled{row.reschedule_count > 1 ? ` ×${row.reschedule_count}` : ''} (weather)
+                          </span>
+                        )}
+                      </td>
                       <td className="mas-num">{row.candidate_count}</td>
                       <td className="mas-cell-strong">{row.receipt_no ?? '—'}</td>
                       <td><CheckpointBar steps={steps} /></td>
@@ -376,6 +440,69 @@ export default function MySessions() {
                                 </>
                               )}
                             </div>
+
+                            {canReschedule && (
+                              <div>
+                                <h3 className="mas-detail-heading">Reschedule (weather)</h3>
+                                <p className="mas-status">
+                                  This session was rained off. Set a new date to move it in place —{' '}
+                                  <strong>no additional fee</strong>; the original payment carries over.
+                                </p>
+                                {row.weather_reason && (
+                                  <p className="mas-status" style={{ marginTop: '0.25rem' }}>
+                                    Rain-off note: {row.weather_reason}
+                                  </p>
+                                )}
+                                <div className="mas-reschedule-fields">
+                                  <label>
+                                    New date
+                                    <input
+                                      type="date"
+                                      min={todayIso}
+                                      value={rsDate[row.session_id] ?? ''}
+                                      onChange={(e) => setRsDate((m) => ({ ...m, [row.session_id]: e.target.value }))}
+                                    />
+                                  </label>
+                                  <label>
+                                    Venue (optional — if it changes)
+                                    <input
+                                      type="text"
+                                      value={rsVenue[row.session_id] ?? ''}
+                                      onChange={(e) => setRsVenue((m) => ({ ...m, [row.session_id]: e.target.value }))}
+                                      placeholder={row.venue ?? 'Venue'}
+                                    />
+                                  </label>
+                                </div>
+                                {row.cp_examiner ? (
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={rsKeep[row.session_id] ?? true}
+                                      onChange={(e) => setRsKeep((m) => ({ ...m, [row.session_id]: e.target.checked }))}
+                                    />
+                                    Keep the same examiner (untick to return it to the examiner pool)
+                                  </label>
+                                ) : (
+                                  <p className="mas-status" style={{ marginTop: '0.5rem' }}>
+                                    This session will return to the examiner pool for pickup on the new date.
+                                  </p>
+                                )}
+                                <div style={{ marginTop: '0.6rem' }}>
+                                  <button
+                                    className="mas-btn-primary"
+                                    onClick={() => rescheduleSession(row)}
+                                    disabled={rsBusy === row.session_id || !rsDate[row.session_id]}
+                                  >
+                                    {rsBusy === row.session_id ? 'Setting new date…' : 'Set new date'}
+                                  </button>
+                                </div>
+                                {rsError[row.session_id] && (
+                                  <p className="mas-status mas-status-bad mas-admin-rowerror">
+                                    Couldn’t reschedule: {rsError[row.session_id]}
+                                  </p>
+                                )}
+                              </div>
+                            )}
 
                             <div>
                               <h3 className="mas-detail-heading">Certificates</h3>
