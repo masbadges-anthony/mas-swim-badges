@@ -140,13 +140,19 @@ restricted to `chief_examiner` / `system_admin` / `chairperson`.
 |---|---|
 | `my_state` | 13 states + KL, Labuan, Putrajaya |
 | `partner_center_status` | pending, recognized, suspended, removed |
-| `membership_role` | board_member, coaching_panel, chairperson, chief_examiner, examiner_trainer, examiner, instructor, partner_center_admin |
+| `membership_role` | board_member, coaching_panel, chairperson, chief_examiner, examiner_trainer, examiner, instructor, partner_center_admin, system_admin, instructor_trainer, master_trainer, finance_officer |
 | `membership_status` | pending, active, suspended, expired, revoked |
 | `candidate_status` | active, withdrawn, anonymized |
 | `badge_level` | starfish, sea_turtle, guppy, octopus, frog, swordfish, dolphin (1→7) |
 | `session_status` | requested, scheduled, completed, cancelled |
 | `assessment_outcome` | pass, refer |
 | `role_kind` | instructor, examiner |
+
+*Notes on `membership_role`: `coaching_panel` is a defined value not currently
+checked in the app's route guards (governance membership drives access instead).
+`role_kind` is a separate, coarser dimension used only by the onboarding quiz —
+`my_role_kinds()` maps `instructor` and `partner_center_admin` → `instructor`,
+and `examiner` → `examiner`; other roles map to neither and are not quizzed.*
 
 ---
 
