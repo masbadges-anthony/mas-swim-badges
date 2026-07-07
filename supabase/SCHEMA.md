@@ -42,6 +42,12 @@ Plus the registry it all hangs off: people, their roles, and partner centers.
 - `certificates` — append-only ledger. Names snapshotted at issue.
 - `certificate_revocations` — append-only; one revocation per cert; links to its reissued replacement.
 
+**Onboarding quiz**
+- `quiz_question` — the theory bank. One row per question, scoped by `role_kind`; `options text[]` (4), `correct_index int` (0–3), `active bool`. Correct answers never leave the DB except after submission.
+- `quiz_config` — per-role parameters (`draw_size`, `pass_mark`). Mirrors Manual Appendix F; seeded 10 / 8. The standard changes here, never in code.
+- `quiz_attempt` — one row per attempt: the drawn `question_ids uuid[]`, the submitted `answers int[]`, `score`, `passed`, timestamps.
+- `onboarding_checkpoint` — per profile per role: `quiz_passed`, `coc_accepted_at`, `activated`. The gate `needs_onboarding()` reads this.
+
 ---
 
 ## 3. Relationships
@@ -63,6 +69,8 @@ erDiagram
     candidates   ||--o{ certificates : "issued to"
     certificates ||--o| certificate_revocations : "revoked by"
     certificates ||--o{ certificate_revocations : "replaces"
+    profiles     ||--o{ quiz_attempt : takes
+    profiles     ||--o{ onboarding_checkpoint : "gated by"
 ```
 
 ---
@@ -100,6 +108,13 @@ definer, to avoid RLS recursion through the assessment tables.
 - *Scoped reads* — only the registrant, claiming parent, that center's admin,
   the assigned examiner, and program leadership can see a candidate.
 
+**Parent-facing reads are redacted.** `list_session_tracker()` returns session
+data to a parent whose child is enrolled, but nulls examiner/booker phone and
+email and both instructor/examiner remarks for parent-only scope — contact is
+revealed only to governance and to the owner of that contact. Emails and contact
+details are never exposed by default; they surface only at designated
+communication stages.
+
 **Conflict of interest is enforced in data.** `enforce_assessment_coi()` rejects
 any result whose assessor instructs the candidate, and any assessor who isn't an
 active examiner. It is a trigger — not a UI rule — so a direct API call can't
@@ -110,6 +125,12 @@ UPDATE/DELETE outright, beyond RLS. Corrections go through revoke-and-reissue:
 revoke (which frees the underlying pass) then issue a corrected cert. A
 certificate can't be created at all without a passing result behind it
 (`link_certificate_to_result()`), guaranteeing one valid cert per pass.
+
+**Quiz answers stay server-side.** `quiz_question` and `quiz_config` are never
+read directly by clients — the quiz RPCs are the only path, and they never
+expose `correct_index` before submission. A user reads only their own
+`quiz_attempt` and `onboarding_checkpoint`; question/config management is
+restricted to `chief_examiner` / `system_admin` / `chairperson`.
 
 ---
 
@@ -125,10 +146,46 @@ certificate can't be created at all without a passing result behind it
 | `badge_level` | starfish, sea_turtle, guppy, octopus, frog, swordfish, dolphin (1→7) |
 | `session_status` | requested, scheduled, completed, cancelled |
 | `assessment_outcome` | pass, refer |
+| `role_kind` | instructor, examiner |
 
 ---
 
-## 6. Open decisions blocking Phases 3–4
+## 6. Onboarding quiz module
+
+First-login theory gate for instructors and examiners. One instrument serves
+both the certification course and Portal onboarding (SO-01 / SO-02). Added in
+migrations `20260707140000`–`20260707143000`.
+
+**Flow**
+
+```
+login → needs_onboarding()? → start_quiz_attempt(role) [draw N, answers hidden]
+   → user answers → submit_quiz_attempt(attempt, answers[]) [score, gate, reveal key]
+   → pass ≥ pass_mark → onboarding_checkpoint.quiz_passed = true → gate clears
+```
+
+**Functions** (all `SECURITY DEFINER`, `search_path=''`)
+- `my_role_kinds()` → the caller's role_kind(s), derived from `memberships` in
+  status `pending`/`active`. Called in `FROM` as a set-returning function
+  (`from public.my_role_kinds() r`).
+- `start_quiz_attempt(p_role role_kind)` → draws `quiz_config.draw_size` random
+  `active` questions for the role, records the attempt, returns them **without**
+  `correct_index`. Raises `42501` if the caller doesn't hold the role.
+- `submit_quiz_attempt(p_attempt uuid, p_answers int[])` → scores against
+  `correct_index`, persists, flips `onboarding_checkpoint` on a pass, and returns
+  the per-question key (answers shown after submission).
+- `get_onboarding_status()` → per role: `quiz_passed`, `coc_accepted`,
+  `activated`, and an `outstanding text[]`.
+- `needs_onboarding()` → boolean for the login redirect (used by `AppLayout`).
+
+**Config note.** `draw_size` and `pass_mark` are the only place the 10-of-25 @
+8/10 standard lives operationally; they are recorded in Manual Appendix F. No
+client hard-codes them. Question banks are the controlled documents QB-INS /
+QB-EXM (Manual Appendix E), loaded by the seed migration.
+
+---
+
+## 7. Open decisions blocking Phases 3–4
 
 These are governance calls, not engineering ones. Each blocks clean schema work
 downstream, so resolving them prevents rework.
@@ -152,7 +209,7 @@ downstream, so resolving them prevents rework.
 
 ---
 
-## 7. Status
+## 8. Status
 
 | Phase | Scope | State |
 |---|---|---|
@@ -160,3 +217,4 @@ downstream, so resolving them prevents rework.
 | 2 | Assessment · grading (COI) · issuance | **core complete**; serial gen + pass-gate done |
 | 3 | Parent portal (candidate claiming) | blocked on decision #3 |
 | 4 | Partner self-service · fees | blocked on decision #4 |
+| — | Onboarding quiz module | **complete**; verified end-to-end |
