@@ -419,6 +419,17 @@ function Sidebar({
     return () => { active = false; };
   }, [canInvitations, location.pathname]);
 
+  const [onboardingDue, setOnboardingDue] = useState(false);
+  useEffect(() => {
+    let active = true;
+    supabase.rpc('get_onboarding_status').then(({ data, error }) => {
+      if (!active) return;
+      const rows = (data ?? []) as Array<{ outstanding?: string[] }>;
+      setOnboardingDue(!error && rows.some((r) => r.outstanding?.includes('quiz')));
+    });
+    return () => { active = false; };
+  }, [location.pathname]);
+
   useEffect(() => {
     onAttentionChange?.(unhandledEnquiries + unhandledPartnerApps);
   }, [unhandledEnquiries, unhandledPartnerApps, onAttentionChange]);
@@ -439,6 +450,7 @@ function Sidebar({
 
       <nav className="mas-sidenav">
         <NavLink to="/dashboard" className={navClass}><Icon name="grid" /><span>Dashboard</span></NavLink>
+        {onboardingDue && <NavLink to="/onboarding" className={navClass}><Icon name="check" /><span>Onboarding quiz</span><AttentionDot count={1} label="onboarding quiz outstanding" /></NavLink>}
         {canBuyStore && <NavLink to="/store" className={navClass}><Icon name="card" /><span>Store</span></NavLink>}
 
         {assessmentsGroup && (canRegister || canSwimmerRegistry || canClaimSlips) && (
@@ -525,6 +537,7 @@ function Sidebar({
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/account': 'Account',
+  '/onboarding': 'Onboarding quiz',
   '/claim': "My child's badges",
   '/invoices': 'My invoices',
   '/centre': 'My centre',
@@ -606,7 +619,7 @@ function AppLayout() {
   // Onboarding quiz guard. /onboarding lives outside AppLayout, so redirecting
   // there unmounts this layout; passing the quiz clears needs_onboarding() and
   // the user lands back in the portal with no loop.
-  if (needsQuiz === true) {
+  if (needsQuiz === true && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
 
@@ -717,6 +730,7 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
               <Route path="/account" element={<Protected><AccountSettings /></Protected>} />
+              <Route path="/onboarding" element={<Protected><OnboardingScreen /></Protected>} />
               <Route path="/claim" element={<Protected><ClaimCandidate /></Protected>} />
               <Route path="/invoices" element={<RequireRole roles={['instructor', 'partner_center_admin']}><MyInvoices /></RequireRole>} />
               <Route path="/billing/invoice/:id" element={<RequireRole roles={['instructor', 'partner_center_admin', 'master_trainer', 'finance_officer', 'system_admin', 'chairperson', 'chief_examiner']}><PrintableDocument mode="invoice" /></RequireRole>} />
@@ -755,7 +769,6 @@ export default function App() {
             <Route path="/claim-signup" element={<ClaimSignup />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/set-password" element={<SetPassword />} />
-            <Route path="/onboarding" element={<Protected><OnboardingScreen /></Protected>} />
             <Route element={<Protected />}>
               <Route path="/parent" element={<ParentDashboard />} />
             </Route>
