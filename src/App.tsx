@@ -694,8 +694,11 @@ function AppLayout() {
 }
 
 function OnboardingScreen() {
-  const navigate = useNavigate();
-  return <OnboardingQuiz onComplete={() => navigate('/dashboard', { replace: true })} />;
+  // Full navigation on completion so AppLayout remounts and re-runs its
+  // needs_onboarding() check. An in-app navigate() would keep AppLayout mounted
+  // with its cached needsQuiz === true, and the hard gate would bounce the user
+  // straight back here — the "stuck after passing" bug.
+  return <OnboardingQuiz onComplete={() => { window.location.assign('/dashboard'); }} />;
 }
 
 export default function App() {
