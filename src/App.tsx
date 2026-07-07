@@ -64,6 +64,7 @@ import ExaminerRegistry from './pages/ExaminerRegistry';
 import CentreBilling from './pages/CentreBilling';
 import Store from './pages/Store';
 import StoreAdmin from './pages/StoreAdmin';
+import OnboardingQuiz from './pages/OnboardingQuiz';
 import './styles/public.css';
 import './styles/auth.css';
 import './styles/admin.css';
@@ -562,17 +563,24 @@ function AppLayout() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [attentionTotal, setAttentionTotal] = useState(0);
+  const [needsQuiz, setNeedsQuiz] = useState<boolean | null>(null);
 
   useEffect(() => { setSidebarOpen(false); }, [location.pathname]);
 
-  // Force-change password guard (#22 D2). If the signed-in user carries
-  // must_change_password: true in their user_metadata, block the portal and
-  // redirect to /set-password. SetPassword itself lives outside AppLayout, so
-  // it isn't caught by this guard — it can clear the flag and land the user
-  // back on /dashboard.
-  if (user?.user_metadata?.must_change_password === true) {
-    return <Navigate to="/set-password" replace />;
-  }
+  // Onboarding quiz gate. Instructors/examiners who haven't passed their
+  // first-login theory quiz are sent to /onboarding (which lives outside
+  // AppLayout, so there is no redirect loop). Checked once per signed-in user.
+  useEffect(() => {
+    if (!user || user?.user_metadata?.must_change_password === true) {
+      setNeedsQuiz(false);
+      return;
+    }
+    let active = true;
+    supabase.rpc('needs_onboarding').then(({ data, error }) => {
+      if (active) setNeedsQuiz(!error && data === true);
+    });
+    return () => { active = false; };
+  }, [user]);
 
   useEffect(() => {
     if (!sidebarOpen) return;
@@ -585,6 +593,22 @@ function AppLayout() {
       document.body.style.overflow = prevOverflow;
     };
   }, [sidebarOpen]);
+
+  // Guards run after all hooks so hook order stays stable across renders.
+  // Force-change password guard (#22 D2). If the signed-in user carries
+  // must_change_password: true in their user_metadata, block the portal and
+  // redirect to /set-password. SetPassword itself lives outside AppLayout, so
+  // it isn't caught by this guard — it can clear the flag and land the user
+  // back on /dashboard.
+  if (user?.user_metadata?.must_change_password === true) {
+    return <Navigate to="/set-password" replace />;
+  }
+  // Onboarding quiz guard. /onboarding lives outside AppLayout, so redirecting
+  // there unmounts this layout; passing the quiz clears needs_onboarding() and
+  // the user lands back in the portal with no loop.
+  if (needsQuiz === true) {
+    return <Navigate to="/onboarding" replace />;
+  }
 
   async function handleSignOut() {
     await signOut();
@@ -654,6 +678,11 @@ function AppLayout() {
       </div>
     </div>
   );
+}
+
+function OnboardingScreen() {
+  const navigate = useNavigate();
+  return <OnboardingQuiz onComplete={() => navigate('/dashboard', { replace: true })} />;
 }
 
 export default function App() {
@@ -726,6 +755,7 @@ export default function App() {
             <Route path="/claim-signup" element={<ClaimSignup />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/set-password" element={<SetPassword />} />
+            <Route path="/onboarding" element={<Protected><OnboardingScreen /></Protected>} />
             <Route element={<Protected />}>
               <Route path="/parent" element={<ParentDashboard />} />
             </Route>
