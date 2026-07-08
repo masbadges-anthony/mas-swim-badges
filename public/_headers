@@ -7,11 +7,17 @@
 # fresh — the hashed assets it references are then correct by construction.
 #
 # Hashed assets are safe to cache forever — their name changes when they change.
+#
+# version.json is the deploy marker the running app polls; it must never be
+# cached, or a long-open tab would never see that a new build shipped.
 
 /index.html
   Cache-Control: no-store, must-revalidate
 
 /
+  Cache-Control: no-store, must-revalidate
+
+/version.json
   Cache-Control: no-store, must-revalidate
 
 /assets/*
