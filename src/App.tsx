@@ -64,6 +64,7 @@ import ExaminerRegistry from './pages/ExaminerRegistry';
 import CentreBilling from './pages/CentreBilling';
 import Store from './pages/Store';
 import StoreAdmin from './pages/StoreAdmin';
+import Settings from './pages/Settings';
 import OnboardingQuiz from './pages/OnboardingQuiz';
 import './styles/public.css';
 import './styles/auth.css';
@@ -361,8 +362,9 @@ function Sidebar({
   const canProvisionAccounts = hasRole('system_admin') || hasRole('chairperson');
   const canExaminerRegistry = hasRole('chief_examiner');
   const canCentreBilling = hasRole('chairperson') || hasRole('board_member') || hasRole('system_admin');
-  const canBuyStore = hasRole('instructor') || hasRole('partner_center_admin');
+  const canBuyStore = hasRole('instructor') || hasRole('partner_center_admin') || hasRole('examiner');
   const canManageStore = hasRole('system_admin') || hasRole('chairperson') || hasRole('board_member');
+  const canSystemSettings = hasRole('system_admin');
 
   const isStaffOperator =
     hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner') ||
@@ -373,7 +375,7 @@ function Sidebar({
     canRegister || canSchedule || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canMySessions;
   const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore || canBilling;
   const adminGroup =
-    canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries || canProvisionAccounts;
+    canManageCentres || canManageMembers || canCentreAdmin || canOnboard || canBlacklist || canManageCourses || canEnquiries || canProvisionAccounts || canSystemSettings;
 
   const primaryRole = memberships[0]?.role;
   const roleLabel = primaryRole ? (ROLE_LABELS[primaryRole] ?? primaryRole) : 'Member';
@@ -501,6 +503,7 @@ function Sidebar({
               {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span><AttentionDot count={unhandledEnquiries} label="unhandled enquiries" /></NavLink>}
               {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span><AttentionDot count={unhandledPartnerApps} label="new applications" /></NavLink>}
               {canRoleRegistry && <NavLink to="/admin/role-registry" className={navClass}><Icon name="settings" /><span>Roles &amp; policies</span></NavLink>}
+              {canSystemSettings && <NavLink to="/admin/settings" className={navClass}><Icon name="settings" /><span>System settings</span></NavLink>}
               {canAuditLog && <NavLink to="/admin/audit-log" className={navClass}><Icon name="file" /><span>Audit log</span></NavLink>}
               {canManageCentres && <NavLink to="/admin/centres" className={navClass}><Icon name="building" /><span>Manage centres</span></NavLink>}
               {canManageMembers && <NavLink to="/admin/memberships" className={navClass}><Icon name="users" /><span>Memberships</span></NavLink>}
@@ -564,6 +567,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/centres/register': 'Register a centre',
   '/admin/partner-applications': 'Centre applications',
   '/admin/role-registry': 'Roles & policies',
+  '/admin/settings': 'System settings',
   '/registry/swimmers': 'Swimmer registry',
   '/admin/audit-log': 'Audit log',
 };
@@ -752,7 +756,7 @@ export default function App() {
               <Route path="/admin/accounts" element={<RequireRole roles={['system_admin', 'finance_officer']}><Accounts /></RequireRole>} />
               <Route path="/admin/centre-billing" element={<RequireRole roles={['chairperson', 'board_member', 'system_admin']}><CentreBilling /></RequireRole>} />
               <Route path="/billing/payments" element={<RequireRole roles={['finance_officer', 'system_admin', 'chairperson']}><BillingPayments /></RequireRole>} />
-              <Route path="/store" element={<RequireRole roles={['instructor', 'partner_center_admin']}><Store /></RequireRole>} />
+              <Route path="/store" element={<RequireRole roles={['instructor', 'partner_center_admin', 'examiner']}><Store /></RequireRole>} />
               <Route path="/admin/store" element={<RequireRole roles={['system_admin', 'chairperson', 'board_member']}><StoreAdmin /></RequireRole>} />
               <Route path="/admin/instructors" element={<RequireRole roles={['instructor_trainer', 'chairperson', 'board_member']}><InstructorOnboarding /></RequireRole>} />
               <Route path="/admin/instructor-blacklist" element={<RequireRole roles={['chairperson', 'board_member']}><InstructorBlacklist /></RequireRole>} />
@@ -766,6 +770,7 @@ export default function App() {
               <Route path="/admin/audit-log" element={<RequireRole roles={['system_admin', 'chairperson']}><AuditLog /></RequireRole>} />
               <Route path="/admin/memberships" element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>} />
               <Route path="/admin/staff" element={<RequireRole roles={['system_admin', 'chairperson']}><AccountProvisioning /></RequireRole>} />
+              <Route path="/admin/settings" element={<RequireRole roles={['system_admin']}><Settings /></RequireRole>} />
             </Route>
 
             <Route path="/login" element={<Login />} />
