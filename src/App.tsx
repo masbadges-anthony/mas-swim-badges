@@ -76,6 +76,78 @@ import './styles/theme.css';
 const PORTAL_LOGIN: string =
   (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_PORTAL_LOGIN_URL ?? '/login';
 
+// ---- host-based split ----------------------------------------------------
+// Public marketing site serves from www.masbadges.org; the authenticated
+// portal serves from apps.masbadges.org. Same repo, same Netlify site, two
+// hostnames. The origin split gives portal sessions their own storage/cookie
+// world so a public-page vulnerability cannot read a signed-in staff token.
+//
+// Rules on every request:
+//   www host  → render only PUBLIC routes; any portal URL bounces to apps
+//   apps host → render only PORTAL/AUTH routes; any public URL bounces to www
+//   anything else (localhost, netlify previews, apex, bare IPs) → serve BOTH
+//                                                                (dev/QA unaffected)
+const PUBLIC_HOST = 'www.masbadges.org';
+const APP_HOST    = 'apps.masbadges.org';
+
+type HostMode = 'public' | 'portal' | 'both';
+
+function classifyHost(host: string): HostMode {
+  const h = host.toLowerCase();
+  if (h === PUBLIC_HOST) return 'public';
+  if (h === APP_HOST)    return 'portal';
+  return 'both';
+}
+
+// Which URL paths are portal-only vs public-only. Anything that's not clearly
+// one or the other (e.g. /login, /auth/callback, /verify) is treated as
+// SHARED and rendered on either host, so QR/email links keep working.
+const PORTAL_PATH_PREFIXES = [
+  '/dashboard', '/account', '/onboarding', '/claim', '/invoices',
+  '/billing', '/certificate/', '/centre', '/candidates', '/assessments',
+  '/my-sessions', '/certificates', '/admin', '/registry', '/parent',
+  '/centres/register', '/store',
+];
+const PUBLIC_PATH_PREFIXES = [
+  '/the-programme', '/for-centres', '/for-parents', '/contact', '/faq',
+  '/guides', '/instructors', '/privacy', '/terms', '/safeguarding',
+  '/directory', '/courses', '/search',
+];
+
+function isPortalPath(p: string): boolean {
+  return PORTAL_PATH_PREFIXES.some((x) => p === x || p.startsWith(x + '/'));
+}
+function isPublicPath(p: string): boolean {
+  if (p === '/') return true;
+  return PUBLIC_PATH_PREFIXES.some((x) => p === x || p.startsWith(x + '/'));
+}
+
+// Full-URL redirect helper. Uses window.location so Netlify sees the request
+// on the other origin (rather than trying to rewrite in the SPA).
+function redirectToHost(host: string, path: string, search: string): void {
+  const target = `https://${host}${path}${search}`;
+  if (window.location.href === target) return;
+  window.location.replace(target);
+}
+
+// Sits at the top of the tree. On a canonicalised host it bounces any URL
+// belonging to the other side; on unknown hosts (localhost etc.) it is a
+// no-op and the full route tree renders as before.
+function HostGuard() {
+  const location = useLocation();
+  const host = window.location.hostname;
+  const mode = classifyHost(host);
+  useEffect(() => {
+    if (mode === 'both') return;
+    const p = location.pathname;
+    if (mode === 'public' && isPortalPath(p))
+      redirectToHost(APP_HOST, p, location.search);
+    if (mode === 'portal' && isPublicPath(p))
+      redirectToHost(PUBLIC_HOST, p, location.search);
+  }, [location.pathname, location.search, mode]);
+  return null;
+}
+
 const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'is-active' : '');
 
 function initials(email?: string | null): string {
@@ -708,6 +780,7 @@ export default function App() {
     <AuthProvider>
       <ContentOverridesProvider>
       <BrowserRouter>
+        <HostGuard />
         <ScrollToTop />
         <div className="mas-app">
           <ErrorBoundary>
