@@ -89,13 +89,15 @@ const PORTAL_LOGIN: string =
 //                                                                (dev/QA unaffected)
 const PUBLIC_HOST = 'www.masbadges.org';
 const APP_HOST    = 'apps.masbadges.org';
+const BARE_APEX   = 'masbadges.org';
 
-type HostMode = 'public' | 'portal' | 'both';
+type HostMode = 'public' | 'portal' | 'both' | 'apex';
 
 function classifyHost(host: string): HostMode {
   const h = host.toLowerCase();
   if (h === PUBLIC_HOST) return 'public';
   if (h === APP_HOST)    return 'portal';
+  if (h === BARE_APEX)   return 'apex';
   return 'both';
 }
 
@@ -140,6 +142,12 @@ function HostGuard() {
   useEffect(() => {
     if (mode === 'both') return;
     const p = location.pathname;
+    // Bare apex always canonicalizes to www so the address bar shows www.
+    // (Netlify's 301 also does this at the edge, but doing it here guarantees
+    // the browser URL reflects reality even if the edge redirect got cached
+    // before the primary flip.)
+    if (mode === 'apex')
+      redirectToHost(PUBLIC_HOST, p, location.search);
     if (mode === 'public' && isPortalPath(p))
       redirectToHost(APP_HOST, p, location.search);
     if (mode === 'portal' && isPublicPath(p))
