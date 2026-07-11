@@ -499,7 +499,6 @@ function Sidebar({
           <details className="mas-navgroup" open>
             <summary>Administration</summary>
             <div className="mas-navgroup-items">
-              {canProvisionAccounts && <NavLink to="/admin/staff" className={navClass}><Icon name="users" /><span>Staff accounts</span></NavLink>}
               {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span><AttentionDot count={unhandledEnquiries} label="unhandled enquiries" /></NavLink>}
               {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span><AttentionDot count={unhandledPartnerApps} label="new applications" /></NavLink>}
               {canRoleRegistry && <NavLink to="/admin/role-registry" className={navClass}><Icon name="settings" /><span>Roles &amp; policies</span></NavLink>}
@@ -552,7 +551,6 @@ const PAGE_TITLES: Record<string, string> = {
   '/assessments/examiners': 'Examiner registry',
   '/certificates/issue': 'Issue certificates',
   '/certificates': 'Certificates',
-  '/admin/staff': 'Staff accounts',
   '/admin/accounts': 'Examiner payouts',
   '/admin/centre-billing': 'Centre billing',
   '/billing/payments': 'Invoices & Payments',
@@ -769,7 +767,7 @@ export default function App() {
               <Route path="/registry/swimmers" element={<RequireRole roles={['instructor', 'partner_center_admin', 'chairperson', 'system_admin', 'finance_officer']}><SwimmerRegistry /></RequireRole>} />
               <Route path="/admin/audit-log" element={<RequireRole roles={['system_admin', 'chairperson']}><AuditLog /></RequireRole>} />
               <Route path="/admin/memberships" element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>} />
-              <Route path="/admin/staff" element={<RequireRole roles={['system_admin', 'chairperson']}><AccountProvisioning /></RequireRole>} />
+<Route path="/admin/staff" element={<Navigate to="/admin/settings" replace />} />
               <Route path="/admin/settings" element={<RequireRole roles={['system_admin']}><Settings /></RequireRole>} />
             </Route>
 
