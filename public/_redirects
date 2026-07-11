@@ -1,0 +1,22 @@
+# MAS BADGES · Netlify redirects
+#
+# Host canonicalisation is enforced in-app (App.tsx HostGuard) for known
+# public/portal paths. This file handles the edges Netlify can catch at the
+# CDN before the SPA loads:
+#   1. Bare masbadges.org -> www.masbadges.org (marketing home).
+#   2. Any *.netlify.app preview -> single canonical host so social crawlers
+#      and search engines see one origin.
+#   3. SPA fallback: hand every remaining route to /index.html so React
+#      Router owns the URL.
+
+# 1 · Apex -> www (301, permanent, preserves path and query)
+https://masbadges.org/*    https://www.masbadges.org/:splat    301!
+
+# 2 · Netlify preview / *.netlify.app -> www (only affects the production
+#     alias, not deploy previews and branch deploys which use their own hosts)
+#     Comment this rule out if you rely on the production Netlify subdomain
+#     for anything besides certificate provisioning.
+# https://*.netlify.app/*   https://www.masbadges.org/:splat    301!
+
+# 3 · SPA fallback for both hostnames
+/*    /index.html    200
