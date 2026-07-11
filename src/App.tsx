@@ -63,7 +63,7 @@ import AuditLog from './pages/AuditLog';
 import ExaminerRegistry from './pages/ExaminerRegistry';
 import CentreBilling from './pages/CentreBilling';
 import Store from './pages/Store';
-import StoreAdmin from './pages/StoreAdmin';
+import StoreAdmin from './pages/StoreOrders';
 import Settings from './pages/Settings';
 import OnboardingQuiz from './pages/OnboardingQuiz';
 import './styles/public.css';
