@@ -120,15 +120,29 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
       ...r,
       username: unMap[r.profile_id] ?? null,
     }));
-    // memberships alongside accounts, keyed by profile_id
-    const memRes = await supabase.rpc('list_memberships');
-    const memMap: Record<string, { id: string; role: string; state: string | null }[]> = {};
-    (memRes.data ?? []).forEach((m: { membership_id: string; profile_id: string; role: string; state: string | null; status: string }) => {
-      if (m.status !== 'active') return;
-      if (!memMap[m.profile_id]) memMap[m.profile_id] = [];
-      memMap[m.profile_id].push({ id: m.membership_id, role: m.role, state: m.state });
-    });
-    setMemberships(memMap);
+    // memberships alongside accounts, keyed by profile_id.
+    // Defensive: if list_memberships fails or is unavailable, we still render
+    // the accounts table — just without the current-roles chip strip.
+    try {
+      const memRes = await supabase.rpc('list_memberships');
+      if (memRes.error) {
+        console.warn('[Settings] list_memberships failed:', memRes.error);
+      } else {
+        const memMap: Record<string, { id: string; role: string; state: string | null }[]> = {};
+        const memRows = (memRes.data ?? []) as Array<{
+          membership_id: string; profile_id: string; role: string;
+          state: string | null; status: string;
+        }>;
+        memRows.forEach((m) => {
+          if (m.status !== 'active') return;
+          if (!memMap[m.profile_id]) memMap[m.profile_id] = [];
+          memMap[m.profile_id].push({ id: m.membership_id, role: m.role, state: m.state });
+        });
+        setMemberships(memMap);
+      }
+    } catch (e) {
+      console.warn('[Settings] list_memberships threw:', e);
+    }
     setRows(merged as ProvisionedAccount[]);
     setLoad('ready');
   }, []);
@@ -994,10 +1008,9 @@ function SystemTab() {
       <p><strong>Build:</strong> {build}</p>
       <p><strong>Environment:</strong> {mode}</p>
       <p className="mas-cell-sub" style={{ marginTop: '0.6rem' }}>
-        A stale build banner appears automatically when a newer build is deployed
-        (UpdateBanner). Hygiene reminder: remove test accounts
-        (test.examiner@ / test.instructor@) once verification passes — they are
-        visible in the Accounts tab.
+        A stale-build banner appears automatically when a newer build is deployed
+        (UpdateBanner). Manage accounts, resources, and portal parameters via the
+        respective tabs.
       </p>
     </div>
   );
