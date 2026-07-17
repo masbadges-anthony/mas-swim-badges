@@ -12,11 +12,12 @@
 // RequireRole ['system_admin'] (App.tsx); every write is additionally
 // gated server-side (RLS / definer RPC checks) - the UI is never the guard.
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import Icon from '../components/Icon';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
 
 type Load = 'loading' | 'ready' | 'error';
-type Tab = 'accounts' | 'products' | 'params' | 'flags' | 'contacts' | 'system';
+type Tab = 'accounts' | 'params' | 'flags' | 'contacts' | 'resources' | 'system';
 
 const CSS = `
 .mas-page.mas-page-wide { max-width: none !important; width: auto !important; margin-left: 0 !important; margin-right: 0 !important; }
@@ -27,6 +28,7 @@ const CSS = `
 .mas-tight .mas-link + .mas-link { margin-left: 0.6rem; }
 .mas-set-form { display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap; }
 .mas-set-form label { display: flex; flex-direction: column; font-size: 0.8rem; color: var(--mas-muted, #5b6472); }
+.mas-tight .mas-link.is-danger { color: var(--mas-red, #C62026); }
 .mas-set-form input, .mas-set-form select, .mas-set-form textarea {
   font: inherit; padding: 0.35rem 0.5rem; border: 1px solid var(--mas-line, #e3e9f3); border-radius: 6px;
 }
@@ -68,6 +70,14 @@ interface ProvisionedAccount {
 // Streamlined role list per Anthony's spec — labels distinct from raw enum
 // so operators aren't decoding underscores. Order deliberate: sysadmin first,
 // governance next, delivery roles last.
+// Curated Lucide icon set for the Resources module — small subset keeps
+// bundle light and choices sensible for document links.
+const CURATED_ICONS = [
+  'file', 'book', 'award', 'shield', 'clipboard', 'checkList', 'users',
+  'userPlus', 'building', 'calendar', 'card', 'inbox', 'settings', 'grid',
+  'check', 'printer', 'mail', 'lock',
+];
+
 const CURATED_ROLES: { value: string; label: string }[] = [
   { value: 'system_admin',        label: 'Sysadmin' },
   { value: 'finance_officer',     label: 'Admin & Finance Officer' },
@@ -83,6 +93,7 @@ const CURATED_ROLES: { value: string; label: string }[] = [
 
 function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
   const [rows, setRows] = useState<ProvisionedAccount[]>([]);
+  const [memberships, setMemberships] = useState<Record<string, { id: string; role: string; state: string | null }[]>>({});
   const [load, setLoad] = useState<Load>('loading');
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -192,6 +203,28 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
     const identity = cKind === 'email' ? cEmail.trim() : cUsername.trim().toLowerCase();
     setCMsg({ ok: true, text: `Account created for ${identity} with role ${pretty(cRole)}. Share the password securely.` });
     setCEmail(''); setCUsername(''); setCName(''); setCPassword(''); setCRole(''); setCState('');
+    fetchRows();
+  }
+
+  async function deleteAccount(r: ProvisionedAccount) {
+    const who = r.username ?? r.email;
+    const confirm1 = window.confirm(
+      `Delete account for ${who}? This removes all their memberships and logs them out immediately. This cannot be undone.`
+    );
+    if (!confirm1) return;
+    const confirm2 = window.confirm(`Second confirmation: really delete ${who}?`);
+    if (!confirm2) return;
+    const { error } = await supabase.rpc('admin_delete_account', { _profile_id: r.profile_id });
+    if (error) { setCMsg({ ok: false, text: error.message }); return; }
+    setCMsg({ ok: true, text: `Account ${who} deleted.` });
+    fetchRows();
+  }
+
+  async function revokeMembership(membershipId: string, label: string) {
+    if (!window.confirm(`Revoke ${label}? The person keeps their account and any other roles.`)) return;
+    const { error } = await supabase.rpc('admin_revoke_membership', { _membership_id: membershipId });
+    if (error) { setGMsg({ ok: false, text: error.message }); return; }
+    setGMsg({ ok: true, text: `${label} revoked.` });
     fetchRows();
   }
 
@@ -326,14 +359,37 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
                           setGMsg(null); setGRole(''); setGState(''); setGExpires('');
                           setExpanded(isOpen ? null : r.profile_id);
                         }}>
-                          {isOpen ? 'Close' : 'Grant role'}
+                          {isOpen ? 'Close' : 'Manage'}
                         </button>
+                        <button className="mas-link is-danger" onClick={() => deleteAccount(r)}>Delete</button>
                       </td>
                     </tr>
                     {isOpen && (
                       <tr className="mas-table-detailrow">
                         <td colSpan={7}>
                           <div className="mas-table-detail">
+                            {(memberships[r.profile_id] ?? []).length > 0 && (
+                              <div style={{ marginBottom: '0.6rem' }}>
+                                <p className="mas-cell-sub" style={{ marginBottom: '0.3rem' }}>Current roles</p>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                  {(memberships[r.profile_id] ?? []).map((m) => {
+                                    const label = CURATED_ROLES.find((x) => x.value === m.role)?.label ?? pretty(m.role);
+                                    return (
+                                      <span key={m.id} style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                                        padding: '0.2rem 0.6rem', border: '1px solid var(--mas-line,#e3e9f3)',
+                                        borderRadius: 999, fontSize: '0.82rem',
+                                      }}>
+                                        {label}{m.state ? ` · ${pretty(m.state)}` : ''}
+                                        <button className="mas-link is-danger" style={{ fontSize: '0.75rem' }}
+                                          onClick={() => revokeMembership(m.id, label)}>revoke</button>
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                            <p className="mas-cell-sub" style={{ marginBottom: '0.3rem' }}>Grant another role</p>
                             <div className="mas-set-form">
                               <label>Role
                                 <select value={gRole} onChange={(e) => setGRole(e.target.value)}>
@@ -361,282 +417,6 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
                             )}
                           </div>
                         </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </>
-  );
-}
-
-// ============================================================ Store products
-interface StoreProduct {
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  category: string;
-  unit_price: number;
-  currency: string | null;
-  active: boolean;
-  sort_order: number | null;
-  image_paths: string[];
-  stock_qty: number | null;
-  updated_at: string | null;
-}
-
-const CANON_CATEGORIES = ['branding', 'teaching_materials'];
-
-function publicImageUrl(path: string): string {
-  return supabase.storage.from('store-products').getPublicUrl(path).data.publicUrl;
-}
-
-function ProductsTab() {
-  const [rows, setRows] = useState<StoreProduct[]>([]);
-  const [load, setLoad] = useState<Load>('loading');
-  const [expanded, setExpanded] = useState<string | null>(null); // product id or 'new'
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-
-  // form state
-  const [fCode, setFCode] = useState('');
-  const [fName, setFName] = useState('');
-  const [fDesc, setFDesc] = useState('');
-  const [fCategory, setFCategory] = useState('branding');
-  const [fPrice, setFPrice] = useState('');
-  const [fStock, setFStock] = useState('');
-  const [fSort, setFSort] = useState('');
-  const [fActive, setFActive] = useState(true);
-  const [uploading, setUploading] = useState(false);
-
-  const fetchRows = useCallback(async () => {
-    setLoad('loading');
-    const { data, error } = await supabase
-      .from('store_products')
-      .select('*')
-      .order('sort_order', { ascending: true, nullsFirst: false })
-      .order('name');
-    if (error) { setLoad('error'); return; }
-    setRows((data ?? []) as StoreProduct[]);
-    setLoad('ready');
-  }, []);
-  useEffect(() => { fetchRows(); }, [fetchRows]);
-
-  function openEdit(p: StoreProduct | null) {
-    setMsg(null);
-    if (p) {
-      setExpanded(p.id);
-      setFCode(p.code); setFName(p.name); setFDesc(p.description ?? '');
-      setFCategory(p.category); setFPrice(String(p.unit_price));
-      setFStock(p.stock_qty == null ? '' : String(p.stock_qty));
-      setFSort(p.sort_order == null ? '' : String(p.sort_order));
-      setFActive(p.active);
-    } else {
-      setExpanded('new');
-      setFCode(''); setFName(''); setFDesc(''); setFCategory('branding');
-      setFPrice(''); setFStock(''); setFSort(''); setFActive(true);
-    }
-  }
-
-  async function saveProduct(existing: StoreProduct | null) {
-    setMsg(null);
-    const price = Number(fPrice);
-    if (!fCode.trim() || !fName.trim() || !fCategory || !(price >= 0)) {
-      setMsg({ ok: false, text: 'Code, name, category, and a non-negative price are required.' });
-      return;
-    }
-    setBusy(true);
-    const payload = {
-      code: fCode.trim(),
-      name: fName.trim(),
-      description: fDesc.trim() || null,
-      category: fCategory,
-      unit_price: price,
-      stock_qty: fStock.trim() === '' ? null : Number(fStock),
-      sort_order: fSort.trim() === '' ? null : Number(fSort),
-      active: fActive,
-    };
-    const q = existing
-      ? supabase.from('store_products').update(payload).eq('id', existing.id)
-      : supabase.from('store_products').insert(payload);
-    const { error } = await q;
-    setBusy(false);
-    if (error) { setMsg({ ok: false, text: error.message }); return; }
-    setMsg({ ok: true, text: existing ? 'Product updated.' : 'Product created — open it to add images.' });
-    if (!existing) setExpanded(null);
-    fetchRows();
-  }
-
-  async function uploadImage(p: StoreProduct, file: File) {
-    setUploading(true); setMsg(null);
-    const clean = file.name.replace(/[^A-Za-z0-9._-]/g, '_');
-    const path = `products/${p.id}/${Date.now()}_${clean}`;
-    const up = await supabase.storage.from('store-products').upload(path, file, { upsert: false });
-    if (up.error) { setUploading(false); setMsg({ ok: false, text: up.error.message }); return; }
-    const { error } = await supabase.from('store_products')
-      .update({ image_paths: [...(p.image_paths ?? []), path] })
-      .eq('id', p.id);
-    setUploading(false);
-    if (error) { setMsg({ ok: false, text: error.message }); return; }
-    fetchRows();
-  }
-
-  async function removeImage(p: StoreProduct, path: string) {
-    setMsg(null);
-    const { error } = await supabase.from('store_products')
-      .update({ image_paths: (p.image_paths ?? []).filter((x) => x !== path) })
-      .eq('id', p.id);
-    if (error) { setMsg({ ok: false, text: error.message }); return; }
-    await supabase.storage.from('store-products').remove([path]); // best-effort
-    fetchRows();
-  }
-
-  async function makePrimary(p: StoreProduct, path: string) {
-    setMsg(null);
-    const rest = (p.image_paths ?? []).filter((x) => x !== path);
-    const { error } = await supabase.from('store_products')
-      .update({ image_paths: [path, ...rest] })
-      .eq('id', p.id);
-    if (error) { setMsg({ ok: false, text: error.message }); return; }
-    fetchRows();
-  }
-
-  const categoryOptions = useMemo(() => {
-    const set = new Set(CANON_CATEGORIES);
-    for (const r of rows) set.add(r.category);
-    if (fCategory) set.add(fCategory);
-    return Array.from(set);
-  }, [rows, fCategory]);
-
-  const editing = expanded && expanded !== 'new' ? rows.find((r) => r.id === expanded) ?? null : null;
-
-  const form = (existing: StoreProduct | null) => (
-    <div className="mas-table-detail">
-      <div className="mas-set-form">
-        <label>Code
-          <input type="text" value={fCode} onChange={(e) => setFCode(e.target.value)} style={{ width: '8rem' }} />
-        </label>
-        <label>Name
-          <input type="text" value={fName} onChange={(e) => setFName(e.target.value)} style={{ width: '18rem' }} />
-        </label>
-        <label>Category
-          <select value={fCategory} onChange={(e) => setFCategory(e.target.value)}>
-            {categoryOptions.map((c) => <option key={c} value={c}>{pretty(c)}</option>)}
-          </select>
-        </label>
-        <label>Price (RM)
-          <input type="number" step="0.01" value={fPrice} onChange={(e) => setFPrice(e.target.value)} style={{ width: '7rem' }} />
-        </label>
-        <label>Stock (blank = untracked)
-          <input type="number" value={fStock} onChange={(e) => setFStock(e.target.value)} style={{ width: '9rem' }} />
-        </label>
-        <label>Sort
-          <input type="number" value={fSort} onChange={(e) => setFSort(e.target.value)} style={{ width: '5rem' }} />
-        </label>
-        <label>Active
-          <select value={fActive ? 'yes' : 'no'} onChange={(e) => setFActive(e.target.value === 'yes')}>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </label>
-      </div>
-      <div className="mas-set-form" style={{ marginTop: '0.5rem' }}>
-        <label style={{ flex: 1, minWidth: '24rem' }}>Description
-          <textarea rows={2} value={fDesc} onChange={(e) => setFDesc(e.target.value)} />
-        </label>
-        <button className="mas-btn-primary mas-btn-compact" onClick={() => saveProduct(existing)} disabled={busy}>
-          {busy ? 'Saving…' : existing ? 'Save changes' : 'Create product'}
-        </button>
-      </div>
-
-      {existing && (
-        <>
-          <p className="mas-cell-sub" style={{ margin: '0.6rem 0 0.2rem' }}>
-            Images — first is the primary shown in the catalogue.
-          </p>
-          <div className="mas-set-thumbs">
-            {(existing.image_paths ?? []).map((path, i) => (
-              <div key={path} className={`mas-set-thumb${i === 0 ? ' mas-set-primary' : ''}`}>
-                <img src={publicImageUrl(path)} alt="" />
-                {i !== 0 && <button className="mas-link" onClick={() => makePrimary(existing, path)}>Make primary</button>}
-                {i !== 0 && ' '}
-                <button className="mas-link" onClick={() => removeImage(existing, path)}>Remove</button>
-              </div>
-            ))}
-            <div className="mas-set-thumb" style={{ display: 'flex', alignItems: 'center' }}>
-              <label className="mas-link" style={{ cursor: 'pointer' }}>
-                {uploading ? 'Uploading…' : '+ Add image'}
-                <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploading}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f && existing) uploadImage(existing, f);
-                    e.target.value = '';
-                  }} />
-              </label>
-            </div>
-          </div>
-        </>
-      )}
-
-      {msg && (
-        <p className={`mas-status ${msg.ok ? 'mas-status-good' : 'mas-status-bad'}`} style={{ marginTop: '0.4rem' }}>
-          {msg.text}
-        </p>
-      )}
-    </div>
-  );
-
-  return (
-    <>
-      <div className="mas-admin-toolbar" style={{ gap: '0.6rem', flexWrap: 'wrap' }}>
-        <button className="mas-btn-ghost" onClick={fetchRows} disabled={load === 'loading'}>Refresh</button>
-        <button className="mas-btn-primary mas-btn-compact" onClick={() => openEdit(null)}>New product</button>
-        {load === 'ready' && <span className="mas-admin-count">{rows.length} products</span>}
-      </div>
-
-      {expanded === 'new' && form(null)}
-
-      {load === 'loading' && <p className="mas-status">Loading…</p>}
-      {load === 'error' && <p className="mas-status mas-status-bad">Couldn’t load products. Refresh to try again.</p>}
-
-      {load === 'ready' && rows.length > 0 && (
-        <div className="mas-table-wrap">
-          <table className="mas-table mas-tight">
-            <thead>
-              <tr>
-                <th>Code</th><th>Name</th><th>Category</th>
-                <th className="mas-num">Price</th><th className="mas-num">Stock</th>
-                <th>Active</th><th>Images</th>
-                <th className="mas-table-actioncol">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((p) => {
-                const isOpen = expanded === p.id;
-                return (
-                  <Fragment key={p.id}>
-                    <tr className={isOpen ? 'is-open' : undefined}>
-                      <td className="mas-cell-strong">{p.code}</td>
-                      <td>{p.name}</td>
-                      <td>{pretty(p.category)}</td>
-                      <td className="mas-num">{money(p.unit_price)}</td>
-                      <td className="mas-num">{p.stock_qty == null ? '—' : p.stock_qty}</td>
-                      <td>{p.active ? 'Yes' : 'No'}</td>
-                      <td>{(p.image_paths ?? []).length || <span className="mas-cell-sub">none</span>}</td>
-                      <td className="mas-table-actioncol">
-                        <button className="mas-link" onClick={() => (isOpen ? setExpanded(null) : openEdit(p))}>
-                          {isOpen ? 'Close' : 'Edit'}
-                        </button>
-                      </td>
-                    </tr>
-                    {isOpen && (
-                      <tr className="mas-table-detailrow">
-                        <td colSpan={8}>{form(p)}</td>
                       </tr>
                     )}
                   </Fragment>
@@ -993,25 +773,277 @@ function ContactsTab() {
   );
 }
 
+
+// ============================================================ Resources
+interface AdminResource {
+  id: string;
+  title: string;
+  description: string | null;
+  url: string;
+  icon: string;
+  category: string;
+  sort_order: number;
+  is_active: boolean;
+  roles: string[];
+}
+const RESOURCE_CATEGORIES = [
+  { value: 'manual',   label: 'Manual' },
+  { value: 'handbook', label: 'Handbook' },
+  { value: 'guide',    label: 'Course Guide' },
+  { value: 'form',     label: 'Form' },
+  { value: 'other',    label: 'Other' },
+];
+function ResourcesTab() {
+  const [rows, setRows] = useState<AdminResource[]>([]);
+  const [load, setLoad] = useState<Load>('loading');
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string>('all');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [fTitle, setFTitle] = useState('');
+  const [fDesc, setFDesc] = useState('');
+  const [fUrl, setFUrl] = useState('');
+  const [fIcon, setFIcon] = useState('file');
+  const [fCategory, setFCategory] = useState('manual');
+  const [fSort, setFSort] = useState('100');
+  const [fActive, setFActive] = useState(true);
+  const [fRoles, setFRoles] = useState<string[]>([]);
+  const [iconSearch, setIconSearch] = useState('');
+  const fetchRows = useCallback(async () => {
+    setLoad('loading');
+    const { data, error } = await supabase.rpc('list_resources_admin');
+    if (error) { setLoad('error'); return; }
+    setRows((data ?? []) as AdminResource[]);
+    setLoad('ready');
+  }, []);
+  useEffect(() => { fetchRows(); }, [fetchRows]);
+  function openEdit(r: AdminResource | null) {
+    setMsg(null);
+    if (r) {
+      setExpanded(r.id);
+      setFTitle(r.title); setFDesc(r.description ?? ''); setFUrl(r.url);
+      setFIcon(r.icon); setFCategory(r.category);
+      setFSort(String(r.sort_order)); setFActive(r.is_active);
+      setFRoles(r.roles ?? []);
+    } else {
+      setExpanded('new');
+      setFTitle(''); setFDesc(''); setFUrl(''); setFIcon('file');
+      setFCategory('manual'); setFSort('100'); setFActive(true); setFRoles([]);
+    }
+  }
+  async function save(existing: AdminResource | null) {
+    if (!fTitle.trim() || !fUrl.trim()) { setMsg({ ok: false, text: 'Title and URL are required.' }); return; }
+    setBusy(true); setMsg(null);
+    const { data, error } = await supabase.rpc('resource_upsert', {
+      _id: existing?.id ?? null, _title: fTitle.trim(), _description: fDesc.trim() || null,
+      _url: fUrl.trim(), _icon: fIcon, _category: fCategory,
+      _sort_order: Number(fSort) || 100, _is_active: fActive,
+    });
+    if (error) { setBusy(false); setMsg({ ok: false, text: error.message }); return; }
+    const rid = existing?.id ?? (data as string);
+    const { error: vErr } = await supabase.rpc('resource_set_visibility', { _resource_id: rid, _roles: fRoles });
+    setBusy(false);
+    if (vErr) { setMsg({ ok: false, text: vErr.message }); return; }
+    setMsg({ ok: true, text: existing ? 'Resource updated.' : 'Resource created.' });
+    if (!existing) setExpanded(null);
+    fetchRows();
+  }
+  async function del(r: AdminResource) {
+    if (!window.confirm(`Delete "${r.title}"?`)) return;
+    const { error } = await supabase.rpc('resource_delete', { _id: r.id });
+    if (error) { setMsg({ ok: false, text: error.message }); return; }
+    setMsg({ ok: true, text: `Deleted "${r.title}".` });
+    fetchRows();
+  }
+  const filteredIcons = useMemo(() => {
+    const q = iconSearch.trim().toLowerCase();
+    return q ? CURATED_ICONS.filter((n) => n.toLowerCase().includes(q)) : CURATED_ICONS;
+  }, [iconSearch]);
+  const filtered = useMemo(() => {
+    if (filter === 'all') return rows;
+    return rows.filter((r) => r.roles?.includes(filter));
+  }, [rows, filter]);
+  const form = (existing: AdminResource | null) => (
+    <div className="mas-table-detail">
+      <div className="mas-set-form">
+        <label>Title<input type="text" value={fTitle} onChange={(e) => setFTitle(e.target.value)} style={{ width: '20rem' }} /></label>
+        <label>Category
+          <select value={fCategory} onChange={(e) => setFCategory(e.target.value)}>
+            {RESOURCE_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </label>
+        <label>Sort<input type="number" value={fSort} onChange={(e) => setFSort(e.target.value)} style={{ width: '5rem' }} /></label>
+        <label>Active
+          <select value={fActive ? 'yes' : 'no'} onChange={(e) => setFActive(e.target.value === 'yes')}>
+            <option value="yes">Yes</option><option value="no">No</option>
+          </select>
+        </label>
+      </div>
+      <div className="mas-set-form" style={{ marginTop: '0.4rem' }}>
+        <label style={{ flex: 1, minWidth: '20rem' }}>URL
+          <input type="url" value={fUrl} onChange={(e) => setFUrl(e.target.value)} placeholder="https://drive.google.com/…" />
+        </label>
+      </div>
+      <div className="mas-set-form" style={{ marginTop: '0.4rem' }}>
+        <label style={{ flex: 1, minWidth: '24rem' }}>Description
+          <textarea rows={2} value={fDesc} onChange={(e) => setFDesc(e.target.value)} />
+        </label>
+      </div>
+      <p className="mas-cell-sub" style={{ margin: '0.8rem 0 0.3rem' }}>Icon</p>
+      <div className="mas-set-form" style={{ marginBottom: '0.4rem' }}>
+        <label>Search icons<input type="text" value={iconSearch} onChange={(e) => setIconSearch(e.target.value)} style={{ width: '14rem' }} placeholder="e.g. book" /></label>
+        <span className="mas-cell-sub">Selected: <strong>{fIcon}</strong></span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.6rem' }}>
+        {filteredIcons.map((name) => (
+          <button key={name} type="button" onClick={() => setFIcon(name)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.6rem',
+              border: '1px solid ' + (fIcon === name ? 'var(--mas-navy,#1E2752)' : 'var(--mas-line,#e3e9f3)'),
+              background: fIcon === name ? '#eef1f8' : '#fff',
+              borderRadius: 6, cursor: 'pointer', font: 'inherit', fontSize: '0.78rem' }}>
+            <Icon name={name} /> {name}
+          </button>
+        ))}
+      </div>
+      <p className="mas-cell-sub" style={{ margin: '0.8rem 0 0.3rem' }}>Visible to roles</p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.6rem' }}>
+        {CURATED_ROLES.map((r) => {
+          const on = fRoles.includes(r.value);
+          return (
+            <label key={r.value} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+              padding: '0.25rem 0.55rem',
+              border: '1px solid ' + (on ? 'var(--mas-navy,#1E2752)' : 'var(--mas-line,#e3e9f3)'),
+              background: on ? '#eef1f8' : '#fff', borderRadius: 6, cursor: 'pointer', fontSize: '0.82rem' }}>
+              <input type="checkbox" checked={on} onChange={(e) => {
+                setFRoles((cur) => e.target.checked ? [...cur, r.value] : cur.filter((x) => x !== r.value));
+              }} />
+              {r.label}
+            </label>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button className="mas-btn-primary mas-btn-compact" onClick={() => save(existing)} disabled={busy}>
+          {busy ? 'Saving…' : existing ? 'Save changes' : 'Create resource'}
+        </button>
+        <button className="mas-btn-ghost mas-btn-compact" onClick={() => setExpanded(null)}>Cancel</button>
+        {existing && <button className="mas-link is-danger" style={{ marginLeft: 'auto' }} onClick={() => del(existing)}>Delete resource</button>}
+      </div>
+      {msg && <p className={`mas-status ${msg.ok ? 'mas-status-good' : 'mas-status-bad'}`} style={{ marginTop: '0.4rem' }}>{msg.text}</p>}
+    </div>
+  );
+  return (
+    <>
+      <p className="mas-cell-sub" style={{ marginBottom: '0.6rem' }}>
+        Curate the resource library. Each entry is a live link tagged for one or more roles.
+        Users see only what their roles grant, under Account &rarr; My resources.
+      </p>
+      <div className="mas-admin-toolbar" style={{ gap: '0.6rem', flexWrap: 'wrap' }}>
+        <button className="mas-btn-ghost" onClick={fetchRows} disabled={load === 'loading'}>Refresh</button>
+        <button className="mas-btn-primary mas-btn-compact" onClick={() => openEdit(null)}>New resource</button>
+        <label style={{ marginLeft: 'auto', display: 'flex', gap: '0.4rem', alignItems: 'center', fontSize: '0.85rem', color: 'var(--mas-muted,#5b6472)' }}>
+          Preview as role
+          <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <option value="all">All resources</option>
+            {CURATED_ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+          </select>
+        </label>
+        {load === 'ready' && <span className="mas-admin-count">{filtered.length} shown</span>}
+      </div>
+      {expanded === 'new' && form(null)}
+      {load === 'loading' && <p className="mas-status">Loading…</p>}
+      {load === 'error' && <p className="mas-status mas-status-bad">Couldn’t load resources.</p>}
+      {load === 'ready' && filtered.length === 0 && expanded !== 'new' && (
+        <p className="mas-status">
+          {filter === 'all' ? 'No resources yet. Add the first one to build the library.'
+            : `No resources visible to the ${CURATED_ROLES.find((x) => x.value === filter)?.label ?? filter} role.`}
+        </p>
+      )}
+      {load === 'ready' && filtered.length > 0 && (
+        <div className="mas-table-wrap">
+          <table className="mas-table mas-tight">
+            <thead>
+              <tr><th>Title</th><th>Category</th><th>Icon</th><th>Roles</th><th className="mas-num">Sort</th><th>Active</th><th className="mas-table-actioncol">Action</th></tr>
+            </thead>
+            <tbody>
+              {filtered.map((r) => {
+                const isOpen = expanded === r.id;
+                return (
+                  <Fragment key={r.id}>
+                    <tr className={isOpen ? 'is-open' : undefined}>
+                      <td className="mas-cell-strong">{r.title}</td>
+                      <td>{RESOURCE_CATEGORIES.find((c) => c.value === r.category)?.label ?? r.category}</td>
+                      <td><Icon name={r.icon} /></td>
+                      <td>{(r.roles ?? []).length > 0 ? (r.roles ?? []).map((x) => CURATED_ROLES.find((c) => c.value === x)?.label ?? x).join(', ') : <span className="mas-cell-sub">— none —</span>}</td>
+                      <td className="mas-num">{r.sort_order}</td>
+                      <td>{r.is_active ? 'Yes' : 'No'}</td>
+                      <td className="mas-table-actioncol">
+                        <button className="mas-link" onClick={() => (isOpen ? setExpanded(null) : openEdit(r))}>{isOpen ? 'Close' : 'Edit'}</button>
+                      </td>
+                    </tr>
+                    {isOpen && (<tr className="mas-table-detailrow"><td colSpan={7}>{form(r)}</td></tr>)}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ============================================================ System
 function SystemTab() {
-  const [build, setBuild] = useState<string>('…');
+  const [buildTime, setBuildTime] = useState<string>('…');
+  const [userEmail, setUserEmail] = useState<string>('…');
   useEffect(() => {
     fetch(`/version.json?ts=${Date.now()}`)
       .then((r) => r.json())
-      .then((j) => setBuild(String(j.build ?? j.version ?? JSON.stringify(j))))
-      .catch(() => setBuild('unavailable'));
+      .then((j) => {
+        const raw = j.build ?? j.version ?? j.buildId ?? null;
+        if (!raw) { setBuildTime('unknown'); return; }
+        const d = new Date(String(raw));
+        if (Number.isNaN(d.getTime())) { setBuildTime(String(raw)); return; }
+        setBuildTime(d.toLocaleString('en-GB', {
+          day: 'numeric', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        }));
+      })
+      .catch(() => setBuildTime('unavailable'));
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? 'unknown');
+    });
   }, []);
   const mode = (import.meta as unknown as { env?: Record<string, string> }).env?.MODE ?? 'unknown';
   return (
-    <div className="mas-table-detail">
-      <p><strong>Build:</strong> {build}</p>
-      <p><strong>Environment:</strong> {mode}</p>
-      <p className="mas-cell-sub" style={{ marginTop: '0.6rem' }}>
-        A stale-build banner appears automatically when a newer build is deployed
-        (UpdateBanner). Manage accounts, resources, and portal parameters via the
-        respective tabs.
-      </p>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(14rem, 1fr))',
+      gap: '0.6rem',
+      padding: '1rem 1.1rem',
+      background: '#f8fafd',
+      border: '1px solid var(--mas-line, #e3e9f3)',
+      borderRadius: 8,
+    }}>
+      <SysStat label="Build" value={buildTime} />
+      <SysStat label="Environment" value={mode} />
+      <SysStat label="Signed in as" value={userEmail} />
+    </div>
+  );
+}
+function SysStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div style={{
+        fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em',
+        color: 'var(--mas-muted, #5b6472)', marginBottom: '0.2rem',
+      }}>{label}</div>
+      <div style={{
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+        fontSize: '0.9rem', color: 'var(--mas-navy, #1E2752)',
+        wordBreak: 'break-word',
+      }}>{value}</div>
     </div>
   );
 }
@@ -1033,10 +1065,10 @@ export default function Settings() {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'accounts', label: 'Accounts' },
-    { id: 'products', label: 'Store products' },
     { id: 'params', label: 'Parameters' },
     { id: 'flags', label: 'Flags' },
     { id: 'contacts', label: 'Role contacts' },
+    { id: 'resources', label: 'Resources' },
     { id: 'system', label: 'System' },
   ];
 
@@ -1064,10 +1096,10 @@ export default function Settings() {
       </div>
 
       {tab === 'accounts' && <AccountsTab states={states} roles={roles} />}
-      {tab === 'products' && <ProductsTab />}
       {tab === 'params' && <ParamsTab />}
       {tab === 'flags' && <FlagsTab />}
       {tab === 'contacts' && <ContactsTab />}
+      {tab === 'resources' && <ResourcesTab />}
       {tab === 'system' && <SystemTab />}
     </section>
   );
