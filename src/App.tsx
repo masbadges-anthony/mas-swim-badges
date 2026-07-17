@@ -64,6 +64,7 @@ import ExaminerRegistry from './pages/ExaminerRegistry';
 import CentreBilling from './pages/CentreBilling';
 import Store from './pages/Store';
 import StoreAdmin from './pages/StoreOrders';
+import StoreProducts from './pages/StoreProducts';
 import Settings from './pages/Settings';
 import MyResources from './pages/MyResources';
 import OnboardingQuiz from './pages/OnboardingQuiz';
@@ -445,6 +446,7 @@ function Sidebar({
   const canCentreBilling = hasRole('chairperson') || hasRole('board_member') || hasRole('system_admin');
   const canBuyStore = hasRole('instructor') || hasRole('partner_center_admin') || hasRole('examiner');
   const canManageStore = hasRole('system_admin') || hasRole('chairperson') || hasRole('board_member');
+  const canStoreProducts = hasRole('system_admin') || hasRole('finance_officer');
   const canSystemSettings = hasRole('system_admin');
 
   const isStaffOperator =
@@ -454,7 +456,7 @@ function Sidebar({
 
   const assessmentsGroup =
     canRegister || canSchedule || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canMySessions;
-  const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore || canBilling;
+  const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore || canStoreProducts || canBilling;
   const governanceGroup =
     canManageCentres || canManageMembers || canOnboard || canBlacklist || canManageCourses || canEnquiries || canPartnerApps || canAuditLog;
   const systemGroup =
@@ -571,6 +573,7 @@ function Sidebar({
             <div className="mas-navgroup-items">
               {canAccounts && <NavLink to="/admin/accounts" className={navClass}><Icon name="card" /><span>Examiner payouts</span></NavLink>}
               {canCentreBilling && <NavLink to="/admin/centre-billing" className={navClass}><Icon name="building" /><span>Centre billing</span></NavLink>}
+              {canStoreProducts && <NavLink to="/admin/store-products" className={navClass}><Icon name="grid" /><span>Store products</span></NavLink>}
               {canManageStore && <NavLink to="/admin/store" className={navClass}><Icon name="inbox" /><span>Store orders</span></NavLink>}
               {canBilling && <NavLink to="/billing/payments" className={navClass}><Icon name="card" /><span>Invoices &amp; Payments</span><AttentionDot count={outstandingInvoices} variant="count" label="outstanding invoices" /></NavLink>}
               {canMyInvoices && <NavLink to="/invoices" className={navClass}><Icon name="file" /><span>My invoices</span></NavLink>}
@@ -648,6 +651,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/billing/payments': 'Invoices & Payments',
   '/store': 'Store',
   '/admin/store': 'Store orders',
+  '/admin/store-products': 'Store products',
   '/admin/instructors': 'Instructor onboarding',
   '/admin/instructor-blacklist': 'Instructor blacklist',
   '/admin/courses': 'Manage courses',
@@ -850,6 +854,7 @@ export default function App() {
               <Route path="/billing/payments" element={<RequireRole roles={['finance_officer', 'system_admin', 'chairperson']}><BillingPayments /></RequireRole>} />
               <Route path="/store" element={<RequireRole roles={['instructor', 'partner_center_admin', 'examiner']}><Store /></RequireRole>} />
               <Route path="/admin/store" element={<RequireRole roles={['system_admin', 'chairperson', 'board_member']}><StoreAdmin /></RequireRole>} />
+              <Route path="/admin/store-products" element={<RequireRole roles={['system_admin', 'finance_officer']}><StoreProducts /></RequireRole>} />
               <Route path="/admin/instructors" element={<RequireRole roles={['instructor_trainer', 'chairperson', 'board_member']}><InstructorOnboarding /></RequireRole>} />
               <Route path="/admin/instructor-blacklist" element={<RequireRole roles={['chairperson', 'board_member']}><InstructorBlacklist /></RequireRole>} />
               <Route path="/admin/courses" element={<RequireRole roles={['instructor_trainer', 'examiner_trainer', 'chairperson', 'board_member']}><CourseManagement /></RequireRole>} />
