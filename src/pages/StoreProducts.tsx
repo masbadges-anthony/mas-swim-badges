@@ -131,7 +131,7 @@ const CSS = `
 
 .mas-edit-drawer {
   background: #fff; border: 1px solid var(--mas-line, #e3e9f3); border-radius: 10px;
-  padding: 1rem; margin: 0.6rem 0 1rem; grid-column: 1 / -1;
+  padding: 1rem; margin: 0.6rem 0 1.2rem;
 }
 .mas-edit-drawer h3 { margin: 0 0 0.6rem; color: var(--mas-navy, #1E2752); font-size: 0.95rem; }
 .mas-edit-drawer .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem; }
@@ -275,6 +275,8 @@ export default function StoreProducts() {
   // ---------- EDIT ----------
   function openEdit(p: Product) {
     setEditId(p.id);
+    // scroll the drawer into view once React renders it
+    setTimeout(() => document.getElementById('mas-store-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     setEName(p.name);
     setESku(p.sku ?? '');
     setEPrice(String(p.unit_price));
@@ -409,6 +411,63 @@ export default function StoreProducts() {
         </p>
       </header>
 
+
+      {editingProduct && (
+        <div className="mas-edit-drawer" id="mas-store-editor">
+          <h3>Edit — {editingProduct.name}</h3>
+          <div className="row">
+            <label>Name<input type="text" value={eName} onChange={(e) => setEName(e.target.value)} /></label>
+            <label>SKU<input type="text" value={eSku} onChange={(e) => setESku(e.target.value)} /></label>
+          </div>
+          <div className="row3">
+            <label>Price (RM)<input type="number" step="0.01" value={ePrice} onChange={(e) => setEPrice(e.target.value)} /></label>
+            <label>Category
+              <select value={eCategory} onChange={(e) => setECategory(e.target.value)}>
+                {CATEGORY_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </label>
+            <label>Stock (blank = untracked)<input type="number" value={eStock} onChange={(e) => setEStock(e.target.value)} /></label>
+          </div>
+          <label style={{ display: 'flex', flexDirection: 'column', marginBottom: '0.5rem', fontSize: '0.78rem', color: 'var(--mas-muted,#5b6472)' }}>
+            Description
+            <textarea rows={2} value={eDesc} onChange={(e) => setEDesc(e.target.value)} />
+          </label>
+
+          <p style={{ fontSize: '0.78rem', color: 'var(--mas-muted,#5b6472)', margin: '0.6rem 0 0.3rem' }}>
+            Images — first is the buyer-facing primary
+          </p>
+          <div className="thumbs">
+            {(editingProduct.image_paths ?? []).map((path, i) => (
+              <div key={path} className={`thumb${i === 0 ? ' is-primary' : ''}`}>
+                <img src={imageUrl(path) ?? ''} alt="" />
+                <button title="Remove" onClick={() => removeImage(path)}>×</button>
+                {i !== 0 && (
+                  <button title="Make primary" onClick={() => makePrimary(path)}
+                    style={{ right: 'auto', left: '0.15rem', background: 'rgba(30,39,82,0.85)' }}>★</button>
+                )}
+              </div>
+            ))}
+            <label className="thumb" style={{ borderStyle: 'dashed', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--mas-muted,#5b6472)', background: '#fff' }}>
+              {eUploading ? '…' : '+'}
+              <input type="file" accept="image/*" style={{ display: 'none' }} disabled={eUploading}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadEditImage(f); e.target.value = ''; }} />
+            </label>
+          </div>
+
+          <div className="footer">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--mas-navy,#1E2752)' }}>
+              <input type="checkbox" checked={eActive} onChange={(e) => setEActive(e.target.checked)} />
+              Active (visible in the buyer store)
+            </label>
+            <span className="grow" />
+            <button className="mas-btn-ghost mas-btn-compact" onClick={closeEdit}>Cancel</button>
+            <button className="mas-btn-primary mas-btn-compact" onClick={saveEdit} disabled={eBusy}>
+              {eBusy ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mas-catalog-head">
         <h2><Icon name="flag" /> Product catalogue</h2>
         <p>Items you sell (goggles, caps, swim diapers, badges, teaching materials). The photo and details show in the buyer store so instructors and centres pick the right item. Drag the handle on a card to re-order. Shared across all buyers; price stays editable per sale.</p>
@@ -485,61 +544,6 @@ export default function StoreProducts() {
           );
         })}
 
-        {editingProduct && (
-          <div className="mas-edit-drawer">
-            <h3>Edit — {editingProduct.name}</h3>
-            <div className="row">
-              <label>Name<input type="text" value={eName} onChange={(e) => setEName(e.target.value)} /></label>
-              <label>SKU<input type="text" value={eSku} onChange={(e) => setESku(e.target.value)} /></label>
-            </div>
-            <div className="row3">
-              <label>Price (RM)<input type="number" step="0.01" value={ePrice} onChange={(e) => setEPrice(e.target.value)} /></label>
-              <label>Category
-                <select value={eCategory} onChange={(e) => setECategory(e.target.value)}>
-                  {CATEGORY_OPTIONS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-                </select>
-              </label>
-              <label>Stock (blank = untracked)<input type="number" value={eStock} onChange={(e) => setEStock(e.target.value)} /></label>
-            </div>
-            <label style={{ display: 'flex', flexDirection: 'column', marginBottom: '0.5rem', fontSize: '0.78rem', color: 'var(--mas-muted,#5b6472)' }}>
-              Description
-              <textarea rows={2} value={eDesc} onChange={(e) => setEDesc(e.target.value)} />
-            </label>
-
-            <p style={{ fontSize: '0.78rem', color: 'var(--mas-muted,#5b6472)', margin: '0.6rem 0 0.3rem' }}>
-              Images — first is the buyer-facing primary
-            </p>
-            <div className="thumbs">
-              {(editingProduct.image_paths ?? []).map((path, i) => (
-                <div key={path} className={`thumb${i === 0 ? ' is-primary' : ''}`}>
-                  <img src={imageUrl(path) ?? ''} alt="" />
-                  <button title="Remove" onClick={() => removeImage(path)}>×</button>
-                  {i !== 0 && (
-                    <button title="Make primary" onClick={() => makePrimary(path)}
-                      style={{ right: 'auto', left: '0.15rem', background: 'rgba(30,39,82,0.85)' }}>★</button>
-                  )}
-                </div>
-              ))}
-              <label className="thumb" style={{ borderStyle: 'dashed', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--mas-muted,#5b6472)', background: '#fff' }}>
-                {eUploading ? '…' : '+'}
-                <input type="file" accept="image/*" style={{ display: 'none' }} disabled={eUploading}
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadEditImage(f); e.target.value = ''; }} />
-              </label>
-            </div>
-
-            <div className="footer">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--mas-navy,#1E2752)' }}>
-                <input type="checkbox" checked={eActive} onChange={(e) => setEActive(e.target.checked)} />
-                Active (visible in the buyer store)
-              </label>
-              <span className="grow" />
-              <button className="mas-btn-ghost mas-btn-compact" onClick={closeEdit}>Cancel</button>
-              <button className="mas-btn-primary mas-btn-compact" onClick={saveEdit} disabled={eBusy}>
-                {eBusy ? 'Saving…' : 'Save changes'}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </section>
   );
