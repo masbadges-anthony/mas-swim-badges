@@ -7,7 +7,7 @@ import Icon from '../components/Icon';
 export default function Login() {
   const { signIn, session } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');  // email OR username
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -18,7 +18,19 @@ export default function Login() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null); setNotice(null); setBusy(true);
-    const { error } = await signIn(email.trim(), password);
+    const raw = identifier.trim();
+    // Username path: resolve to the internal @masbadges.internal email server-side.
+    let loginEmail = raw;
+    if (!raw.includes('@')) {
+      const { data, error: rErr } = await supabase.rpc('resolve_login', { _input: raw });
+      if (rErr || !data) {
+        setBusy(false);
+        setError('No account matches that username.');
+        return;
+      }
+      loginEmail = data as string;
+    }
+    const { error } = await signIn(loginEmail, password);
     setBusy(false);
     if (error) setError(error);
     else navigate('/dashboard');
@@ -26,8 +38,13 @@ export default function Login() {
 
   async function onForgot() {
     setError(null); setNotice(null);
-    if (!email.trim()) { setError('Enter your email above first, then tap Forgot.'); return; }
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    const raw = identifier.trim();
+    if (!raw) { setError('Enter your email above first, then tap Forgot.'); return; }
+    if (!raw.includes('@')) {
+      setError('Username accounts don\'t self-reset. Ask the system administrator to set a new password.');
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(raw, {
       redirectTo: `${window.location.origin}/login`,
     });
     if (error) setError(error.message);
@@ -70,12 +87,12 @@ export default function Login() {
           {notice && <div className="mas-auth-note">{notice}</div>}
 
           <div className="mas-auth-field">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="identifier">Email or username</label>
             <span className="mas-input-icon">
               <Icon name="mail" />
-              <input id="email" type="email" className="mas-input" autoComplete="email"
-                     placeholder="you@example.com" value={email}
-                     onChange={(e) => setEmail(e.target.value)} required />
+              <input id="identifier" type="text" className="mas-input" autoComplete="username"
+                     placeholder="you@example.com or your username" value={identifier}
+                     onChange={(e) => setIdentifier(e.target.value)} required />
             </span>
           </div>
 
