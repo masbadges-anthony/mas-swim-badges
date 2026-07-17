@@ -997,23 +997,61 @@ function ContactsTab() {
 
 // ============================================================ System
 function SystemTab() {
-  const [build, setBuild] = useState<string>('…');
+  const [buildTime, setBuildTime] = useState<string>('…');
+  const [userEmail, setUserEmail] = useState<string>('…');
   useEffect(() => {
     fetch(`/version.json?ts=${Date.now()}`)
       .then((r) => r.json())
-      .then((j) => setBuild(String(j.build ?? j.version ?? JSON.stringify(j))))
-      .catch(() => setBuild('unavailable'));
+      .then((j) => {
+        // Accept build / version / buildId; format a timestamp nicely.
+        const raw = j.build ?? j.version ?? j.buildId ?? null;
+        if (!raw) { setBuildTime('unknown'); return; }
+        const d = new Date(String(raw));
+        if (Number.isNaN(d.getTime())) { setBuildTime(String(raw)); return; }
+        setBuildTime(d.toLocaleString('en-GB', {
+          day: 'numeric', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        }));
+      })
+      .catch(() => setBuildTime('unavailable'));
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? 'unknown');
+    });
   }, []);
   const mode = (import.meta as unknown as { env?: Record<string, string> }).env?.MODE ?? 'unknown';
   return (
-    <div className="mas-table-detail">
-      <p><strong>Build:</strong> {build}</p>
-      <p><strong>Environment:</strong> {mode}</p>
-      <p className="mas-cell-sub" style={{ marginTop: '0.6rem' }}>
-        A stale-build banner appears automatically when a newer build is deployed
-        (UpdateBanner). Manage accounts, resources, and portal parameters via the
-        respective tabs.
-      </p>
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(14rem, 1fr))',
+      gap: '0.6rem',
+      padding: '1rem 1.1rem',
+      background: '#f8fafd',
+      border: '1px solid var(--mas-line, #e3e9f3)',
+      borderRadius: 8,
+    }}>
+      <SysStat label="Build" value={buildTime} />
+      <SysStat label="Environment" value={mode} />
+      <SysStat label="Signed in as" value={userEmail} />
+    </div>
+  );
+}
+
+function SysStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div style={{
+        fontSize: '0.72rem',
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        color: 'var(--mas-muted, #5b6472)',
+        marginBottom: '0.2rem',
+      }}>{label}</div>
+      <div style={{
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+        fontSize: '0.9rem',
+        color: 'var(--mas-navy, #1E2752)',
+        wordBreak: 'break-word',
+      }}>{value}</div>
     </div>
   );
 }
