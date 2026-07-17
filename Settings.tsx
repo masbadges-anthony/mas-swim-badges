@@ -84,6 +84,7 @@ const CURATED_ROLES: { value: string; label: string }[] = [
 function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
   const [rows, setRows] = useState<ProvisionedAccount[]>([]);
   const [memberships, setMemberships] = useState<Record<string, { id: string; role: string; state: string | null }[]>>({});
+  const [memberships, setMemberships] = useState<Record<string, { id: string; role: string; state: string | null }[]>>({});
   const [load, setLoad] = useState<Load>('loading');
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
