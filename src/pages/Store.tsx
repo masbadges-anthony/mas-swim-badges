@@ -163,6 +163,29 @@ const CSS = `
 .mas-store-order-items { color: var(--mas-muted, #5b6472); font-size: 0.88rem; margin: 0.4rem 0 0; }
 .mas-store-order-meta  { color: var(--mas-muted, #5b6472); font-size: 0.82rem; margin: 0.3rem 0 0; }
 .mas-store-order-tracking { color: var(--mas-navy, #1E2752); font-weight: 600; }
+
+.mas-lightbox {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(20, 26, 51, 0.92);
+  display: flex; align-items: center; justify-content: center;
+  padding: 2rem; cursor: zoom-out;
+  animation: mas-lightbox-in 0.15s ease-out;
+}
+@keyframes mas-lightbox-in { from { opacity: 0; } to { opacity: 1; } }
+.mas-lightbox img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  cursor: default;
+}
+.mas-lightbox-close {
+  position: absolute; top: 1rem; right: 1rem;
+  background: rgba(255,255,255,0.15); color: #fff; border: 0;
+  width: 2.4rem; height: 2.4rem; border-radius: 999px;
+  font-size: 1.4rem; cursor: pointer; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.mas-lightbox-close:hover { background: rgba(255,255,255,0.25); }
+.mas-store-media { cursor: zoom-in; }
 `;
 
 function money(n: number | string | null | undefined): string {
@@ -208,6 +231,15 @@ export default function Store() {
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+
+  // Close lightbox on Esc.
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setLightbox(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox]);
 
   const fetchProducts = useCallback(async () => {
     setLoad('loading');
@@ -365,7 +397,16 @@ export default function Store() {
                 const lowStock = p.stock_qty != null && p.stock_qty > 0 && p.stock_qty <= 5;
                 return (
                   <div key={p.id} className="mas-store-card">
-                    <div className="mas-store-media">
+                    <div className="mas-store-media"
+                      onClick={() => primary && setLightbox({ src: primary, alt: p.name })}
+                      role={primary ? 'button' : undefined}
+                      tabIndex={primary ? 0 : undefined}
+                      onKeyDown={(e) => {
+                        if (primary && (e.key === 'Enter' || e.key === ' ')) {
+                          e.preventDefault();
+                          setLightbox({ src: primary, alt: p.name });
+                        }
+                      }}>
                       {primary
                         ? <img src={primary} alt={p.name} loading="lazy" />
                         : <span className="mas-store-media-placeholder">No image</span>}
@@ -507,6 +548,13 @@ export default function Store() {
           </div>
         ))}
       </div>
+
+      {lightbox && (
+        <div className="mas-lightbox" onClick={() => setLightbox(null)} role="dialog" aria-modal="true">
+          <button className="mas-lightbox-close" onClick={() => setLightbox(null)} aria-label="Close">×</button>
+          <img src={lightbox.src} alt={lightbox.alt} onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </section>
   );
 }
