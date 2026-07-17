@@ -1073,7 +1073,6 @@ export default function Settings() {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'accounts', label: 'Accounts' },
-    { id: 'products', label: 'Store products' },
     { id: 'params', label: 'Parameters' },
     { id: 'flags', label: 'Flags' },
     { id: 'contacts', label: 'Role contacts' },
@@ -1104,7 +1103,6 @@ export default function Settings() {
       </div>
 
       {tab === 'accounts' && <AccountsTab states={states} roles={roles} />}
-      {tab === 'products' && <ProductsTab />}
       {tab === 'params' && <ParamsTab />}
       {tab === 'flags' && <FlagsTab />}
       {tab === 'contacts' && <ContactsTab />}
