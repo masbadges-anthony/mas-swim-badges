@@ -62,7 +62,24 @@ interface ProvisionedAccount {
   email_confirmed_at: string | null;
   banned_until: string | null;
   status: string | null;
+  username?: string | null;
 }
+
+// Streamlined role list per Anthony's spec — labels distinct from raw enum
+// so operators aren't decoding underscores. Order deliberate: sysadmin first,
+// governance next, delivery roles last.
+const CURATED_ROLES: { value: string; label: string }[] = [
+  { value: 'system_admin',        label: 'Sysadmin' },
+  { value: 'finance_officer',     label: 'Admin & Finance Officer' },
+  { value: 'chairperson',         label: 'Chairperson (DSL)' },
+  { value: 'board_member',        label: 'Board Member' },
+  { value: 'chief_examiner',      label: 'Chief Examiner' },
+  { value: 'master_trainer',      label: 'Master Trainer' },
+  { value: 'instructor_trainer',  label: 'Instructor Trainer' },
+  { value: 'examiner',            label: 'Examiner' },
+  { value: 'instructor',          label: 'Instructor' },
+  { value: 'partner_center_admin',label: 'Partner Centre Admin' },
+];
 
 function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
   const [rows, setRows] = useState<ProvisionedAccount[]>([]);
@@ -71,7 +88,9 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   // create form
+  const [cKind, setCKind] = useState<'email' | 'username'>('email');
   const [cEmail, setCEmail] = useState('');
+  const [cUsername, setCUsername] = useState('');
   const [cName, setCName] = useState('');
   const [cPassword, setCPassword] = useState('');
   const [cRole, setCRole] = useState('');
@@ -88,35 +107,67 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
 
   const fetchRows = useCallback(async () => {
     setLoad('loading');
-    const { data, error } = await supabase.rpc('list_provisioned_accounts');
-    if (error) { setLoad('error'); return; }
-    setRows((data ?? []) as ProvisionedAccount[]);
+    const [accRes, unRes] = await Promise.all([
+      supabase.rpc('list_provisioned_accounts'),
+      supabase.rpc('list_account_usernames'),
+    ]);
+    if (accRes.error) { setLoad('error'); return; }
+    const unMap: Record<string, string> = {};
+    (unRes.data ?? []).forEach((r: { profile_id: string; username: string }) => {
+      unMap[r.profile_id] = r.username;
+    });
+    const merged = (accRes.data ?? []).map((r: ProvisionedAccount) => ({
+      ...r,
+      username: unMap[r.profile_id] ?? null,
+    }));
+    setRows(merged as ProvisionedAccount[]);
     setLoad('ready');
   }, []);
   useEffect(() => { fetchRows(); }, [fetchRows]);
 
   async function createAccount() {
     setCMsg(null);
-    if (!cEmail.trim() || !cPassword || !cRole || !cState) {
-      setCMsg({ ok: false, text: 'Email, password, role, and state are required.' });
+    if (!cPassword || !cRole || !cState) {
+      setCMsg({ ok: false, text: 'Password, role, and state are required.' });
       return;
     }
     if (cPassword.length < 8) {
       setCMsg({ ok: false, text: 'Password must be at least 8 characters.' });
       return;
     }
+    if (cKind === 'email' && !cEmail.trim()) {
+      setCMsg({ ok: false, text: 'Email is required for an email account.' });
+      return;
+    }
+    if (cKind === 'username' && !cUsername.trim()) {
+      setCMsg({ ok: false, text: 'Username is required for a username account.' });
+      return;
+    }
+    if (cKind === 'username' && !/^[a-z0-9_.]{3,32}$/.test(cUsername.trim().toLowerCase())) {
+      setCMsg({ ok: false, text: 'Username must be 3-32 lowercase letters, digits, underscore, or dot.' });
+      return;
+    }
     setCBusy(true);
-    const { error } = await supabase.rpc('admin_create_account_with_password', {
-      p_email: cEmail.trim().toLowerCase(),
-      p_password: cPassword,
-      p_role: cRole,
-      p_state: cState,
-      p_full_name: cName.trim() || null,
-    });
+    const { error } = cKind === 'email'
+      ? await supabase.rpc('admin_create_account_with_password', {
+          p_email: cEmail.trim().toLowerCase(),
+          p_password: cPassword,
+          p_role: cRole,
+          p_state: cState,
+          p_full_name: cName.trim() || null,
+        })
+      : await supabase.rpc('admin_create_username_account', {
+          p_username: cUsername.trim().toLowerCase(),
+          p_password: cPassword,
+          p_role: cRole,
+          p_state: cState,
+          p_display_name: cName.trim() || null,
+        });
     setCBusy(false);
     if (error) { setCMsg({ ok: false, text: error.message }); return; }
-    setCMsg({ ok: true, text: `Account created for ${cEmail.trim()} with role ${pretty(cRole)}. Share the password securely.` });
-    setCEmail(''); setCName(''); setCPassword(''); setCRole(''); setCState('');
+    const identity = cKind === 'email' ? cEmail.trim() : cUsername.trim().toLowerCase();
+    setCMsg({ ok: true, text: `Account created for ${identity} with role ${pretty(cRole)}. Share the password securely.` });
+    setCEmail(''); setCUsername(''); setCName(''); setCPassword(''); setCRole(''); setCState('');
     fetchRows();
   }
 
@@ -146,6 +197,7 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
     return rows.filter((r) =>
       !q ||
       (r.email ?? '').toLowerCase().includes(q) ||
+      (r.username ?? '').toLowerCase().includes(q) ||
       (r.full_name ?? '').toLowerCase().includes(q) ||
       (r.roles ?? '').toLowerCase().includes(q));
   }, [rows, query]);
@@ -154,14 +206,33 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
     <>
       <div className="mas-table-detail" style={{ marginBottom: '1rem' }}>
         <p className="mas-cell-sub" style={{ marginBottom: '0.5rem' }}>
-          Create a login-ready account. The account can sign in immediately with this
-          password; the initial role is granted active in the chosen state.
+          Create a login-ready account. <strong>Email</strong> accounts sign in with the
+          email address and support password reset by mail. <strong>Username</strong> accounts
+          sign in with a chosen username and are for role-holders without a working
+          email — password reset is manual through this screen. Both grant the same
+          role permissions.
         </p>
-        <div className="mas-set-form">
-          <label>Email
-            <input type="email" value={cEmail} onChange={(e) => setCEmail(e.target.value)} style={{ width: '16rem' }} />
+        <div className="mas-set-form" style={{ marginBottom: '0.4rem' }}>
+          <label>Account type
+            <select value={cKind} onChange={(e) => setCKind(e.target.value as 'email' | 'username')}>
+              <option value="email">Email login</option>
+              <option value="username">Username login</option>
+            </select>
           </label>
-          <label>Full name
+        </div>
+        <div className="mas-set-form">
+          {cKind === 'email' ? (
+            <label>Email
+              <input type="email" value={cEmail} onChange={(e) => setCEmail(e.target.value)} style={{ width: '16rem' }} />
+            </label>
+          ) : (
+            <label>Username
+              <input type="text" value={cUsername}
+                onChange={(e) => setCUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))}
+                placeholder="e.g. clara" style={{ width: '12rem' }} />
+            </label>
+          )}
+          <label>Display name
             <input type="text" value={cName} onChange={(e) => setCName(e.target.value)} style={{ width: '14rem' }} />
           </label>
           <label>Password
@@ -170,7 +241,7 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
           <label>Role
             <select value={cRole} onChange={(e) => setCRole(e.target.value)}>
               <option value="">—</option>
-              {roles.map((r) => <option key={r} value={r}>{pretty(r)}</option>)}
+              {CURATED_ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
           </label>
           <label>State
@@ -206,7 +277,7 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
           <table className="mas-table mas-tight">
             <thead>
               <tr>
-                <th>Email</th><th>Name</th><th>Roles</th><th>Status</th>
+                <th>Login</th><th>Name</th><th>Roles</th><th>Status</th>
                 <th>Created</th><th>Last sign-in</th>
                 <th className="mas-table-actioncol">Action</th>
               </tr>
@@ -217,7 +288,10 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
                 return (
                   <Fragment key={r.profile_id}>
                     <tr className={isOpen ? 'is-open' : undefined}>
-                      <td className="mas-cell-strong">{r.email}</td>
+                      <td className="mas-cell-strong">
+                        {r.username ?? r.email}
+                        {r.username && <div className="mas-cell-sub">username</div>}
+                      </td>
                       <td>{r.full_name || <span className="mas-cell-sub">—</span>}</td>
                       <td>{r.roles ? pretty(r.roles) : <span className="mas-cell-sub">none</span>}</td>
                       <td>{pretty(r.status) || '—'}</td>
@@ -240,7 +314,7 @@ function AccountsTab({ states, roles }: { states: string[]; roles: string[] }) {
                               <label>Role
                                 <select value={gRole} onChange={(e) => setGRole(e.target.value)}>
                                   <option value="">—</option>
-                                  {roles.map((x) => <option key={x} value={x}>{pretty(x)}</option>)}
+                                  {CURATED_ROLES.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
                                 </select>
                               </label>
                               <label>State
