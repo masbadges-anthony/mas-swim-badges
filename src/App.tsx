@@ -43,6 +43,7 @@ import MembershipManagement from './pages/MembershipManagement';
 import AccountSettings from './pages/AccountSettings';
 import CentreAdmin from './pages/CentreAdmin';
 import CentrePublicDirectory from './pages/CentrePublicDirectory';
+import PublicCentreDirectory from './pages/PublicCentreDirectory';
 import ClaimCandidate from './pages/ClaimCandidate';
 import ClaimSlips from './pages/ClaimSlips';
 import Invitations from './pages/Invitations';
@@ -116,7 +117,7 @@ const PORTAL_PATH_PREFIXES = [
 const PUBLIC_PATH_PREFIXES = [
   '/the-programme', '/for-centres', '/for-parents', '/contact', '/faq',
   '/guides', '/instructors', '/privacy', '/terms', '/safeguarding',
-  '/directory', '/courses', '/search',
+  '/directory', '/courses', '/search', '/find-a-centre',
 ];
 
 function isPortalPath(p: string): boolean {
@@ -819,6 +820,7 @@ export default function App() {
               <Route path="/the-programme" element={<TheProgramme />} />
               <Route path="/for-centres" element={<ForCentres />} />
               <Route path="/for-parents" element={<ForParents />} />
+              <Route path="/find-a-centre" element={<PublicCentreDirectory />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/faq" element={<FAQ />} />
               <Route path="/guides" element={<Guides />} />
