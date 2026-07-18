@@ -42,6 +42,7 @@ import CentreManagement from './pages/CentreManagement';
 import MembershipManagement from './pages/MembershipManagement';
 import AccountSettings from './pages/AccountSettings';
 import CentreAdmin from './pages/CentreAdmin';
+import CentrePublicDirectory from './pages/CentrePublicDirectory';
 import ClaimCandidate from './pages/ClaimCandidate';
 import ClaimSlips from './pages/ClaimSlips';
 import Invitations from './pages/Invitations';
@@ -413,6 +414,7 @@ function Sidebar({
   const isGovernance =
     hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner');
   const canManageCentres = hasRole('chairperson') || hasRole('board_member');
+  const canCentreDirectory = hasRole('system_admin') || hasRole('finance_officer') || hasRole('chairperson') || hasRole('board_member') || hasRole('chief_examiner');
   const canManageMembers = hasRole('chairperson') || hasRole('board_member');
   const canCentreAdmin = hasRole('partner_center_admin');
   const canRegister = hasRole('instructor') || isGovernance;
@@ -458,7 +460,7 @@ function Sidebar({
     canRegister || canSchedule || canGrade || canInvitations || canViewCerts || isGovernance || canClaimSlips || canMySessions;
   const billingGroup = canAccounts || canMyInvoices || canCentreBilling || canManageStore || canStoreProducts || canBilling;
   const governanceGroup =
-    canManageCentres || canManageMembers || canOnboard || canBlacklist || canManageCourses || canEnquiries || canPartnerApps || canAuditLog;
+    canManageCentres || canManageMembers || canOnboard || canBlacklist || canManageCourses || canEnquiries || canPartnerApps || canAuditLog || canCentreDirectory;
   const systemGroup =
     canSystemSettings || canRoleRegistry;
 
@@ -588,6 +590,7 @@ function Sidebar({
               {canEnquiries && <NavLink to="/admin/enquiries" className={navClass}><Icon name="inbox" /><span>Enquiries</span><AttentionDot count={unhandledEnquiries} label="unhandled enquiries" /></NavLink>}
               {canPartnerApps && <NavLink to="/admin/partner-applications" className={navClass}><Icon name="check" /><span>Centre applications</span><AttentionDot count={unhandledPartnerApps} label="new applications" /></NavLink>}
               {canManageCentres && <NavLink to="/admin/centres" className={navClass}><Icon name="building" /><span>Manage centres</span></NavLink>}
+              {canCentreDirectory && <NavLink to="/admin/centre-directory" className={navClass}><Icon name="grid" /><span>Public directory</span></NavLink>}
               {canManageMembers && <NavLink to="/admin/memberships" className={navClass}><Icon name="users" /><span>Memberships</span></NavLink>}
               {canOnboard && <NavLink to="/admin/instructors" className={navClass}><Icon name="userPlus" /><span>Instructor onboarding</span></NavLink>}
               {canBlacklist && <NavLink to="/admin/instructor-blacklist" className={navClass}><Icon name="userX" /><span>Instructor blacklist</span></NavLink>}
@@ -656,6 +659,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/instructor-blacklist': 'Instructor blacklist',
   '/admin/courses': 'Manage courses',
   '/admin/centres': 'Manage centres',
+  '/admin/centre-directory': 'Centre public directory',
   '/admin/memberships': 'Memberships',
   '/admin/enquiries': 'Enquiries',
   '/centres/register': 'Register a centre',
@@ -859,6 +863,7 @@ export default function App() {
               <Route path="/admin/instructor-blacklist" element={<RequireRole roles={['chairperson', 'board_member']}><InstructorBlacklist /></RequireRole>} />
               <Route path="/admin/courses" element={<RequireRole roles={['instructor_trainer', 'examiner_trainer', 'chairperson', 'board_member']}><CourseManagement /></RequireRole>} />
               <Route path="/admin/centres" element={<RequireRole roles={['chairperson', 'board_member']}><CentreManagement /></RequireRole>} />
+              <Route path="/admin/centre-directory" element={<RequireRole roles={['system_admin', 'finance_officer', 'chairperson', 'board_member', 'chief_examiner']}><CentrePublicDirectory /></RequireRole>} />
               <Route path="/admin/enquiries" element={<RequireRole roles={['chairperson', 'board_member', 'instructor_trainer', 'system_admin']}><Enquiries /></RequireRole>} />
               <Route path="/centres/register" element={<RequireRole roles={['instructor']}><RegisterCentre /></RequireRole>} />
               <Route path="/admin/partner-applications" element={<RequireRole roles={['chairperson', 'board_member']}><PartnerApplications /></RequireRole>} />
