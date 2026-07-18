@@ -63,7 +63,13 @@ const CSS = `
   padding: 0.8rem 1rem; cursor: pointer; user-select: none;
 }
 .mas-centre-head:hover { background: #f8fafd; }
-.mas-centre-head.is-open { background: #eef1f8; }
+.mas-centre-head.is-open {
+  background: var(--mas-navy, #1E2752);
+  color: #fff;
+}
+.mas-centre-head.is-open .mas-centre-title,
+.mas-centre-head.is-open .mas-centre-sub { color: #fff; }
+.mas-centre-head.is-open .mas-badge { border-color: rgba(255,255,255,0.3); }
 .mas-centre-title { font-weight: 600; color: var(--mas-navy, #1E2752); font-size: 1rem; }
 .mas-centre-sub { color: var(--mas-muted, #5b6472); font-size: 0.82rem; }
 .mas-centre-badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
