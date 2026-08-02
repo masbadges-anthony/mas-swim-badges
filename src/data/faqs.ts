@@ -2,10 +2,8 @@
 // Real-world FAQs grounded in the BADGES Manual, Assessment System Handbook,
 // Instructor Foundation & Examiner Certification Course Guides, Teaching System
 // Handbook, and Registration-Paths FAQ. Written in the voice of each visitor.
-
 export interface FaqItem { q: string; a: string; }
 export interface FaqCategory { key: string; title: string; accent: string; intro: string; items: FaqItem[]; }
-
 export const FAQ_CATEGORIES: FaqCategory[] = [
   {
     key: 'general',
@@ -14,7 +12,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
     intro: 'For anyone wanting to understand how the system is set up, taught, and assessed.',
     items: [
       { q: 'What is MAS BADGES?',
-        a: 'A national Learn-to-Swim certification framework run by Malaysia Aquatics: seven progressive levels — Starfish, Sea Turtle, Guppy, Octopus, Frog, Swordfish, Dolphin — primarily for children aged 5–12, from first water familiarisation through to competitive readiness.' },
+        a: 'A national Learn-to-Swim certification framework run by Malaysia Aquatics: seven progressive levels — Starfish, Guppy, Frog, Octopus, Sea Turtle, Swordfish, Dolphin — primarily for children aged 5–12, from first water familiarisation through to competitive readiness.' },
       { q: 'Who runs and governs the programme?',
         a: 'Malaysia Aquatics, through its Board and its Coaching & Technical Board. A Chairperson leads the programme, a Chief Examiner oversees assessment standards, and certified Master Trainers run the instructor and examiner courses.' },
       { q: 'How is a swimmer assessed?',
@@ -23,6 +21,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
         a: 'Independence (a firewall between teaching and judging), a single published standard for every level, and certificates that are serialised, issued only on a genuine pass, and publicly verifiable — while never exposing a child’s identity.' },
     ],
   },
+
   {
     key: 'parents',
     title: 'For parents & swimmers',
@@ -53,6 +52,22 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
         a: 'The pool is cleared immediately. The examiner decides, based on time remaining, whether to continue or call a rain-off — which is re-booked at no additional fee.' },
     ],
   },
+
+  {
+    key: 'transition',
+    title: 'Syllabus transition & updates',
+    accent: '#F9C610',
+    intro: 'For swimmers who hold a certification from an earlier syllabus, and for instructors preparing them under BADGES.',
+    items: [
+      { q: 'My child passed an older syllabus level (e.g. ASUM Level 4) before MAS BADGES became the standard. Do they have to repeat from Level 1 and pay for every assessment?',
+        a: 'No. The BADGES programme recognises swimmers who hold prior MAS certification.\n\nYour child’s instructor will look at where your child is now against the new syllabus, and register them for the closest matching level. Your child sits one assessment session at that level, and you pay only for the highest level awarded — not every level below it.\n\nTwo things to know. First, the instructor’s preparation judgement decides the level: prior certification tells the instructor where to start, but doesn’t automatically map one-to-one. If the instructor judges your child ready for Sea Turtle (Level 5), that’s the level to register for; if they need more work first, the instructor prepares them. Second, a Refer isn’t a penalty: if your child doesn’t pass at the level attempted, they re-prepare and re-attempt at a future session — no attempt limit, no extra fee for the referral itself.\n\nGovernance reference: BADGES System Manual, Appendix D (CD-2).' },
+      { q: 'As an instructor, how do I gauge which BADGES level my swimmer should register for, especially when transitioning students from an older syllabus?',
+        a: 'The BADGES syllabus has its own level definitions, which aren’t a direct one-for-one match with previous syllabi. Your judgement is what places a swimmer at the right level.\n\nMalaysia Aquatics runs instructor refreshers for this reason. These short sessions help you read the new syllabus criteria at each level with confidence, recognise the specific behaviours and abilities that separate one level from the next, place transitional students accurately so they neither repeat what they’ve already mastered nor register above their real readiness, and get a preview of what the examiner observes and how they grade — so your preparation and their assessment stay aligned.\n\nRefreshers are voluntary but strongly encouraged, particularly during the transition period. Watch for announcements on the portal.' },
+      { q: 'I want to understand how the examiner assesses my student. Can I get a copy of the marking criteria so I can prepare properly?',
+        a: 'A great question, and one we get often. We share your goal — every instructor wants their students to do well on assessment day, and every parent wants to know their child is being prepared for something transparent and fair. Here’s how the BADGES system handles this openly.\n\nWhat we share with everyone: the syllabus itself defines what a swimmer must demonstrate at each level, is public, and is available on the portal — teach to the syllabus, that’s what the assessment measures. Instructor refreshers also include a preview of how examiners observe and grade: the rubric structure, the safety hard gates, and the honest-readiness principle. Instructors are warmly encouraged to attend, and refreshers are the right forum for the deeper conversation about assessment mechanics.\n\nWhat we keep as the examiner’s tools: the examiner marking sheets stay with the examiners. Not because they’re hidden — but because they’re calibration instruments, tuned to a common standard across the whole examiner pool. Sharing them as separate documents would gradually shift teaching toward the sheet rather than the swimmer, and that’s not what serves your child.\n\nHow we make sure it’s fair: every BADGES examiner completes a poolside calibration during their certification course. It’s a live exercise where they observe the same swimmer alongside the Chief Examiner and Master Trainer, and their Pass/Refer calls are checked against the benchmark. Only examiners who calibrate to the standard are approved to conduct assessments.\n\nThis is what makes the system fair for your student: two different examiners assessing the same swimmer on the same day will arrive at the same decision. There’s no “easier examiner” to find, and no examiner preferences to learn. Prepare honestly to the syllabus, and the assessment will reflect what your swimmer can actually do — no more, no less.\n\nGovernance reference: BADGES System Manual §12; Assessment System Handbook (poolside calibration).' },
+    ],
+  },
+
   {
     key: 'instructors',
     title: 'For instructors',
@@ -83,6 +98,7 @@ export const FAQ_CATEGORIES: FaqCategory[] = [
         a: 'Yes — at all times, not just at application. A partner centre’s core undertaking is to deliver the MAS syllabus, and only a certified instructor is trained to do that. Keep more than one on your roster where possible; ideally the owner or manager is certified. Membership entitles your centre to a place on the annual regional instructor course.' },
       { q: 'How do we apply to become a partner centre?',
         a: 'Your certified instructor registers the centre in the portal. The Chairperson reviews the application against the published criteria; once approved and the recognition fee is settled, the centre is recognised and appears in the public directory.' },
+
       { q: 'Can a swimmer from another school be assessed at our pool?',
         a: 'Yes. Your centre acts as the venue host, while the swimmer’s home school or independent certified instructor remains responsible for the booking and fees to MAS. You may charge a reasonable venue-use fee directly — that’s between the parties. The conflict-of-interest rule still applies: the examiner can’t be anyone who taught the candidate.' },
       { q: 'What are our ongoing obligations once recognised?',
