@@ -60,6 +60,7 @@ import BillingPayments from './pages/BillingPayments';
 import Enquiries from './pages/Enquiries';
 import RegisterCentre from './pages/RegisterCentre';
 import PartnerApplications from './pages/PartnerApplications';
+import PartnerApplicationForm from './pages/PartnerApplicationForm';
 import RoleRegistry from './pages/RoleRegistry';
 import SwimmerRegistry from './pages/SwimmerRegistry';
 import AuditLog from './pages/AuditLog';
@@ -878,6 +879,7 @@ export default function App() {
 <Route path="/admin/staff" element={<Navigate to="/admin/settings" replace />} />
               <Route path="/admin/settings" element={<RequireRole roles={['system_admin']}><Settings /></RequireRole>} />
               <Route path="/account/resources" element={<MyResources />} />
+              <Route path="/my-application" element={<PartnerApplicationForm />} />
             </Route>
 
             <Route path="/login" element={<Login />} />
