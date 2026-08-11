@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import EditableText from './EditableText';
 import '../styles/admin.css';
@@ -15,7 +15,7 @@ const TABS: { key: Category; label: string }[] = [
 
 const INTRO: Record<Category, string> = {
   centre_partnership:
-    'Interested in becoming a recognised partner centre? Tell us about your centre and we’ll guide you through the requirements, benefits, and next steps.',
+    'Interested in becoming a recognised partner centre? Head to our dedicated application page — it captures everything we need to review your centre in one go.',
   instructor_registration:
     'Already a MAS Badges–certified instructor? Send your details and instructor ID. Our Instructor Trainer will verify and invite you to register for the portal.',
   parent_swimmer:
@@ -41,8 +41,10 @@ function topicToCategory(topic: string | null): Category {
 /**
  * The shared contact / enquiry form. Renders the category tabs, contextual
  * fields, and the single `submit_enquiry` submission path. Used by both the
- * standalone /contact page and the embedded form beneath the FAQ — there is
- * only one form component and one submission flow.
+ * standalone /contact page and the embedded form beneath the FAQ.
+ *
+ * Centre partnership tab redirects to the dedicated /apply-partner-centre
+ * page — it collects more comprehensive centre details than a contact form.
  */
 export default function ContactForm() {
   const [params] = useSearchParams();
@@ -51,8 +53,6 @@ export default function ContactForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [organisation, setOrganisation] = useState('');
-  const [state, setState] = useState('');
   const [instructorRef, setInstructorRef] = useState('');
   const [affiliated, setAffiliated] = useState('');
   const [message, setMessage] = useState('');
@@ -62,12 +62,12 @@ export default function ContactForm() {
   const [done, setDone] = useState(false);
 
   const canSubmit = useMemo(() => {
+    if (category === 'centre_partnership') return false;  // routes elsewhere; no submit here
     const base = name.trim().length > 1 && email.includes('@') && message.trim().length > 4;
     if (!base) return false;
-    if (category === 'centre_partnership') return !!organisation.trim() && !!state;
     if (category === 'instructor_registration') return !!instructorRef.trim();
     return true;
-  }, [name, email, message, category, organisation, state, instructorRef]);
+  }, [name, email, message, category, instructorRef]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -80,16 +80,16 @@ export default function ContactForm() {
       _contact_email: email,
       _message: message,
       _contact_phone: phone || null,
-      _organisation: category === 'centre_partnership' ? organisation : null,
-      _state: category === 'centre_partnership' ? state : null,
+      _organisation: null,
+      _state: null,
       _instructor_ref: category === 'instructor_registration' ? instructorRef : null,
       _affiliated_centre: category === 'instructor_registration' ? affiliated : null,
     });
     setBusy(false);
     if (error) { setError(error.message); return; }
     setDone(true);
-    setName(''); setEmail(''); setPhone(''); setOrganisation('');
-    setState(''); setInstructorRef(''); setAffiliated(''); setMessage('');
+    setName(''); setEmail(''); setPhone('');
+    setInstructorRef(''); setAffiliated(''); setMessage('');
   }
 
   return (
@@ -110,11 +110,37 @@ export default function ContactForm() {
       <div className="mas-contact-card">
       <p className="mas-lede" style={{ maxWidth: '60ch' }}>{INTRO[category]}</p>
 
-      {done ? (
+      {category === 'centre_partnership' ? (
+        <div style={{
+          marginTop: '1rem',
+          padding: '2rem',
+          background: '#f8fafd',
+          borderRadius: '12px',
+          textAlign: 'center',
+          maxWidth: '640px',
+        }}>
+          <p style={{ margin: '0 0 1.2rem', color: 'var(--mas-muted, #5b6472)', lineHeight: 1.55 }}>
+            Our centre partnership application has moved to its own page. It captures
+            your centre&rsquo;s details, photos, and pool specifications so the review
+            team has everything they need up front.
+          </p>
+          <Link to="/apply-partner-centre" style={{
+            display: 'inline-block',
+            padding: '0.8rem 2rem',
+            background: 'var(--mas-navy, #1E2752)',
+            color: '#fff',
+            borderRadius: '8px',
+            textDecoration: 'none',
+            fontWeight: 700,
+          }}>
+            Apply to become a partner centre →
+          </Link>
+        </div>
+      ) : done ? (
         <div className="mas-alert is-success" style={{ maxWidth: '640px', marginTop: '1rem' }}>
           <div className="mas-alert-body">
             <p className="mas-alert-title"><EditableText keyName="contact.success.title">Thank you — your enquiry is in.</EditableText></p>
-            <p className="mas-alert-text"><EditableText keyName="contact.success.body">We’ll be in touch by email. You can send another enquiry any time.</EditableText></p>
+            <p className="mas-alert-text"><EditableText keyName="contact.success.body">We&rsquo;ll be in touch by email. You can send another enquiry any time.</EditableText></p>
           </div>
         </div>
       ) : (
@@ -139,22 +165,6 @@ export default function ContactForm() {
               <label htmlFor="phone" className="mas-field-label">Phone <span className="mas-field-opt">(optional)</span></label>
               <input id="phone" type="tel" className="mas-input" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g. 012-345 6789" />
             </div>
-
-            {category === 'centre_partnership' && (
-              <>
-                <div className="mas-field">
-                  <label htmlFor="org" className="mas-field-label">Centre / organisation <span className="mas-req">*</span></label>
-                  <input id="org" className="mas-input" value={organisation} onChange={(e) => setOrganisation(e.target.value)} placeholder="e.g. Splash Aquatics Centre" />
-                </div>
-                <div className="mas-field">
-                  <label htmlFor="state" className="mas-field-label">State <span className="mas-req">*</span></label>
-                  <select id="state" className="mas-select" value={state} onChange={(e) => setState(e.target.value)}>
-                    <option value="">Select a state…</option>
-                    {STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </>
-            )}
 
             {category === 'instructor_registration' && (
               <>
@@ -187,3 +197,7 @@ export default function ContactForm() {
     </>
   );
 }
+
+// Keep STATES for reference — no longer used since centre_partnership tab
+// redirects to /apply-partner-centre. Left in for future centre-related fields.
+void STATES;

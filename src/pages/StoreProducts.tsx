@@ -412,6 +412,15 @@ export default function StoreProducts() {
       </header>
 
 
+      {/* TEMP DIAG: shows current editId + whether drawer will render.
+           Remove once verified. */}
+      <div style={{
+        padding: '0.6rem 0.9rem', background: '#fef4d9', color: '#7a5b00',
+        border: '1px solid #F9C610', borderRadius: 6, marginBottom: '0.8rem',
+        fontFamily: 'ui-monospace, monospace', fontSize: '0.8rem',
+      }}>
+        DIAG: editId={String(editId)} · rows.length={rows.length} · editingProduct={editingProduct ? editingProduct.name : 'null'}
+      </div>
       {editingProduct && (
         <div className="mas-edit-drawer" id="mas-store-editor">
           <h3>Edit — {editingProduct.name}</h3>
