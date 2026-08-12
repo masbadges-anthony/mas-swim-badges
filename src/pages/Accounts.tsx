@@ -5,10 +5,13 @@
 // expanded detail row (record_examiner_payout needs real inputs).
 //
 // Wire (unchanged where used):
-//   list  ← list_sessions_overview() → session_id, status, venue, scheduled_on,
-//           state, examiner_name, invoice_paid, payout_recorded, …
-//   expected ← expected_examiner_payout(_session_id) → number
-//   pay   ← record_examiner_payout(_session_id, _amount, _reference)
+//   list      ← list_sessions_overview() → session_id, status, venue,
+//                scheduled_on, state, examiner_name, invoice_paid,
+//                payout_recorded, …
+//   breakdown ← session_payout_breakdown(_session_id) → {examiner_rm,
+//                instructor_rm, hosting_rm, mas_retention_rm, total_rm,
+//                candidate_count} per CD-4
+//   pay       ← record_examiner_payout(_session_id, _amount, _reference)
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import '../styles/admin.css';
@@ -28,6 +31,14 @@ interface SessionOverview {
   invoice_paid: boolean;
   payout_recorded: boolean;
 }
+interface PayoutBreakdown {
+  examiner_rm: number;
+  instructor_rm: number;
+  hosting_rm: number;
+  mas_retention_rm: number;
+  total_rm: number;
+  candidate_count: number;
+}
 type Load = 'loading' | 'ready' | 'error';
 type Tab = 'awaiting' | 'paid' | 'archived';
 
@@ -45,6 +56,22 @@ const CSS = `
 .mas-payout-form input {
   font:inherit; padding:0.35rem 0.5rem; border:1px solid var(--mas-line,#e3e9f3); border-radius:6px;
 }
+.mas-cd4-grid {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  gap: 0.15rem 1.2rem;
+  padding: 0.6rem 0.8rem;
+  background: #f8fafd;
+  border: 1px solid var(--mas-line, #e3e9f3);
+  border-radius: 6px;
+  margin: 0.4rem 0 0.6rem;
+  font-size: 0.85rem;
+  max-width: fit-content;
+}
+.mas-cd4-grid dt { color: var(--mas-muted, #5b6472); }
+.mas-cd4-grid dd { margin: 0; color: var(--mas-navy, #1E2752); font-variant-numeric: tabular-nums; text-align: right; }
+.mas-cd4-grid .is-total dt, .mas-cd4-grid .is-total dd { font-weight: 700; border-top: 1px solid var(--mas-line, #e3e9f3); padding-top: 0.2rem; margin-top: 0.15rem; }
+.mas-cd4-note { color: var(--mas-muted, #5b6472); font-size: 0.78rem; margin: 0 0 0.5rem; }
 `;
 
 function money(n: number | string | null | undefined): string {
@@ -76,7 +103,8 @@ export default function Accounts() {
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const [expected, setExpected] = useState<Record<string, number | null>>({});
+  // CD-4 breakdown cache — keyed by session_id
+  const [breakdown, setBreakdown] = useState<Record<string, PayoutBreakdown | null>>({});
   const [amount, setAmount] = useState<Record<string, string>>({});
   const [reference, setReference] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string | null>(null);
@@ -93,18 +121,33 @@ export default function Accounts() {
 
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
-  const loadExpected = useCallback(async (sessionId: string) => {
-    if (expected[sessionId] != null) return;
-    const { data } = await supabase.rpc('expected_examiner_payout', { _session_id: sessionId });
-    const n = data == null ? null : Number(data);
-    setExpected((m) => ({ ...m, [sessionId]: n }));
-    if (n != null) setAmount((m) => (m[sessionId] ? m : { ...m, [sessionId]: String(n) }));
-  }, [expected]);
+  // Loads the CD-4 four-component payout breakdown for a session, caches it.
+  // Called on expand; the examiner_rm value pre-fills the amount field.
+  const loadBreakdown = useCallback(async (sessionId: string) => {
+    if (breakdown[sessionId] != null) return;
+    const { data } = await supabase.rpc('session_payout_breakdown', { _session_id: sessionId });
+    // session_payout_breakdown returns a single row; supabase-js gives an array.
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row == null) {
+      setBreakdown((m) => ({ ...m, [sessionId]: null }));
+      return;
+    }
+    const b: PayoutBreakdown = {
+      examiner_rm:      Number(row.examiner_rm ?? 0),
+      instructor_rm:    Number(row.instructor_rm ?? 0),
+      hosting_rm:       Number(row.hosting_rm ?? 0),
+      mas_retention_rm: Number(row.mas_retention_rm ?? 0),
+      total_rm:         Number(row.total_rm ?? 0),
+      candidate_count:  Number(row.candidate_count ?? 0),
+    };
+    setBreakdown((m) => ({ ...m, [sessionId]: b }));
+    setAmount((m) => (m[sessionId] ? m : { ...m, [sessionId]: String(b.examiner_rm) }));
+  }, [breakdown]);
 
   function toggleExpand(sessionId: string) {
     setExpanded((cur) => {
       const next = cur === sessionId ? null : sessionId;
-      if (next) loadExpected(sessionId);
+      if (next) loadBreakdown(sessionId);
       return next;
     });
   }
@@ -223,6 +266,7 @@ export default function Accounts() {
               {filtered.map((s) => {
                 const isOpen = expanded === s.session_id;
                 const canRecord = tab === 'awaiting' && s.invoice_paid && !s.payout_recorded && !!s.examiner_name;
+                const b = breakdown[s.session_id];
                 return (
                   <Fragment key={s.session_id}>
                     <tr className={isOpen ? 'is-open' : undefined}>
@@ -247,15 +291,30 @@ export default function Accounts() {
                       <tr className="mas-table-detailrow">
                         <td colSpan={7}>
                           <div className="mas-table-detail">
-                            <p className="mas-cell-sub" style={{ marginBottom: '0.5rem' }}>
-                              Expected payout: <strong>{expected[s.session_id] == null ? '…' : money(expected[s.session_id])}</strong>
-                              {s.examiner_name ? ` · to ${s.examiner_name}` : ''}
-                              {s.payout_recorded ? ' · already recorded' : ''}
+                            <p className="mas-cell-sub" style={{ marginBottom: '0.3rem', fontWeight: 600, color: 'var(--mas-navy, #1E2752)' }}>
+                              CD-4 payout breakdown{b != null ? ` — ${b.candidate_count} candidate${b.candidate_count === 1 ? '' : 's'}` : ''}
                             </p>
+                            {b == null ? (
+                              <p className="mas-status">Loading breakdown…</p>
+                            ) : (
+                              <>
+                                <dl className="mas-cd4-grid">
+                                  <dt>Examiner</dt>       <dd>{money(b.examiner_rm)}</dd>
+                                  <dt>Instructor</dt>     <dd>{money(b.instructor_rm)}</dd>
+                                  <dt>Hosting</dt>        <dd>{money(b.hosting_rm)}</dd>
+                                  <dt>MAS retention</dt>  <dd>{money(b.mas_retention_rm)}</dd>
+                                  <dt className="is-total">Total</dt><dd className="is-total">{money(b.total_rm)}</dd>
+                                </dl>
+                                <p className="mas-cd4-note">
+                                  Per Manual Appendix D (CD-4). Examiner component pre-fills the payout amount below.
+                                  Hosting is paid to the venue-provider of record (partner centre / independent instructor / MAS).
+                                </p>
+                              </>
+                            )}
 
                             {canRecord ? (
                               <div className="mas-payout-form">
-                                <label>Amount (RM)
+                                <label>Amount to examiner (RM)
                                   <input
                                     type="number" step="0.01"
                                     value={amount[s.session_id] ?? ''}
@@ -277,7 +336,7 @@ export default function Accounts() {
                                   onClick={() => recordPayout(s)}
                                   disabled={busy === s.session_id}
                                 >
-                                  {busy === s.session_id ? 'Recording…' : 'Record payout'}
+                                  {busy === s.session_id ? 'Recording…' : 'Record examiner payout'}
                                 </button>
                               </div>
                             ) : (

@@ -131,6 +131,13 @@ export default function ExaminerGrading() {
   const [rainReason, setRainReason] = useState<Record<string, string>>({});
   const [rainCarry, setRainCarry] = useState<Record<string, boolean>>({});
 
+  // Examiner remarks — per session, saved via set_session_examiner_remarks.
+  // Loaded lazily on first render of a session (see fetchRemarks).
+  const [remarks, setRemarks] = useState<Record<string, string>>({});
+  const [remarksLoaded, setRemarksLoaded] = useState<Record<string, boolean>>({});
+  const [remarksSaving, setRemarksSaving] = useState<string | null>(null);
+  const [remarksMsg, setRemarksMsg] = useState<Record<string, { ok: boolean; text: string }>>({});
+
   const fetchRoster = useCallback(async () => {
     setLoad('loading');
     const { data, error } = await supabase.rpc('list_my_grading_roster');
@@ -145,6 +152,18 @@ export default function ExaminerGrading() {
   useEffect(() => {
     fetchRoster();
   }, [fetchRoster]);
+
+  // Fetch existing examiner remarks for each session once its group appears.
+  // Cheap and avoids adding examiner_remarks to the roster RPC return shape.
+  useEffect(() => {
+    if (load !== 'ready') return;
+    for (const r of rows) {
+      if (!remarksLoaded[r.session_id]) {
+        fetchRemarks(r.session_id);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, load]);
 
   const groups = useMemo(() => {
     const map = new Map<string, { row: RosterRow; enrolments: RosterRow[] }>();
@@ -246,6 +265,35 @@ export default function ExaminerGrading() {
     }
     setRainOpen((m) => ({ ...m, [sessionId]: false }));
     await fetchRoster();
+  }
+
+  async function fetchRemarks(sessionId: string) {
+    if (remarksLoaded[sessionId]) return;
+    // Read the current examiner_remarks value directly from the session row.
+    // Any real role on the session may read; the setter RPC enforces write auth.
+    const { data } = await supabase
+      .from('assessment_sessions')
+      .select('examiner_remarks')
+      .eq('id', sessionId)
+      .single();
+    setRemarks((m) => ({ ...m, [sessionId]: (data as { examiner_remarks: string | null } | null)?.examiner_remarks ?? '' }));
+    setRemarksLoaded((m) => ({ ...m, [sessionId]: true }));
+  }
+
+  async function saveRemarks(sessionId: string) {
+    setRemarksSaving(sessionId);
+    setRemarksMsg((m) => { const n = { ...m }; delete n[sessionId]; return n; });
+    const trimmed = (remarks[sessionId] ?? '').trim();
+    const { error } = await supabase.rpc('set_session_examiner_remarks', {
+      _session_id: sessionId,
+      _remarks: trimmed || null,
+    });
+    setRemarksSaving(null);
+    if (error) {
+      setRemarksMsg((m) => ({ ...m, [sessionId]: { ok: false, text: error.message } }));
+      return;
+    }
+    setRemarksMsg((m) => ({ ...m, [sessionId]: { ok: true, text: 'Remarks saved.' } }));
   }
 
   return (
@@ -489,6 +537,40 @@ export default function ExaminerGrading() {
                   )}
                 </div>
               )}
+
+              {/* Examiner remarks — visible to governance and booking instructor; never to parents. */}
+              <div className="mas-grade-remarks" style={{ marginTop: '0.75rem', maxWidth: '38rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--mas-muted, #5b6472)', marginBottom: '0.3rem' }}>
+                  Examiner remarks <span style={{ fontSize: '0.72rem' }}>(optional, up to 200 chars) — visible to governance and the booking instructor; not shown to parents</span>
+                </label>
+                <textarea
+                  value={remarks[head.session_id] ?? ''}
+                  onChange={(e) => setRemarks((m) => ({ ...m, [head.session_id]: e.target.value.slice(0, 200) }))}
+                  placeholder="Notes for governance and the booking instructor — venue observations, calibration notes, or context relevant to results."
+                  rows={2}
+                  disabled={readOnly}
+                  style={{ width: '100%', font: 'inherit', padding: '0.4rem 0.55rem', border: '1px solid var(--border, #e3e7ee)', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }}
+                />
+                {!readOnly && (
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.3rem' }}>
+                    <button
+                      className="mas-btn-ghost mas-btn-compact"
+                      onClick={() => saveRemarks(head.session_id)}
+                      disabled={remarksSaving === head.session_id || !remarksLoaded[head.session_id]}
+                    >
+                      {remarksSaving === head.session_id ? 'Saving…' : 'Save remarks'}
+                    </button>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--mas-muted, #5b6472)' }}>
+                      {(remarks[head.session_id] ?? '').length}/200
+                    </span>
+                    {remarksMsg[head.session_id] && (
+                      <span style={{ fontSize: '0.78rem', color: remarksMsg[head.session_id].ok ? 'var(--ok, #1a7f4b)' : 'var(--warn, #b4690e)' }}>
+                        {remarksMsg[head.session_id].text}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {!readOnly && (
                 <div className="mas-form-actions mas-grade-submit" style={{ marginTop: '0.75rem' }}>
