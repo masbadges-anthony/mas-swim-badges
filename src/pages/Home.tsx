@@ -60,7 +60,7 @@ const HERO_CSS = `
 .mas-hero-slide-grid {
   position: relative; z-index: 2;
   display: grid;
-  grid-template-columns: 1fr min(44%, 26rem);
+  grid-template-columns: 1fr min(52%, 32rem);
   gap: clamp(1.5rem, 4vw, 3rem);
   align-items: end;
   max-width: 1180px;
@@ -77,10 +77,10 @@ const HERO_CSS = `
 }
 .mas-hero-media img {
   width: 100%;
-  max-width: 28rem;
+  max-width: 34rem;
   height: auto;
   display: block;
-  margin-bottom: clamp(-6rem, -8vw, -3rem);
+  margin-bottom: clamp(-10rem, -14vw, -5rem);
   filter: drop-shadow(0 18px 32px rgba(0,0,0,0.28));
   animation: mas-hero-float 5.5s ease-in-out infinite;
 }
