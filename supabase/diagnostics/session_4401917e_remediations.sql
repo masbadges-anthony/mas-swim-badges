@@ -1,0 +1,118 @@
+-- session_4401917e_remediations.sql
+-- Remediation blocks for session 4401917e-7ceb-4b4f-ba9d-5d660f078a8a.
+-- Pick ONE block based on the diagnostic (session_4401917e_bonus_certs.sql).
+-- Prefix `reset role;` in the editor before pasting.
+--
+--   Scenario A · bonus invoice PAID but 3 certs still nil
+--                → _auto_issue_certs was skipped or never fired. Call it.
+--
+--   Scenario B · bonus invoice PRO_FORMA/ISSUED (unpaid)
+--                → normal pending state. No SQL fix — Finance Officer records
+--                  the payment via record_payment() and the certs auto-issue.
+--                  Nothing to do here; this is a process reminder, not a bug.
+--
+--   Scenario C · bonus invoice MISSING (never created)
+--                → the submit_session_results bonus block was skipped
+--                  (bill_to null, subtotal 0, or the guard tripped). Recreate
+--                  the invoice + items by hand, then FO issues+numbers it.
+--
+--   Scenario D · results carry wrong billing_stage (should be 'bonus' but are
+--                'booked', or the reverse) → data-integrity fix. Ask before
+--                touching results rows; every relabel changes the invoice math.
+
+-- ===========================================================================
+-- SCENARIO A · reissue bonus certs directly (invoice already paid)
+-- ===========================================================================
+-- Preflight — must return one row with status = 'paid':
+--   select stage, status, paid_at
+--     from public.invoices
+--    where session_id = '4401917e-7ceb-4b4f-ba9d-5d660f078a8a'
+--      and stage = 'bonus_reconcile';
+--
+-- Then run:
+--
+-- select public._auto_issue_certs(
+--   '4401917e-7ceb-4b4f-ba9d-5d660f078a8a'::uuid,
+--   'bonus'::public.result_billing_stage
+-- );
+--
+-- Expected return: 3 (the count of newly-minted certs).
+-- Verify:
+--   select r.candidate_id, r.target_level, r.certificate_id, c.serial
+--     from public.assessment_results r
+--     left join public.certificates c on c.id = r.certificate_id
+--    where r.session_id = '4401917e-7ceb-4b4f-ba9d-5d660f078a8a'
+--      and r.billing_stage = 'bonus' and r.outcome = 'pass';
+-- All three rows should now have a certificate_id.
+
+-- ===========================================================================
+-- SCENARIO C · recreate the missing bonus invoice
+-- ===========================================================================
+-- Only run if Q3 of the diagnostic showed NO invoice at stage='bonus_reconcile'
+-- (or only a 'void' one). Mirrors the block inside submit_session_results.
+--
+-- do $do$
+-- declare
+--   v_session_id      uuid := '4401917e-7ceb-4b4f-ba9d-5d660f078a8a';
+--   v_bill_to         uuid;
+--   v_partner_center  uuid;
+--   v_subtotal        numeric;
+--   v_invoice_id      uuid;
+-- begin
+--   select requested_by_profile_id, partner_center_id
+--     into v_bill_to, v_partner_center
+--     from public.assessment_sessions
+--    where id = v_session_id;
+--
+--   if v_bill_to is null then
+--     raise exception 'requested_by_profile_id is null on session % — cannot bill', v_session_id;
+--   end if;
+--
+--   -- Guard against duplicates first.
+--   if exists (
+--     select 1 from public.invoices
+--      where session_id = v_session_id
+--        and stage = 'bonus_reconcile'
+--        and status <> 'void'
+--   ) then
+--     raise notice 'active bonus invoice already exists — nothing to do';
+--     return;
+--   end if;
+--
+--   select coalesce(sum(coalesce(r.fee_rm_snapshot, f.fee_rm)), 0)
+--     into v_subtotal
+--     from public.assessment_results r
+--     left join public.fee_schedule f on f.level = r.target_level
+--    where r.session_id = v_session_id
+--      and r.billing_stage = 'bonus'
+--      and r.outcome = 'pass';
+--
+--   if v_subtotal <= 0 then
+--     raise exception 'computed bonus subtotal is 0 — check fee_schedule and fee_rm_snapshot for the bonus pass rows';
+--   end if;
+--
+--   insert into public.invoices
+--     (session_id, stage, bill_to_profile_id, partner_center_id, status, subtotal, total)
+--   values
+--     (v_session_id, 'bonus_reconcile', v_bill_to, v_partner_center, 'pro_forma', v_subtotal, v_subtotal)
+--   returning id into v_invoice_id;
+--
+--   insert into public.invoice_items
+--     (invoice_id, item_type, description, level, candidate_id, quantity, unit_amount, amount)
+--   select v_invoice_id, 'assessment_fee',
+--     'Bonus level pass — ' || r.target_level::text,
+--     r.target_level, r.candidate_id, 1,
+--     coalesce(r.fee_rm_snapshot, f.fee_rm),
+--     coalesce(r.fee_rm_snapshot, f.fee_rm)
+--   from public.assessment_results r
+--   left join public.fee_schedule f on f.level = r.target_level
+--   where r.session_id = v_session_id
+--     and r.billing_stage = 'bonus'
+--     and r.outcome = 'pass';
+--
+--   raise notice 'bonus invoice created: % (subtotal RM%)', v_invoice_id, v_subtotal;
+-- end;
+-- $do$;
+--
+-- After this, FO issues+numbers the pro_forma invoice via the normal flow,
+-- records payment, and the bonus certs auto-issue via record_payment().
