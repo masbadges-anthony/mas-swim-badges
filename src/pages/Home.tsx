@@ -45,7 +45,7 @@ const HERO_CSS = `
   color: #fff;
   padding: clamp(2.25rem, 5vw, 3.5rem);
   overflow: hidden;
-  min-height: clamp(20rem, 42vw, 28rem);
+  min-height: clamp(16.9rem, 38vw, 24.9rem);
 }
 .mas-hero-slide--variant-b {
   background:
