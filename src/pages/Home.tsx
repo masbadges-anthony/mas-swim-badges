@@ -43,7 +43,7 @@ const HERO_CSS = `
     radial-gradient(120% 140% at 85% 10%, rgba(255,255,255,.18), transparent 55%),
     linear-gradient(135deg, var(--mas-teal, #26A59A) 0%, var(--mas-teal-deep, #148578) 100%);
   color: #fff;
-  padding: clamp(2.25rem, 5vw, 3.5rem);
+  padding: clamp(0.75rem, 3vw, 2rem) clamp(2.25rem, 5vw, 3.5rem);
   overflow: hidden;
   min-height: clamp(16.9rem, 38vw, 24.9rem);
 }
