@@ -70,10 +70,11 @@ const HERO_CSS = `
 .mas-hero-copy { max-width: min(640px, 60%); align-self: center; }
 .mas-hero-media {
   position: absolute;
-  right: clamp(0.5rem, 4vw, 3rem);
+  right: clamp(0.5rem, 2vw, 2rem);
   bottom: 0;
+  top: 0;
   z-index: 2;
-  width: clamp(18rem, 48%, 34rem);
+  width: clamp(16rem, 42%, 28rem);
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
@@ -81,10 +82,11 @@ const HERO_CSS = `
   overflow: visible;
 }
 .mas-hero-media img {
-  width: 100%;
-  max-width: 54rem;
-  height: auto;
+  width: auto;
+  height: 115%;
+  max-width: none;
   display: block;
+  transform-origin: bottom center;
   filter: drop-shadow(0 18px 32px rgba(0,0,0,0.28));
   animation: mas-hero-float 5.5s ease-in-out infinite;
 }
