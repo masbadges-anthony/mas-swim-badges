@@ -1781,3 +1781,73 @@
 }
 .mas-app .mas-editable-status.is-saved { background: var(--mas-good, #2e9e5b); }
 .mas-app .mas-editable-status.is-bad { background: var(--mas-bad, #C62026); }
+
+/* ============================================================
+   Responsive + touch-target polish (session 2026-08-12)
+   ============================================================
+   - Buttons meet the 44x44 touch-target minimum on all viewports
+   - Page-head action clusters wrap gracefully on narrow screens
+   - Sidebar hamburger toggle is a comfortable tap target
+   Additive; overrides earlier rules by later specificity
+   ============================================================ */
+
+/* Portal buttons — meet touch minimum */
+.mas-app .mas-btn-primary,
+.mas-app .mas-btn-ghost,
+.mas-app .mas-btn-success,
+.mas-app .mas-btn-danger {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Compact variants may stay smaller (used in dense tables) */
+.mas-app .mas-btn-compact { min-height: 32px; }
+
+/* Public site buttons — same touch guarantee */
+.mas-app .mas-btn-solid,
+.mas-app .mas-btn-solid-navy,
+.mas-app .mas-btn-outline-light {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Page-head action row: allow wrapping so long titles + action buttons don't
+   overflow on narrow viewports. Previously flex-shrink:0 could push actions
+   off-screen. */
+.mas-app .mas-page-actions {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .mas-app .mas-page-head-row { flex-direction: column; align-items: flex-start; }
+  .mas-app .mas-page-actions  { width: 100%; }
+}
+
+/* Sidebar hamburger toggle — comfortable tap target with visible focus */
+.mas-app .mas-sidebar-toggle {
+  min-width: 44px;
+  min-height: 44px;
+}
+.mas-app .mas-sidebar-toggle:focus-visible {
+  outline: 2px solid var(--brand, #1E2752);
+  outline-offset: 2px;
+}
+
+/* Home hero CTAs — already flex-wrap:wrap on the container; add safety gap on
+   very narrow screens so wrapped buttons breathe. */
+@media (max-width: 480px) {
+  .mas-app .mas-home-cta { gap: 0.6rem 0.5rem; }
+  .mas-app .mas-btn-solid,
+  .mas-app .mas-btn-outline-light { width: 100%; text-align: center; }
+}
+
+/* Tables — table-wrap horizontal scroll works, but on real tiny viewports the
+   sticky navy header contrast tends to hide behind row shadows. Belt-and-braces. */
+@media (max-width: 560px) {
+  .mas-app .mas-table { font-size: 0.85rem; }
+  .mas-app .mas-table th,
+  .mas-app .mas-table td { padding: 0.35rem 0.55rem; }
+}
