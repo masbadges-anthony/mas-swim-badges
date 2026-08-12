@@ -1,10 +1,74 @@
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { GUIDES } from '../data/guides';
+import { supabase } from '../lib/supabase';
 import EditableText from '../components/EditableText';
+
+interface Section {
+  id: string;
+  heading: string;
+  body: string | null;
+  steps: string[] | null;
+  points: string[] | null;
+  note: string | null;
+  image1_url: string | null;
+  image1_caption: string | null;
+  image2_url: string | null;
+  image2_caption: string | null;
+  sort_order: number;
+}
+interface Guide {
+  id: string;
+  slug: string;
+  title: string;
+  audience: string;
+  accent: string;
+  summary: string;
+  image1_url: string | null;
+  image1_caption: string | null;
+  image2_url: string | null;
+  image2_caption: string | null;
+  sections: Section[];
+}
+
+// Zero-footprint image + optional caption block. Renders nothing when url is null.
+function ImageFig({ url, caption, alt }: { url: string | null; caption: string | null; alt: string }) {
+  if (!url) return null;
+  return (
+    <figure style={{ margin: '1rem 0', borderRadius: '10px', overflow: 'hidden' }}>
+      <img src={url} alt={caption || alt} loading="lazy" style={{ width: '100%', height: 'auto', display: 'block' }} />
+      {caption && (
+        <figcaption style={{ fontSize: '0.85rem', color: 'var(--mas-muted, #5b6472)', marginTop: '0.5rem', textAlign: 'center' }}>
+          {caption}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
 
 export default function GuideDetail() {
   const { slug } = useParams();
-  const guide = GUIDES.find((g) => g.slug === slug);
+  const [guide, setGuide] = useState<Guide | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc('list_public_guides');
+      if (cancelled) return;
+      const arr: Guide[] = Array.isArray(data) ? (data as Guide[]) : [];
+      setGuide(arr.find((g) => g.slug === slug) ?? null);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <section className="mas-page">
+        <header className="mas-page-head"><p className="mas-status">Loading…</p></header>
+      </section>
+    );
+  }
 
   if (!guide) {
     return (
@@ -27,23 +91,31 @@ export default function GuideDetail() {
         <p className="mas-eyebrow" style={{ color: guide.accent }}>{guide.audience}</p>
         <h1>{guide.title}</h1>
         <p className="mas-lede">{guide.summary}</p>
+
+        {/* Header images — zero-footprint if either missing */}
+        <ImageFig url={guide.image1_url} caption={guide.image1_caption} alt={guide.title} />
+        <ImageFig url={guide.image2_url} caption={guide.image2_caption} alt={guide.title} />
       </header>
 
-      {guide.sections.map((s, i) => (
-        <section key={i} className="mas-guide-section">
+      {guide.sections.map((s) => (
+        <section key={s.id} className="mas-guide-section">
           <h2>{s.heading}</h2>
           {s.body && <p>{s.body}</p>}
-          {s.steps && (
+          {s.steps && s.steps.length > 0 && (
             <ol className="mas-guide-steps">
               {s.steps.map((st, j) => <li key={j}>{st}</li>)}
             </ol>
           )}
-          {s.points && (
+          {s.points && s.points.length > 0 && (
             <ul className="mas-guide-points">
               {s.points.map((p, j) => <li key={j}>{p}</li>)}
             </ul>
           )}
           {s.note && <p className="mas-guide-note">{s.note}</p>}
+
+          {/* Section images — zero footprint if missing */}
+          <ImageFig url={s.image1_url} caption={s.image1_caption} alt={s.heading} />
+          <ImageFig url={s.image2_url} caption={s.image2_caption} alt={s.heading} />
         </section>
       ))}
 

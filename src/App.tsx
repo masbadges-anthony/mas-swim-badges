@@ -58,6 +58,8 @@ import PrintableCertificate from './pages/PrintableCertificate';
 import MySessions from './pages/MySessions';
 import BillingPayments from './pages/BillingPayments';
 import Enquiries from './pages/Enquiries';
+import WebsiteGuides from './pages/WebsiteGuides';
+import WebsiteContentOverrides from './pages/WebsiteContentOverrides';
 import RegisterCentre from './pages/RegisterCentre';
 import PartnerApplications from './pages/PartnerApplications';
 import PartnerApplicationForm from './pages/PartnerApplicationForm';
@@ -613,6 +615,16 @@ function Sidebar({
           </details>
         )}
 
+        {canSystemSettings && (
+          <details className="mas-navgroup" open>
+            <summary>Website</summary>
+            <div className="mas-navgroup-items">
+              <NavLink to="/admin/website/guides" className={navClass}><Icon name="book" /><span>Guides</span></NavLink>
+              <NavLink to="/admin/website/content-overrides" className={navClass}><Icon name="file" /><span>Content overrides</span></NavLink>
+            </div>
+          </details>
+        )}
+
         <details className="mas-navgroup" open>
           <summary>Account</summary>
           <div className="mas-navgroup-items">
@@ -669,6 +681,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/partner-applications': 'Centre applications',
   '/admin/role-registry': 'Roles & policies',
   '/admin/settings': 'System settings',
+  '/admin/website/guides': 'Website · Guides',
+  '/admin/website/content-overrides': 'Website · Content overrides',
   '/account/resources': 'My resources',
   '/registry/swimmers': 'Swimmer registry',
   '/admin/audit-log': 'Audit log',
@@ -878,6 +892,8 @@ export default function App() {
               <Route path="/admin/memberships" element={<RequireRole roles={['chairperson', 'board_member']}><MembershipManagement /></RequireRole>} />
 <Route path="/admin/staff" element={<Navigate to="/admin/settings" replace />} />
               <Route path="/admin/settings" element={<RequireRole roles={['system_admin']}><Settings /></RequireRole>} />
+              <Route path="/admin/website/guides" element={<RequireRole roles={['system_admin']}><WebsiteGuides /></RequireRole>} />
+              <Route path="/admin/website/content-overrides" element={<RequireRole roles={['system_admin']}><WebsiteContentOverrides /></RequireRole>} />
               <Route path="/account/resources" element={<MyResources />} />
               <Route path="/my-application" element={<PartnerApplicationForm />} />
             </Route>
