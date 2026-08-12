@@ -105,7 +105,7 @@ export default function CentreBilling() {
                 <input type="checkbox" checked={on} onChange={() => togglePick(centreId, f)} />
                 <span className="mas-switch-slider" /><span className="mas-switch-text">{f.label}</span>
               </label>
-              {on && <input className="mas-input" type="number" style={{ width: '120px' }} value={d.picked[f.code]} onChange={(e) => setAmount(centreId, f.code, Number(e.target.value))} />}
+              {on && <input className="mas-input" type="number" style={{ width: '100%', maxWidth: '140px', minWidth: '90px' }} value={d.picked[f.code]} onChange={(e) => setAmount(centreId, f.code, Number(e.target.value))} />}
             </div>
           );
         })}

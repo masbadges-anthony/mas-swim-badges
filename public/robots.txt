@@ -1,0 +1,21 @@
+# MAS BADGES — Malaysia Aquatics Learn-to-Swim programme
+# https://www.masbadges.org
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /account/
+Disallow: /auth/
+Disallow: /billing/
+Disallow: /my-application
+Disallow: /my-invoices
+Disallow: /my-sessions
+Disallow: /assessments/
+Disallow: /certificates/
+Disallow: /dashboard
+Disallow: /verify?
+Disallow: /login
+Disallow: /claim-signup
+Disallow: /set-password
+
+Sitemap: https://www.masbadges.org/sitemap.xml
