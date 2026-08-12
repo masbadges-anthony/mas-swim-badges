@@ -25,6 +25,8 @@ const HERO_CSS = `
   overflow: hidden;
   border-radius: 20px;
   margin-bottom: 2.75rem;
+  background: transparent;
+  padding: 0;
 }
 .mas-hero-track {
   display: grid;
@@ -363,7 +365,7 @@ function HeroCarousel() {
 
   return (
     <div
-      className="mas-hero-carousel mas-home-hero"
+      className="mas-hero-carousel"
       role="region"
       aria-roledescription="carousel"
       aria-label="Featured highlights"
