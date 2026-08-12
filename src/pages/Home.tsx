@@ -80,7 +80,7 @@ const HERO_CSS = `
   max-width: 41rem;
   height: auto;
   display: block;
-  margin-bottom: clamp(-10rem, -14vw, -5rem);
+  margin-bottom: clamp(-6.9rem, -10vw, -1.9rem);
   filter: drop-shadow(0 18px 32px rgba(0,0,0,0.28));
   animation: mas-hero-float 5.5s ease-in-out infinite;
 }
