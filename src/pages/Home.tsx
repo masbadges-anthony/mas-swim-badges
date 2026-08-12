@@ -60,25 +60,27 @@ const HERO_CSS = `
 .mas-hero-slide-grid {
   position: relative; z-index: 2;
   display: grid;
-  grid-template-columns: 1fr min(38%, 22rem);
+  grid-template-columns: 1fr min(44%, 26rem);
   gap: clamp(1.5rem, 4vw, 3rem);
-  align-items: center;
+  align-items: end;
   max-width: 1180px;
   margin: 0 auto;
 }
 .mas-hero-slide--no-media .mas-hero-slide-grid { grid-template-columns: 1fr; }
-.mas-hero-copy { max-width: 640px; }
+.mas-hero-copy { max-width: 640px; align-self: center; }
 .mas-hero-media {
   position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  overflow: visible;
 }
 .mas-hero-media img {
   width: 100%;
-  max-width: 22rem;
+  max-width: 28rem;
   height: auto;
   display: block;
+  margin-bottom: clamp(-6rem, -8vw, -3rem);
   filter: drop-shadow(0 18px 32px rgba(0,0,0,0.28));
   animation: mas-hero-float 5.5s ease-in-out infinite;
 }
