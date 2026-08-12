@@ -1,19 +1,41 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { searchSite } from '../data/searchIndex';
+import { buildGuideEntries, searchSite, type GuideCardForSearch, type SearchEntry } from '../data/searchIndex';
+import { supabase } from '../lib/supabase';
 import '../styles/public.css';
 
 /**
  * Site-wide search results for the public marketing site. The active query lives
  * in the URL (`/search?q=…`) so a results view is shareable and linkable. Results
- * come from the static, public-only search index (`searchSite`) — this page never
- * touches portal data.
+ * come from the static, public-only search index (`searchSite`) supplemented at
+ * runtime with the current set of published guides (`list_public_guides()` RPC)
+ * so guide content stays discoverable now that guides live in the database.
+ * This page never touches portal data.
  */
 export default function SearchResults() {
   const [params] = useSearchParams();
   const query = params.get('q') ?? '';
   const trimmed = query.trim();
-  const results = searchSite(query);
+
+  const [guideEntries, setGuideEntries] = useState<SearchEntry[]>([]);
+  const [guidesLoaded, setGuidesLoaded] = useState(false);
+
+  // One-shot fetch of published guides. We build search entries from the RPC
+  // response once, then keep them in state — searchSite is a pure filter so
+  // re-running it on every query change is cheap.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc('list_public_guides');
+      if (cancelled) return;
+      const cards = (Array.isArray(data) ? data : []) as GuideCardForSearch[];
+      setGuideEntries(buildGuideEntries(cards));
+      setGuidesLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const results = searchSite(query, guideEntries);
 
   // Reset the scroll position whenever the query changes. ScrollToTop only fires
   // on a pathname change, and searching again from this page keeps the same
@@ -29,9 +51,12 @@ export default function SearchResults() {
         <h1>{trimmed ? `Results for “${trimmed}”` : 'Search the site'}</h1>
         {trimmed ? (
           <p className="mas-lede">
-            {results.length === 0
-              ? 'No matching pages.'
-              : `${results.length} result${results.length === 1 ? '' : 's'} across the programme, guides, FAQs and pages.`}
+            {!guidesLoaded && 'Loading…'}
+            {guidesLoaded && (
+              results.length === 0
+                ? 'No matching pages.'
+                : `${results.length} result${results.length === 1 ? '' : 's'} across the programme, guides, FAQs and pages.`
+            )}
           </p>
         ) : (
           <p className="mas-lede">
@@ -41,7 +66,7 @@ export default function SearchResults() {
         )}
       </header>
 
-      {trimmed && results.length === 0 && (
+      {trimmed && guidesLoaded && results.length === 0 && (
         <div className="mas-search-empty">
           <p>
             We couldn’t find anything matching <strong>“{trimmed}”</strong>.

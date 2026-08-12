@@ -1,22 +1,26 @@
 // src/data/searchIndex.ts
 // Single source-of-truth, static content index for site-wide search across the
 // PUBLIC marketing site only. Page titles, section headings, key body copy, FAQs,
-// Guides and the level pathway are indexed here.
+// and the level pathway are indexed here.
 //
 // SAFETY: this module indexes the public site's OWN page copy only. It must never
 // reference candidate, certificate, member, or any minor data — those live behind
 // the portal's RLS surfaces and are out of bounds for search. Keep it that way.
 //
 // Maintainability:
-//   - FAQ, Guide and Level entries are DERIVED from their existing source-of-truth
-//     data modules (faqs.ts, guides.ts, levels.ts) so they never drift out of sync.
+//   - FAQ and Level entries are DERIVED from their existing source-of-truth
+//     data modules (faqs.ts, levels.ts) so they never drift out of sync.
+//   - GUIDES used to live in a static `guides.ts` module (also indexed here) but
+//     have moved to the database (`guide_cards` / `guide_sections`, served via
+//     the `list_public_guides()` RPC). Guide search entries are now built at
+//     runtime via `buildGuideEntries()` below and merged into the search index
+//     by SearchResults after the RPC returns.
 //   - Static page copy (Home, About, For parents, …) has no data module behind it,
 //     so those entries are hand-authored below in PAGE_ENTRIES. To add or edit a
 //     page entry, edit that one array.
 
 import { LEVELS } from './levels';
 import { FAQ_CATEGORIES } from './faqs';
-import { GUIDES } from './guides';
 
 export interface SearchEntry {
   /** Short, human-readable title for the result. */
@@ -32,6 +36,24 @@ export interface SearchEntry {
    * match the full body of an FAQ answer or guide section while `snippet` stays short.
    */
   body?: string;
+}
+
+/** Shape of a guide card as returned by `list_public_guides()`. Sections are
+ *  optional so a card with none still indexes cleanly. Kept intentionally loose
+ *  — we only require the fields we actually read for search entries. */
+export interface GuideSectionForSearch {
+  heading?: string | null;
+  body?: string | null;
+  steps?: string[] | null;
+  points?: string[] | null;
+  note?: string | null;
+}
+export interface GuideCardForSearch {
+  slug: string;
+  title: string;
+  audience?: string | null;
+  summary?: string | null;
+  sections?: GuideSectionForSearch[] | null;
 }
 
 // Trim a longer string down to a display-friendly excerpt on a word boundary.
@@ -173,51 +195,73 @@ const FAQ_ENTRIES: SearchEntry[] = FAQ_CATEGORIES.flatMap((cat) =>
 );
 
 // ---------------------------------------------------------------------------
-// 4. Guides — derived from guides.ts. One entry per guide, plus one per section.
+// 4. Guides — built at RUNTIME from `list_public_guides()` (see helper below).
+//    SearchResults fetches once on mount and passes the result into searchSite.
 // ---------------------------------------------------------------------------
-const GUIDE_ENTRIES: SearchEntry[] = GUIDES.flatMap((g) => {
-  const sectionText = (s: (typeof g.sections)[number]) =>
-    [s.body, s.note, ...(s.steps ?? []), ...(s.points ?? [])].filter(Boolean).join(' ');
 
-  const overview: SearchEntry = {
-    title: g.title,
-    snippet: g.summary,
-    route: `/guides/${g.slug}`,
-    source: `Guides · ${g.audience}`,
-    body: `${g.title} ${g.summary} ${g.sections.map(sectionText).join(' ')}`,
-  };
+/** Convert one guide-section payload into its text-only body used for matching. */
+function sectionText(s: GuideSectionForSearch): string {
+  return [s.body ?? '', s.note ?? '', ...(s.steps ?? []), ...(s.points ?? [])]
+    .filter(Boolean)
+    .join(' ');
+}
 
-  const sections: SearchEntry[] = g.sections.map((s) => ({
-    title: s.heading,
-    snippet: excerpt(sectionText(s)) || g.summary,
-    route: `/guides/${g.slug}`,
-    source: `Guides · ${g.title}`,
-    body: `${s.heading} ${sectionText(s)}`,
-  }));
+/**
+ * Turn a set of guide cards (as returned by list_public_guides RPC) into the
+ * flat list of SearchEntry rows that previously lived in the static index.
+ * One overview entry per card + one entry per section. Same shape as before,
+ * so SearchResults doesn't need to know these came from the database.
+ */
+export function buildGuideEntries(cards: GuideCardForSearch[] | null | undefined): SearchEntry[] {
+  if (!Array.isArray(cards)) return [];
+  return cards.flatMap((g) => {
+    const summary = g.summary ?? '';
+    const audience = g.audience ?? '';
+    const sections = Array.isArray(g.sections) ? g.sections : [];
 
-  return [overview, ...sections];
-});
+    const overview: SearchEntry = {
+      title: g.title,
+      snippet: summary,
+      route: `/guides/${g.slug}`,
+      source: `Guides · ${audience}`,
+      body: `${g.title} ${summary} ${sections.map(sectionText).join(' ')}`,
+    };
+
+    const sectionEntries: SearchEntry[] = sections
+      .filter((s) => (s.heading ?? '').trim().length > 0)
+      .map((s) => ({
+        title: s.heading as string,
+        snippet: excerpt(sectionText(s)) || summary,
+        route: `/guides/${g.slug}`,
+        source: `Guides · ${g.title}`,
+        body: `${s.heading} ${sectionText(s)}`,
+      }));
+
+    return [overview, ...sectionEntries];
+  });
+}
 
 // ---------------------------------------------------------------------------
-// The complete static search index (single source of truth).
+// The static portion of the search index (loaded synchronously at import time).
 // ---------------------------------------------------------------------------
 export const SEARCH_INDEX: SearchEntry[] = [
   ...PAGE_ENTRIES,
   ...LEVEL_ENTRIES,
   ...FAQ_ENTRIES,
-  ...GUIDE_ENTRIES,
 ];
 
 /**
- * Case-insensitive, partial-match search over the static content index.
+ * Case-insensitive, partial-match search over the static content index, optionally
+ * supplemented with runtime-built entries (e.g. guides fetched from Supabase).
  * Matches the query against each entry's title, snippet, and (where present)
  * fuller body text. Returns matching entries; an empty/whitespace query returns [].
  */
-export function searchSite(query: string): SearchEntry[] {
+export function searchSite(query: string, extra: SearchEntry[] = []): SearchEntry[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
-  return SEARCH_INDEX.filter((e) => {
-    const haystack = `${e.title} ${e.snippet} ${e.body ?? ''}`.toLowerCase();
-    return haystack.includes(q);
+  const haystack = [...SEARCH_INDEX, ...extra];
+  return haystack.filter((e) => {
+    const hay = `${e.title} ${e.snippet} ${e.body ?? ''}`.toLowerCase();
+    return hay.includes(q);
   });
 }
